@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'Users.apps.UsersConfig',
     'Projects.apps.ProjectsConfig',
     'Task.apps.TaskConfig',
+    'Feedback.apps.FeedbackConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
