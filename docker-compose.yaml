@@ -5,8 +5,8 @@ services:
     build:
       context: ./MuniClient
     volumes:
-      - ./reactApp:/reactApp
-      - /MuniClient/node_modules
+      - ./MuniClient:/app
+      - /app/node_modules
     ports:
       - "5173:5173"
   django:
