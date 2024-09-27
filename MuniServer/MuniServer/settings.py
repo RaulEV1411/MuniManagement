@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Departments.apps.DepartmentsConfig',
     'Users.apps.UsersConfig',
+    'Projects.apps.ProjectsConfig',
+    'Task.apps.TaskConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
