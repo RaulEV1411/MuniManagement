@@ -94,5 +94,69 @@ export const login = async (email, password) => {
     }
 };
 
+export const createProyecto = async (data) => {
+    try {
+        const response = await api.post('/projects/proyectos/', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error al crear el proyecto:', error);
+        throw error;
+    }
+};
+
+// Obtener los estados
+export const getEstados = async () => {
+    try {
+        const response = await api.get('/projects/estados/');
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener los estados:', error);
+        throw error;
+    }
+};
+
+// Obtener las prioridades
+export const getPrioridades = async () => {
+    try {
+        const response = await api.get('/projects/prioridades/');
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener las prioridades:', error);
+        throw error;
+    }
+};
+
+// Obtener los usuarios
+export const getUsuarios = async () => {
+    try {
+        const response = await api.get('/users/users/');
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener los usuarios:', error);
+        throw error;
+    }
+};
+
+export const createTarea = async (data) => {
+    try {
+        const response = await api.post('/task/tareas/', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error al crear la tarea:', error);
+        throw error;
+    }
+};
+
+export const getProyectos = async () => {
+    try {
+        const response = await api.get('/projects/proyectos/');
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener los proyectos:', error);
+        throw error;
+    }
+};
+
+
 
 export default api;
