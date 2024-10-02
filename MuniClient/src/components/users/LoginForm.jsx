@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { login } from '../../services/api';  // Importamos el método desde api.js
+import { login } from '../../services/api'; // Importamos el método desde api.js
+import "../../styles/LoginForm.css";
+import logo from '/src/assets/Logo Circular Blanco (Fondo Transparente).png';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -21,33 +23,41 @@ const LoginForm = () => {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            id="email"
-            name="email"
-            placeholder="Ingresa tu email"
-          />
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <img src={logo} alt="Puntarenas Costa Rica" className="login-logo" />
         </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+        <form onSubmit={handleSubmit}>
+          <div className="coolinput">
+            <label htmlFor="email" className="text">Usuario:</label>
+            <input 
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              id="email"
+              name="email"
+              placeholder="Usuario"
+              className="input"
+            />
+          </div>
+          <div className="coolinput">
+            <label htmlFor="password" className="text">Contraseña:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Contraseña"
+              className="input"
+              id="password"
+            />
+          </div>
+          <button type="submit" className="login-button">Entrar</button>
+        </form>
+        {error && <p className="login-error">{error}</p>}
+      </div>
     </div>
   );
 };
