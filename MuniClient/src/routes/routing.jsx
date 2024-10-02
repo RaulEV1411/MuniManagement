@@ -5,6 +5,8 @@ import CreateDepartamentoForm from '../components/departments/CreateDepartamento
 import CreateRoleForm from '../components/users/CreateRoleForm';
 import CreateUserForm from '../components/users/CreateUserForm';
 import LoginForm from '../components/users/LoginForm';
+import CreateTareasForm from '../components/task/CreateTareasForm';
+import CreateProjectoForm from '../components/projects/CreateProyectoForm';
 
 function Routing() {
   return (
@@ -15,6 +17,8 @@ function Routing() {
             <Route path="/departamentos" element={<CreateDepartamentoForm />} />
             <Route path="/roles" element={<CreateRoleForm />} />
             <Route path="/users" element={<CreateUserForm />} />
+            <Route path="/proyectos" element={<CreateProjectoForm />} />
+            <Route path="/tareas" element={<CreateTareasForm />} />
         </Routes>
     </div>
   )
