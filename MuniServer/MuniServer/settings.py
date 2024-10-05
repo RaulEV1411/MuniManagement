@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,7 +71,7 @@ ROOT_URLCONF = 'MuniServer.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,6 +121,15 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Configuración para enviar correos electrónicos
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # O el servidor SMTP que vayas a usar
+EMAIL_PORT = 587  # Puerto SMTP para usar con TLS
+EMAIL_USE_TLS = True  # Utilizar TLS
+EMAIL_HOST_USER = 'raev1411@gmail.com'  # Tu dirección de correo
+EMAIL_HOST_PASSWORD = 'ifia rrgd aqod dajo'  # Contraseña de la cuenta de correo
+DEFAULT_FROM_EMAIL = 'raev1411@gmail.com'  # Dirección de correo desde la cual se enviarán los correos
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -136,6 +146,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'Users/static'),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
