@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{% static 'users/css/email_card.css' %}">
+    <title>Email</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Hola {{ username }}</h1>
+        <p class="p">Tu contraseña aleatoria es: <strong>{{ password }}</strong></p>
+        <p>Por favor, cámbiala después de iniciar sesión.</p>
+        <div class="footer">
+            <p>Este es un mensaje automatizado. No respondas a este correo.</p>
+        </div>
+    </div>
+</body>
+</html>

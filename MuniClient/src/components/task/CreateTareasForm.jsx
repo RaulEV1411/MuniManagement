@@ -18,7 +18,6 @@ const CreateTareasForm = () => {
     const [prioridades, setPrioridades] = useState([]);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
-
     const navigate = useNavigate(); // Para redireccionar al home
 
     // Cargar las listas de proyectos, estados y prioridades
@@ -73,6 +72,7 @@ const CreateTareasForm = () => {
                     value={tareaData.name}
                     onChange={handleChange}
                     required
+                    
                 />
                 <input
                     type="text"

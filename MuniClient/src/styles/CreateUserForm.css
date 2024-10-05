@@ -1,0 +1,94 @@
+.Title_create_users{
+    color: black;
+}
+
+.date-input-container {
+    position: relative;
+    width: 178px;
+    height: 38px;
+    background-color: #f5f5f5;
+    border-radius: 25px;
+    border: 2px solid #dfb5a7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 20px;
+    margin-bottom: 7%;
+}
+
+.date-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background-color: #f5f5f5;
+    padding: 0 5px;
+    font-size: 12px;
+    color: #e7c4bd;
+}
+
+.date-input {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: #333;
+    width: 100%;
+    outline: none;
+}
+
+.order-inputs{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: center;
+    align-content: center;
+    gap: 25px;
+}
+
+.conteiner-inputs_conteiners{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.conteiner_order_divs_user{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.button_create_users {
+    width: fit-content;
+    min-width: 470px;
+    color: #D04919;
+    height: 45px;
+    padding: 8px;
+    border-radius:25px;
+    border: 2.5px solid #D04919;
+    box-shadow: 0px 0px 20px -20px;
+    cursor: pointer;
+    background-color: white;
+    transition: all 0.2s ease-in-out 0ms;
+    user-select: none;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 7%;
+}
+
+.button_create_users:hover {
+    background-color: #F2F2F2;
+    box-shadow: 0px 0px 20px -18px;
+}
+
+.button_create_users:active {
+    transform: scale(0.95);
+}
+
+.conteiner_create_users-logo{
+    display: flex;
+    align-self: start;
+}
+
+.Create_users-logo{
+    width: 280px;
+    height: auto;
+}
