@@ -7,6 +7,8 @@ import CreateUserForm from '../components/users/CreateUserForm';
 import LoginForm from '../components/users/LoginForm';
 import CreateTareasForm from '../components/task/CreateTareasForm';
 import CreateProjectoForm from '../components/projects/CreateProyectoForm';
+import Home from "../pages/home"
+
 
 function Routing() {
   return (
@@ -19,6 +21,7 @@ function Routing() {
             <Route path="/users" element={<CreateUserForm />} />
             <Route path="/proyectos" element={<CreateProjectoForm />} />
             <Route path="/tareas" element={<CreateTareasForm />} />
+            <Route path='/home' element={<Home />} />
         </Routes>
     </div>
   )

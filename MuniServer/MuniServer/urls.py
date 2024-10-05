@@ -23,4 +23,6 @@ urlpatterns = [
     path('users/', include('Users.urls')),
     path('projects/', include('Projects.urls')),
     path('task/', include('Task.urls')),
+    path('feedback/', include('Feedback.urls')),
+    
 ]

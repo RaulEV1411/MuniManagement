@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
+from .models import Feedback
+from .serializers import FeedbackSerializer
 
-# Create your views here.
+class FeedbackViewSet(ModelViewSet):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
+
