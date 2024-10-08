@@ -1,0 +1,77 @@
+body{
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: url('src/assets/Fondo_Prueba_1.png') no-repeat center center fixed ;
+    background-size: cover;  
+}
+
+.standard_input{
+    border: none;
+    background: transparent;
+    font-size: 17px;
+    color: #333;
+    width: 100%;
+    outline: none;
+}
+
+.standard_input_label{
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background-color: #f5f5f5;
+    padding: 0 5px;
+    font-size: 12px;
+    color: #0C3857;
+}
+
+.standard_input_container{
+    position: relative;
+    width: 200px;
+    height: 45px;
+    background-color: #f5f5f5;
+    border-radius: 25px;
+    border: 2px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 20px;
+}
+
+.standard_button {
+    width: fit-content;
+    min-width: 250px;
+    color: #333;
+    height: 45px;
+    padding: 8px;
+    border-radius:25px;
+    border: 2.5px solid #333;
+    box-shadow: 0px 0px 20px -20px;
+    cursor: pointer;
+    background-color: white;
+    transition: all 0.2s ease-in-out 0ms;
+    user-select: none;
+    font-family: 'Poppins', sans-serif;
+}
+
+.standard_title{
+    color: #ffffff;
+}
+
+.standard_div_container{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px;
+    border-radius: 25px;
+    background-color: #0C3857;
+}
+
+.standard_form_container{
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 25px;
+}
