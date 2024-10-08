@@ -1,0 +1,78 @@
+/* Estilos para ProjectDetails */
+.container-project-details {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 15px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header-project-details {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.title-project-details {
+    font-size: 2.5rem;
+    color: #333;
+}
+
+.status-project-details {
+    font-size: 1.5rem;
+    color: #7D8CC4;
+}
+
+.image-container-project-details {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.image-project-details {
+    max-width: 100%;
+    height: auto;
+    border-radius: 15px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-project-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    font-size: 1.2rem;
+    color: #555;
+}
+
+.info-project-details p {
+    margin: 0;
+}
+
+.description-project-details,
+.priority-project-details,
+.department-project-details,
+.type-project-details,
+.date-start-project-details,
+.date-end-project-details,
+.cost-project-details {
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.button-back-project-details {
+    display: block;
+    margin: 40px auto 0;
+    padding: 10px 20px;
+    font-size: 1rem;
+    color: white;
+    background-color: #4A90E2;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.button-back-project-details:hover {
+    background-color: #357ABD;
+}

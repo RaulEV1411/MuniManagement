@@ -1,14 +1,16 @@
 import React from 'react';
-import Sidebar from '../components/Home/Sidebar'
+import Sidebar from '../components/Home/Sidebar';
+import ProjectHome from '../components/Home/main';
 
-
-function App() {
+function Homepages() {
   return (
-    <div>
-      <Sidebar />
-    
+    <div className="app-container">
+      <Sidebar>
+        <ProjectHome />
+      </Sidebar>
     </div>
   );
 }
 
-export default App;
+export default Homepages;
+

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { login } from '../../services/api'; // Importamos el método desde api.js
 import "../../styles/LoginForm.css";
+import { useNavigate } from 'react-router-dom';
 import logo from '/src/assets/Logo Circular Blanco (Fondo Transparente).png';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,6 +18,7 @@ const LoginForm = () => {
       await login(email, password);
       setError(null);
       alert('Login exitoso!');
+      navigate('/home');
       // Aquí puedes redirigir al usuario a otra página o mostrar el contenido protegido
     } catch (error) {
       setError('Credenciales inválidas. Por favor, inténtelo de nuevo.');

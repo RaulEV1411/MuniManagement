@@ -104,6 +104,16 @@ export const createProyecto = async (data) => {
     }
 };
 
+export const getProyectoById = async (id) => {
+    try {
+      const response = await api.get(`/projects/proyectos/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener el proyecto:', error);
+      throw error;
+    }
+  };
+
 // Obtener los estados
 export const getEstados = async () => {
     try {
