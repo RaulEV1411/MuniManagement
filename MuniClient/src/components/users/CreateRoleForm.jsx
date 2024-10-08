@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createRole } from '../../services/api'; 
+import "../../styles/common.css"
 
 const CreateRoleForm = () => {
     const [roleName, setRoleName] = useState('');
@@ -27,12 +28,13 @@ const CreateRoleForm = () => {
     };
 
     return (
-        <div>
-            <h2>Crear Rol de Usuario</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="roleName">Nombre del Rol:</label>
+        <div className='standard_div_container'>
+            <h2 className='standard_title' >Crear Rol de Usuario</h2>
+            <form className='standard_form_container' onSubmit={handleSubmit}>
+                <div className='standard_input_container'>
+                    <label className='standard_input_label' htmlFor="roleName">Nombre del Rol:</label>
                     <input
+                    className='standard_input'
                         type="text"
                         id="roleName"
                         value={roleName}
@@ -42,7 +44,7 @@ const CreateRoleForm = () => {
                 </div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
                 {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
-                <button type="submit">Crear Rol</button>
+                <button className='standard_button' type="submit">Crear Rol</button>
             </form>
         </div>
     );
