@@ -224,7 +224,6 @@ const CreateProjectoForm = () => {
                         </select>
                     </div>
                 </div>
-
                 <button type="submit" className="button_create_project">Crear Proyecto</button>
             </form>
         </div>
