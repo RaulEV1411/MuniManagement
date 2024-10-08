@@ -21,13 +21,14 @@ const CreateDireccionForm = () => {
   };
 
   return (
-    <div>
-      <h2>Crear Nueva Dirección</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="name">Nombre de la Dirección:</label>
+    <div className='standard_div_container'>
+      <h2 className='standard_title' >Crear Nueva Dirección</h2>
+      <form className='standard_form_container' onSubmit={handleSubmit}>
+        <div className='standard_input_container'>
+          <label className='standard_input_label' htmlFor="name">Nombre de la Dirección:</label>
           <br />
           <input
+            className='standard_input'
             type="text"
             id="name"
             value={name}
@@ -36,7 +37,7 @@ const CreateDireccionForm = () => {
           />
         </div>
         <br />
-        <button type="submit">Crear</button>
+        <button className='standard_button' type="submit">Crear</button>
       </form>
       {message && <p>{message}</p>}
     </div>

@@ -89,6 +89,7 @@ const CreateUserForm = () => {
                                     value={formData.first_name}
                                     onChange={handleChange}
                                     className="date-input"
+                                    placeholder='Nombre'
                                 />
                             </div>
 
@@ -102,6 +103,7 @@ const CreateUserForm = () => {
                                     value={formData.last_name}
                                     onChange={handleChange}
                                     className="date-input"
+                                    placeholder='Apellido'
                                 />
                             </div>
 
@@ -115,6 +117,7 @@ const CreateUserForm = () => {
                                     value={formData.cedula}
                                     onChange={handleChange}
                                     className="date-input"
+                                    placeholder='Cedula'
                                 />
                             </div>
                         </div>
@@ -130,6 +133,7 @@ const CreateUserForm = () => {
                                     value={formData.phone_number}
                                     onChange={handleChange}
                                     className="date-input"
+                                    placeholder='Telefono'
                                 />
                             </div>
 
@@ -143,6 +147,7 @@ const CreateUserForm = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     className="date-input"
+                                    placeholder='Email'
                                 />
                             </div>
 
@@ -156,6 +161,7 @@ const CreateUserForm = () => {
                                     value={formData.puesto}
                                     onChange={handleChange}
                                     className="date-input"
+                                    placeholder='Puesto'
                                 />
                             </div>
                         </div>
