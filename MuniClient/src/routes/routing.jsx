@@ -24,7 +24,7 @@ function Routing() {
             <Route path="/tareas" element={<CreateTareasForm />} />
             <Route path='/home' element={<Homepages />} />
             <Route path="/projects/:id" element={<ProjectDetails />} />
-            {/* <Route path='/about' element={<AboutPages />} /> */}
+            <Route path='/about' element={<AboutPages />} /> 
         </Routes>
     </div>
   )
