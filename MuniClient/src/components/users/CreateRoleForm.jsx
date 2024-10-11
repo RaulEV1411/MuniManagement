@@ -28,24 +28,26 @@ const CreateRoleForm = () => {
     };
 
     return (
-        <div className='standard_div_container'>
-            <h2 className='standard_title' >Crear Rol de Usuario</h2>
-            <form className='standard_form_container' onSubmit={handleSubmit}>
-                <div className='standard_input_container'>
-                    <label className='standard_input_label' htmlFor="roleName">Nombre del Rol:</label>
-                    <input
-                    className='standard_input'
-                        type="text"
-                        id="roleName"
-                        value={roleName}
-                        onChange={(e) => setRoleName(e.target.value)}
-                        placeholder="Ingresa el nombre del rol"
-                    />
-                </div>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
-                <button className='standard_button' type="submit">Crear Rol</button>
-            </form>
+        <div className='standard_container'>
+            <div className='standard_div_container'>
+                <h2 className='standard_title' >Crear Rol de Usuario</h2>
+                <form className='standard_form_container' onSubmit={handleSubmit}>
+                    <div className='standard_input_container'>
+                        <label className='standard_input_label' htmlFor="roleName">Nombre del Rol:</label>
+                        <input
+                        className='standard_input'
+                            type="text"
+                            id="roleName"
+                            value={roleName}
+                            onChange={(e) => setRoleName(e.target.value)}
+                            placeholder="Ingresa el nombre del rol"
+                        />
+                    </div>
+                    {error && <p style={{ color: 'red' }}>{error}</p>}
+                    {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+                    <button className='standard_button' type="submit">Crear Rol</button>
+                </form>
+            </div>
         </div>
     );
 };

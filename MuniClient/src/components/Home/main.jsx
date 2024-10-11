@@ -26,7 +26,7 @@ const ProjectHome = () => {
   // Filtrar los proyectos en función de la búsqueda
   const handleSearch = (query) => {
     const result = projects.filter((project) =>
-      project.name.toLowerCase().includes(query.toLowerCase())
+      project.name.toLowerCase().startsWith(query.toLowerCase())
     );
     setFilteredProjects(result);
     console.log(filteredProjects);

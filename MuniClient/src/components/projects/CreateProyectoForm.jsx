@@ -66,7 +66,7 @@ const CreateProjectoForm = () => {
     };
 
     return (
-        <div>
+        <div className='create_project_container'>
             <h2 className="Title_create_project">Crear Nuevo Proyecto</h2>
             {success && <p>Proyecto creado exitosamente</p>}
             {error && <p>{error}</p>}

@@ -1,8 +1,14 @@
-body{
+.standard_container{
     margin: 0;
     font-family: 'Arial', sans-serif;
-    background: url('src/assets/Fondo_Prueba_1.png') no-repeat center center fixed ;
+    background: url('/src/assets/Fondo_Prueba_1.png') no-repeat center center fixed;
     background-size: cover;  
+    display: flex;
+    place-items: center;
+    align-items: center;
+    justify-content: center;
+    min-width: 320px;
+    min-height: 100vh;
 }
 
 .standard_input{

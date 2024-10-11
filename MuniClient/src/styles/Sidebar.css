@@ -5,6 +5,19 @@
   font-family: "Poppins", sans-serif;
 }
 
+.sidebar_container{
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background: url('/src/assets/Base PPT 2.jpg') no-repeat center center fixed;
+  background-size: cover;  
+  display: flex;
+  place-items: center;
+  align-items: start;
+  justify-content: center;
+  min-width: 100%;
+  min-height: 100vh;
+}
+
 :root {
   /* ===== Colors ===== */
 
@@ -325,4 +338,8 @@ body.dark .home .text {
   width: 27px;  
   height: 27px; 
   object-fit: cover; 
+}
+
+.section_bar{
+  width: 100%;
 }

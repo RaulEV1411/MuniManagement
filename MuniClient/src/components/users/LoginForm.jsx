@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { login } from '../../services/api'; // Importamos el método desde api.js
-import "../../styles/LoginForm.css";
+import styles from '../../styles/LoginForm.module.css'; // Importación de CSS Module
 import { useNavigate } from 'react-router-dom';
 import logo from '/src/assets/Logo Circular Blanco (Fondo Transparente).png';
 
@@ -14,26 +14,24 @@ const LoginForm = () => {
     e.preventDefault();
 
     try {
-      // Intentamos hacer login con los datos proporcionados
       await login(email, password);
       setError(null);
       alert('Login exitoso!');
       navigate('/home');
-      // Aquí puedes redirigir al usuario a otra página o mostrar el contenido protegido
     } catch (error) {
       setError('Credenciales inválidas. Por favor, inténtelo de nuevo.');
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <img src={logo} alt="Puntarenas Costa Rica" className="login-logo" />
+    <div className={styles['login-container']}>
+      <div className={styles['login-card']}>
+        <div className={styles['login-header']}>
+          <img src={logo} alt="Puntarenas Costa Rica" className={styles['login-logo']} />
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="coolinput">
-            <label htmlFor="email" className="text">Usuario:</label>
+          <div className={styles['coolinput']}>
+            <label htmlFor="email" className={styles['text']}>Usuario:</label>
             <input 
               type="email"
               value={email}
@@ -42,24 +40,24 @@ const LoginForm = () => {
               id="email"
               name="email"
               placeholder="Usuario"
-              className="input"
+              className={styles['input']}
             />
           </div>
-          <div className="coolinput">
-            <label htmlFor="password" className="text">Contraseña:</label>
+          <div className={styles['coolinput']}>
+            <label htmlFor="password" className={styles['text']}>Contraseña:</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Contraseña"
-              className="input"
+              className={styles['input']}
               id="password"
             />
           </div>
-          <button type="submit" className="login-button">Entrar</button>
+          <button type="submit" className={styles['login-button']}>Entrar</button>
         </form>
-        {error && <p className="login-error">{error}</p>}
+        {error && <p className={styles['login-error']}>{error}</p>}
       </div>
     </div>
   );

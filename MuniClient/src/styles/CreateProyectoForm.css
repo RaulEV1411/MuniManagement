@@ -1,3 +1,17 @@
+.create_project_container{
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: url('/src/assets/Base PPT 2.jpg') no-repeat center center fixed;
+    background-size: cover;  
+    flex-direction: column;
+    display: flex;
+    place-items: center;
+    align-items: center;
+    justify-content: center;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
 .Title_create_project {
     color: black;
 }
