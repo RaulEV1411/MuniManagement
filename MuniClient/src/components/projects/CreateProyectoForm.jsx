@@ -217,8 +217,8 @@ const CreateProjectoForm = () => {
                         >
                             <option value="">Seleccione un Responsable</option>
                             {usuarios.map(usuario => (
-                                <option key={usuario.id} value={usuario.user_ID}>
-                                    {usuario.name}
+                                <option key={usuario.user_ID} value={usuario.user_ID}>
+                                    {usuario.user_ID}
                                 </option>
                             ))}
                         </select>

@@ -1,10 +1,12 @@
 import About from "../components/about/about"; 
-import Carrucel from "../components/about/Carrucel";
+import Map from "../components/about/map";
 function AboutPages() {
   return (
     <div>
-      <Carrucel />
+      <Map /> 
       <About /> 
+
+
     </div>
   );
 }
