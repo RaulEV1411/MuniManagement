@@ -23,7 +23,7 @@ const Sidebar = ({children}) => {
   };
 
   return (
-    <div>
+    <div className="sidebar_container">
       <nav className={`sidebar ${isClosed ? "close" : ""}`}>
         <header>
           <div className="image-text">
@@ -121,7 +121,7 @@ const Sidebar = ({children}) => {
         </div>
       </nav>
 
-      <section className={`${isClosed ? "close" : ""}`}>
+      <section className={`${isClosed ? "close" : ""} section_bar`}>
           {children}
       </section>
     </div>

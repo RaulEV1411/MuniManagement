@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import "../../styles/projectDetails.css";
+import styles from '../../styles/projectDetails.module.css'; // Importación de CSS Module
 import { getProyectoById } from '../../services/api';
 
 const ProjectDetails = () => {
@@ -32,33 +31,33 @@ const ProjectDetails = () => {
   }
 
   return (
-    <div className="container-project-details">
-      <div className="header-project-details">
-        <h1 className="title-project-details">{project.name}</h1>
-        <h3 className="status-project-details">Estado: {project.estado_ID}</h3>
+    <div className={styles['container-project-details']}>
+      <div className={styles['header-project-details']}>
+        <div className={styles['header-image-container']}>
+          <img
+            src={project.image || "https://via.placeholder.com/150"}
+            alt={project.name}
+            className={styles['header-background-image']}
+          />
+          <div className={styles['header-content']}>
+            <h1 className={styles['title-project-details']}>{project.name}</h1>
+            <p className={styles['subtitle-project-details']}>Subtítulo o descripción breve</p>
+            <div className={styles['header-buttons']}>
+              <button className={styles['btn-itinerary']}>Add to my Itinerary</button>
+              <button className={styles['btn-location']}>12 mins from hotel</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="image-container-project-details">
-        <img
-          src={project.image || "https://via.placeholder.com/150"} // Añadir imagen si está disponible
-          alt={project.name}
-          className="image-project-details"
-        />
+      <div className={styles['tabs-container']}>
+        <button className={`${styles['tab-btn']} ${styles['active']}`}>Task</button>
+        <button className={styles['tab-btn']}>Information</button>
       </div>
 
-      <div className="info-project-details">
-        <p className="description-project-details"><strong>Descripción:</strong> {project.descripcion}</p>
-        <p className="priority-project-details"><strong>Prioridad:</strong> {project.prioridad_ID}</p>
-        <p className="department-project-details"><strong>Departamento:</strong> {project.departamento_ID}</p>
-        <p className="type-project-details"><strong>Tipo:</strong> {project.tipos_ID ? project.tipos_ID : 'N/A'}</p>
-        <p className="date-start-project-details"><strong>Fecha de Inicio:</strong> {project.fecha_inicio}</p>
-        <p className="date-end-project-details"><strong>Fecha de Entrega:</strong> {project.fecha_entrega}</p>
-        <p className="cost-project-details"><strong>Costo:</strong> ${project.costo}</p>
+      <div className={styles['info-project-details']}>
+        {/* Aquí iría la información del proyecto */}
       </div>
-
-      <button className="button-back-project-details" onClick={handleBackClick}>
-        Volver a Proyectos
-      </button>
     </div>
   );
 };

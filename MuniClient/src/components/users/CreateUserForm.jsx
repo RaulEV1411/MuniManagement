@@ -70,7 +70,7 @@ const CreateUserForm = () => {
     };
 
     return (
-        <div>
+        <div className='user-form-container'>
             <h1 className='Title_create_users'>Crear Usuario</h1>
             <div className='conteiner_order_divs_user'>
                 <div className='conteiner_create_users-logo'>

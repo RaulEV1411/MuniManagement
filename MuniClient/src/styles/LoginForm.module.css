@@ -1,21 +1,17 @@
 /* LoginForm.css */
 
-body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background: url('/src/assets/Base PPT 2.jpg') no-repeat center center fixed;
-    background-size: cover;  
-  }
-  
-  
-  
-  .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100px;
-  
-  }
+    .login-container {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: url('/src/assets/Base PPT 2.jpg') no-repeat center center fixed;
+      background-size: cover;  
+      display: flex;
+      place-items: center;
+      align-items: end;
+      justify-content: center;
+      min-width: 320px;
+      min-height: 100vh;
+    }
   
   .login-card {
     background-color: #004d66;
@@ -24,7 +20,7 @@ body {
     width: 320px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     text-align: center;
-    margin-bottom: 16%;
+    margin-bottom: 10%;
   }
   
   .login-logo {

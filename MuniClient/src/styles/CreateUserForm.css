@@ -1,5 +1,20 @@
+.user-form-container{
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: url('/src/assets/Base PPT 2.jpg') no-repeat center center fixed;
+    background-size: cover;  
+    display: flex;
+    place-items: center;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
 .Title_create_users{
     color: black;
+    margin-bottom: 5%;
 }
 
 .date-input-container {
@@ -53,7 +68,7 @@
 .conteiner_order_divs_user{
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: center;
     width: 100%;
 }
 

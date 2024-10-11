@@ -1,0 +1,103 @@
+body {
+  margin: 0;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Contenedor principal */
+.container-project-details {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  /* Contenedor del encabezado */
+  .header-project-details {
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  /* Imagen de fondo en el encabezado */
+  .header-image-container {
+    position: relative;
+  }
+  
+  .header-background-image {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  
+  /* Contenido encima de la imagen de fondo */
+  .header-content {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    color: white;
+  }
+  
+  .title-project-details {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+  
+  .subtitle-project-details {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }
+  
+  /* Botones en el encabezado */
+  .header-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .btn-itinerary, .btn-location {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .btn-itinerary {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .btn-location {
+    background-color: #6c757d;
+    color: white;
+  }
+  
+  /* Estilos de las pestañas */
+  .tabs-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  
+  .tab-btn {
+    padding: 10px 20px;
+    background-color: #f1f1f1;
+    border: none;
+    border-radius: 20px;
+    margin: 0 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .tab-btn.active {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .tab-btn:hover {
+    background-color: #e0e0e0;
+  }
+  

@@ -37,42 +37,44 @@ const CreateDepartamentoForm = () => {
     };
 
     return (
-        <div className='standard_div_container'>
-            <h2 className='standard_title'>Crear Nuevo Departamento</h2>
-            <form className='standard_form_container' onSubmit={handleSubmit}>
-                <div className='standard_input_container'>
-                    <label className='standard_input_label' htmlFor="name">Nombre del Departamento:</label>
-                    <input
-                        className='standard_input'
-                        type="text"
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </div>
+        <div className='standard_container'>
+            <div className='standard_div_container'>
+                <h2 className='standard_title'>Crear Nuevo Departamento</h2>
+                <form className='standard_form_container' onSubmit={handleSubmit}>
+                    <div className='standard_input_container'>
+                        <label className='standard_input_label' htmlFor="name">Nombre del Departamento:</label>
+                        <input
+                            className='standard_input'
+                            type="text"
+                            id="name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    </div>
 
-                <div className='standard_input_container'>
-                    <label className='standard_input_label' htmlFor="direccion">Selecciona una Dirección:</label>
-                    <select
-                        className='standard_input'
-                        id="direccion"
-                        value={direccionId}
-                        onChange={(e) => setDireccionId(e.target.value)}
-                        required
-                    >
-                        <option value="">-- Selecciona una Dirección --</option>
-                        {direcciones.map((direccion) => (
-                            <option key={direccion.direccion_ID} value={direccion.direccion_ID}>
-                                {direccion.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                    <div className='standard_input_container'>
+                        <label className='standard_input_label' htmlFor="direccion">Selecciona una Dirección:</label>
+                        <select
+                            className='standard_input'
+                            id="direccion"
+                            value={direccionId}
+                            onChange={(e) => setDireccionId(e.target.value)}
+                            required
+                        >
+                            <option value="">-- Selecciona una Dirección --</option>
+                            {direcciones.map((direccion) => (
+                                <option key={direccion.direccion_ID} value={direccion.direccion_ID}>
+                                    {direccion.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                <button className='standard_button' type="submit">Crear</button>
-            </form>
-            {message && <p>{message}</p>}
+                    <button className='standard_button' type="submit">Crear</button>
+                </form>
+                {message && <p>{message}</p>}
+            </div>
         </div>
     );
 };
