@@ -10,7 +10,7 @@ import CreateProjectoForm from '../components/projects/CreateProyectoForm';
 import Homepages from "../pages/home";
 import AboutPages from '../pages/about';
 import ProjectDetails from '../components/projects/ProjectDetails';
-
+import UserPerfil from '../pages/perfil';
 function Routing() {
   return (
     <div>
@@ -25,6 +25,7 @@ function Routing() {
             <Route path='/home' element={<Homepages />} />
             <Route path="/projects/:id" element={<ProjectDetails />} />
             <Route path='/about' element={<AboutPages />} /> 
+            <Route path='/perfil' element={< UserPerfil  />} /> 
         </Routes>
     </div>
   )

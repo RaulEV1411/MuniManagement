@@ -22,6 +22,10 @@ const Sidebar = ({children}) => {
     navigate("/proyectos");
   };
 
+  const goperfil = () => {
+    navigate("/perfil");
+  };
+
   return (
     <div className="sidebar_container">
       <nav className={`sidebar ${isClosed ? "close" : ""}`}>
@@ -40,6 +44,7 @@ const Sidebar = ({children}) => {
             onClick={toggleSidebar}
           />
         </header>
+
 
         <div className="menu-bar">
           <div className="menu">
@@ -97,7 +102,7 @@ const Sidebar = ({children}) => {
                 </a>
               </li>
 
-              <li className="nav-link">
+              <li className="nav-link"onClick={goperfil}>
                 <a href="#">
                   <img
                     src="src/assets/usuario (1).png"
