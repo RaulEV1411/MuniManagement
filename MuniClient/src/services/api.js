@@ -84,15 +84,22 @@ export const createUser = async (data) => {
 
 export const login = async (email, password) => {
     try {
-    const response = await api.post(`/users/login/`, { email, password });
-    const token = response.data.token;
-    localStorage.setItem('authToken', token);
-    return token;
+      const response = await api.post(`/users/login/`, { email, password });
+      
+      // Aquí aseguramos que estamos tomando el campo 'access' de la respuesta
+      const accessToken = response.data.access;
+      const refreshToken = response.data.refresh;
+  
+      // Guardar ambos tokens si lo necesitas
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+  
     } catch (error) {
-    console.error('Error en la autenticación:', error);
-    throw error;
+      console.error('Error en la autenticación:', error);
+      throw error;
     }
-};
+  };
+  
 
 export const createProyecto = async (data) => {
     try {

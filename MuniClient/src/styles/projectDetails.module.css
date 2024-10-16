@@ -1,15 +1,12 @@
-body {
-  margin: 0;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
+
 
 /* Contenedor principal */
 .container-project-details {
-    max-width: 1200px;
-    margin: 0 auto;
+    margin: 0 ;
     padding: 20px;
+    font-family: 'Arial', sans-serif;
+    min-width: 100%;
+    min-height: 100vh;
   }
   
   /* Contenedor del encabezado */
@@ -65,13 +62,13 @@ body {
   }
   
   .btn-itinerary {
-    background-color: #007bff;
+    background-color: #0c3857;
     color: white;
     font-weight: bold;
   }
   
   .btn-location {
-    background-color: #6c757d;
+    background-color: #d04919;
     color: white;
   }
   
@@ -84,7 +81,7 @@ body {
   
   .tab-btn {
     padding: 10px 20px;
-    background-color: #f1f1f1;
+    background-color: #6c757d;
     border: none;
     border-radius: 20px;
     margin: 0 10px;

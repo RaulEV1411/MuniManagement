@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from '../../styles/projectDetails.module.css'; // Importación de CSS Module
 import { getProyectoById } from '../../services/api';
+import ProjectInformation from './ProjectInformation';
 
 const ProjectDetails = () => {
   const { id } = useParams(); // Obtener el ID del proyecto desde los parámetros de la URL
   const [project, setProject] = useState(null);
+  const [activeTab, setActiveTab] = useState('task'); // Estado para controlar la pestaña activa
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +32,11 @@ const ProjectDetails = () => {
     return <p>Cargando detalles del proyecto...</p>;
   }
 
+  // Función para cambiar de pestaña
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+  };
+
   return (
     <div className={styles['container-project-details']}>
       <div className={styles['header-project-details']}>
@@ -41,22 +48,45 @@ const ProjectDetails = () => {
           />
           <div className={styles['header-content']}>
             <h1 className={styles['title-project-details']}>{project.name}</h1>
-            <p className={styles['subtitle-project-details']}>Subtítulo o descripción breve</p>
             <div className={styles['header-buttons']}>
-              <button className={styles['btn-itinerary']}>Add to my Itinerary</button>
-              <button className={styles['btn-location']}>12 mins from hotel</button>
+              <p className={styles['btn-location']}>Prioridad: {project.prioridad_ID.name}</p>
+              <p className={styles['btn-itinerary']}>Estado: {project.estado_ID.name}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className={styles['tabs-container']}>
-        <button className={`${styles['tab-btn']} ${styles['active']}`}>Task</button>
-        <button className={styles['tab-btn']}>Information</button>
+        {/* Botones para cambiar de pestaña */}
+        <button
+          className={`${styles['tab-btn']} ${activeTab === 'task' ? styles['active'] : ''}`}
+          onClick={() => handleTabClick('task')}
+        >
+          Task
+        </button>
+        <button
+          className={`${styles['tab-btn']} ${activeTab === 'information' ? styles['active'] : ''}`}
+          onClick={() => handleTabClick('information')}
+        >
+          Information
+        </button>
       </div>
 
       <div className={styles['info-project-details']}>
-        {/* Aquí iría la información del proyecto */}
+        {/* Renderizado condicional basado en la pestaña activa */}
+        {activeTab === 'task' && (
+          <div>
+            <h2>Tareas del proyecto</h2>
+            <p>Aquí se mostrarán las tareas relacionadas con el proyecto.</p>
+            {/* Contenido específico de Task */}
+          </div>
+        )}
+        {activeTab === 'information' && (
+          <div>
+            <h2>Información del proyecto</h2>
+            <ProjectInformation project={project} />
+          </div>
+        )}
       </div>
     </div>
   );
