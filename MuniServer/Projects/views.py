@@ -15,7 +15,7 @@ class TiposViewSet(ModelViewSet):
     serializer_class = TiposSerializer
 
 class ProyectosViewSet(ModelViewSet):
-    queryset = Proyectos.objects.all()
+    queryset = Proyectos.objects.select_related('departamento_ID', 'estado_ID', 'prioridad_ID', 'user_ID').all()
     serializer_class = ProyectosSerializer
 
 class ProyectosTiposViewSet(ModelViewSet):

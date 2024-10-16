@@ -58,7 +58,7 @@ const CreateProjectoForm = () => {
             await createProyecto(proyectoData);
             setSuccess(true);
             setError(null);
-            navigate('/');
+            navigate('/home');
         } catch (error) {
             setError('Error al crear el proyecto');
             setSuccess(false);

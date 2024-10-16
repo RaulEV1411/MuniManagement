@@ -20,7 +20,7 @@ const ProjectCard = ({ project }) => {
       </div>
       <div className="card-body">
         <h3 className='h3_card_proyect'>{project.name}</h3>
-        <h5 className='h5_card_proyect'>{project.estado_ID}</h5>
+        <h5 className='h5_card_proyect'>{project.estado_ID.name}</h5>
         <p>{project.descripcion}</p>
       </div>
     </div>
