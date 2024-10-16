@@ -1,8 +1,8 @@
-import React from 'react';
-import "../../styles/about.css"; // Asegúrate de que la ruta sea correcta
+import React, { useState } from 'react';
+import "../../styles/about.css"; 
 
-const Card = ({ title, description, imageUrl }) => (
-  <div className="card">
+const Card = ({ title, description, imageUrl, onClick }) => (
+  <div className="card" onClick={onClick}>
     <img src={imageUrl} alt={title} className="card-image" />
     <div className="card-content">
       <h2 className="card-title">{title}</h2>
@@ -12,6 +12,11 @@ const Card = ({ title, description, imageUrl }) => (
 );
 
 const MunicipalityCards = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
   const cardsData = [
     {
       title: "Alcalde Municipal",
@@ -26,7 +31,8 @@ const MunicipalityCards = () => {
     {
       title: "Organigrama",
       description: "Mapa de la Estructura Organizacional",
-      imageUrl: "https://i0.wp.com/amprensa.com/wp-content/uploads/2024/03/Municipalidad-de-Puntarenas.jpg?fit=1200%2C628&ssl=1?v=1710612095"
+      imageUrl: "https://i0.wp.com/amprensa.com/wp-content/uploads/2024/03/Municipalidad-de-Puntarenas.jpg?fit=1200%2C628&ssl=1?v=1710612095",
+      onClick: openModal // Solo esta card abre el modal
     }
   ];
 
@@ -37,6 +43,16 @@ const MunicipalityCards = () => {
           <Card key={index} {...card} />
         ))}
       </div>
+
+      {isModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <span className="close-button" onClick={closeModal}>&times;</span>
+            {/* Imagen diferente en el modal, cargada desde assets */}
+            <img src="src/assets/Captura de pantalla 2024-10-11 084659.png" alt="Organigrama Detallado" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
