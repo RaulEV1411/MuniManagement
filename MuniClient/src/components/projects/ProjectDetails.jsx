@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styles from '../../styles/projectDetails.module.css'; // Importación de CSS Module
 import { getProyectoById } from '../../services/api';
 import ProjectInformation from './ProjectInformation';
+import CreateTareasForm from '../task/CreateTareasForm';
 
 const ProjectDetails = () => {
   const { id } = useParams(); // Obtener el ID del proyecto desde los parámetros de la URL
   const [project, setProject] = useState(null);
   const [activeTab, setActiveTab] = useState('task'); // Estado para controlar la pestaña activa
+  const [isModalOpen, setIsModalOpen] = useState(false); // Estado para controlar el modal
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,14 +30,24 @@ const ProjectDetails = () => {
     navigate('/home'); // Redirigir a la lista de proyectos
   };
 
-  if (!project) {
-    return <p>Cargando detalles del proyecto...</p>;
-  }
-
   // Función para cambiar de pestaña
   const handleTabClick = (tab) => {
     setActiveTab(tab);
   };
+
+  // Función para abrir el modal
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  // Función para cerrar el modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  if (!project) {
+    return <p>Cargando detalles del proyecto...</p>;
+  }
 
   return (
     <div className={styles['container-project-details']}>
@@ -78,7 +90,19 @@ const ProjectDetails = () => {
           <div>
             <h2>Tareas del proyecto</h2>
             <p>Aquí se mostrarán las tareas relacionadas con el proyecto.</p>
-            {/* Contenido específico de Task */}
+            <button onClick={handleOpenModal} className={styles['.add-task-btn-project']}>
+              Agregar tarea
+            </button>
+
+            {/* Modal */}
+            {isModalOpen && (
+              <div className={styles['modal-project-task']}>
+                <div className={styles['modal-content-task ']}>
+                  <button onClick={handleCloseModal} className={styles['close-modal-task']}>X</button>
+                  <CreateTareasForm ID_proyecto={project.proyect_ID} />
+                </div>
+              </div>
+            )}
           </div>
         )}
         {activeTab === 'information' && (

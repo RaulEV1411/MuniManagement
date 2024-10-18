@@ -102,8 +102,9 @@ export const login = async (email, password) => {
   
 
 export const createProyecto = async (data) => {
+    console.log(data);
     try {
-        const response = await api.post('/projects/proyectos/', data);
+        const response = await api.post('/projects/proyectosWrite/', data);
         return response.data;
     } catch (error) {
         console.error('Error al crear el proyecto:', error);
@@ -113,7 +114,7 @@ export const createProyecto = async (data) => {
 
 export const getProyectoById = async (id) => {
     try {
-      const response = await api.get(`/projects/proyectos/${id}/`);
+      const response = await api.get(`/projects/proyectosRead/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener el proyecto:', error);
@@ -166,7 +167,7 @@ export const createTarea = async (data) => {
 
 export const getProyectos = async () => {
     try {
-        const response = await api.get('/projects/proyectos/');
+        const response = await api.get('/projects/proyectosRead/');
         return response.data;
     } catch (error) {
         console.error('Error al obtener los proyectos:', error);

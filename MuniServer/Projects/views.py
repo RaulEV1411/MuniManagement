@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 from .models import Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos
-from .serializers import EstadoSerializer, PrioridadSerializer, TiposSerializer, ProyectosSerializer, ProyectosTiposSerializer
+from .serializers import EstadoSerializer, PrioridadSerializer, TiposSerializer, ProyectosTiposSerializer, ProyectosReadSerializer,ProyectosWriteSerializer
 
 class EstadoViewSet(ModelViewSet):
     queryset = Estado.objects.all()
@@ -14,9 +14,13 @@ class TiposViewSet(ModelViewSet):
     queryset = Tipos.objects.all()
     serializer_class = TiposSerializer
 
-class ProyectosViewSet(ModelViewSet):
+class ProyectosReadViewSet(ModelViewSet):
     queryset = Proyectos.objects.select_related('departamento_ID', 'estado_ID', 'prioridad_ID', 'user_ID').all()
-    serializer_class = ProyectosSerializer
+    serializer_class = ProyectosReadSerializer
+
+class ProyectosWriteViewSet(ModelViewSet):
+    queryset = Proyectos.objects.select_related('departamento_ID', 'estado_ID', 'prioridad_ID', 'user_ID').all()
+    serializer_class = ProyectosWriteSerializer
 
 class ProyectosTiposViewSet(ModelViewSet):
     queryset = Proyectos_tipos.objects.all()
