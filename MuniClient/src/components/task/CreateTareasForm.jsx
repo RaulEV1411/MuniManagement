@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Para la redirección
 import { createTarea, getProyectos, getEstados, getPrioridades } from '../../services/api';
+import "../../styles/createTareasForm.css"
 
-const CreateTareasForm = () => {
+const CreateTareasForm = ({ID_proyecto}) => {
     const [tareaData, setTareaData] = useState({
         prioridad_ID: '',
         estado_ID: '',
-        proyecto_ID: '',
+        proyecto_ID: ID_proyecto,
         name: '',
         descripcion: '',
         fecha_inicio: '',
@@ -52,7 +53,7 @@ const CreateTareasForm = () => {
             await createTarea(tareaData);
             setSuccess(true);
             setError(null);
-            navigate('/'); // Redirigir al home después de crear la tarea
+            navigate('/');
         } catch (error) {
             setError('Error al crear la tarea');
             setSuccess(false);
@@ -60,20 +61,54 @@ const CreateTareasForm = () => {
     };
 
     return (
-        <div>
-            <h2>Crear Nueva Tarea</h2>
-            {success && <p>Tarea creada exitosamente</p>}
-            {error && <p>{error}</p>}
+        <div className="create-tarea-form-container">
+            <h2 className="create-tarea-title">Crear Nueva Tarea</h2>
+            {success && <p className="create-tarea-success">Tarea creada exitosamente</p>}
+            {error && <p className="create-tarea-error">{error}</p>}
             <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Nombre de la tarea"
-                    value={tareaData.name}
-                    onChange={handleChange}
-                    required
-                    
-                />
+                <div className='div_container_Name_Estado_Prioridad_create_tareas'>
+                    <div>
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Nombre de la tarea"
+                            value={tareaData.name}
+                            onChange={handleChange}
+                            required
+                            className="create-tarea-input"
+                        />
+                    </div>
+                    <div className='div_selects_create_tareas'>
+                        <select
+                            name="estado_ID"
+                            value={tareaData.estado_ID}
+                            onChange={handleChange}
+                            required
+                            className="create-tarea-select"
+                        >
+                            <option value="">Seleccione un Estado</option>
+                            {estados.map((estado) => (
+                                <option key={estado.estado_ID} value={estado.estado_ID}>
+                                    {estado.name}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            name="prioridad_ID"
+                            value={tareaData.prioridad_ID}
+                            onChange={handleChange}
+                            required
+                            className="create-tarea-select"
+                        >
+                            <option value="">Seleccione una Prioridad</option>
+                            {prioridades.map((prioridad) => (
+                                <option key={prioridad.prioridad_ID} value={prioridad.prioridad_ID}>
+                                    {prioridad.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
                 <input
                     type="text"
                     name="descripcion"
@@ -81,6 +116,7 @@ const CreateTareasForm = () => {
                     value={tareaData.descripcion}
                     onChange={handleChange}
                     required
+                    className="create-tarea-input-descripcion"
                 />
                 <input
                     type="date"
@@ -88,6 +124,7 @@ const CreateTareasForm = () => {
                     value={tareaData.fecha_inicio}
                     onChange={handleChange}
                     required
+                    className="create-tarea-date"
                 />
                 <input
                     type="date"
@@ -95,54 +132,13 @@ const CreateTareasForm = () => {
                     value={tareaData.fecha_entrega}
                     onChange={handleChange}
                     required
+                    className="create-tarea-date"
                 />
-
-                <select
-                    name="proyecto_ID"
-                    value={tareaData.proyecto_ID}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="">Seleccione un Proyecto</option>
-                    {proyectos.map((proyecto) => (
-                        <option key={proyecto.proyect_ID} value={proyecto.proyect_ID}>
-                            {proyecto.name}
-                        </option>
-                    ))}
-                </select>
-
-                <select
-                    name="estado_ID"
-                    value={tareaData.estado_ID}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="">Seleccione un Estado</option>
-                    {estados.map((estado) => (
-                        <option key={estado.estado_ID} value={estado.estado_ID}>
-                            {estado.name}
-                        </option>
-                    ))}
-                </select>
-
-                <select
-                    name="prioridad_ID"
-                    value={tareaData.prioridad_ID}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="">Seleccione una Prioridad</option>
-                    {prioridades.map((prioridad) => (
-                        <option key={prioridad.prioridad_ID} value={prioridad.prioridad_ID}>
-                            {prioridad.name}
-                        </option>
-                    ))}
-                </select>
-
-                <button type="submit">Crear Tarea</button>
+                <button type="submit" className="create-tarea-button">Crear Tarea</button>
             </form>
         </div>
     );
+    
 };
 
 export default CreateTareasForm;
