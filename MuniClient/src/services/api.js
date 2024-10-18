@@ -176,6 +176,16 @@ export const getProyectos = async () => {
 };
 
 
+// Obtener un usuario por ID
+export const getUsuariosById = async (userID) => {
+    try {
+        const response = await api.get(`/users/users/${userID}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener el usuario:', error);
+        throw error;
+    }
+};
 
 
 

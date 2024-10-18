@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createProyecto, getDepartamentos, getEstados, getPrioridades, getUsuarios } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import '../../styles/CreateProyectoForm.css';  // Se asume que tienes el CSS en esta ruta
+import '../../styles/CreateProyectoForm.css';  
 
 const CreateProjectoForm = () => {
 
