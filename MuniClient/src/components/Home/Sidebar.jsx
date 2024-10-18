@@ -1,10 +1,19 @@
 import React, { useState } from "react";
 import "../../styles/Sidebar.css";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 const Sidebar = ({children}) => {
   const [isClosed, setIsClosed] = useState(true);
   const navigate = useNavigate();
+  const token = localStorage.getItem('refreshToken');
+  const token2 = localStorage.getItem('accessToken');
+  const decoded = jwtDecode(token);
+  const decoded2 = jwtDecode(token2);
+    //const userId = decoded.sub;
+  const userId = decoded.user_ID;
+  console.log(userId);
+  
 
   const toggleSidebar = () => {
     setIsClosed(!isClosed);
@@ -23,7 +32,7 @@ const Sidebar = ({children}) => {
   };
 
   const goperfil = () => {
-    navigate("/perfil");
+    navigate(`/perfil/${userId}`);
   };
 
   return (
@@ -33,8 +42,8 @@ const Sidebar = ({children}) => {
           <div className="image-text">
             <span className="image"></span>
             <div className="text logo-text">
-              <span className="name">Codinglab</span>
-              <span className="profession">Web developer</span>
+              <span className="name"></span>
+              <span className="profession"></span>
             </div>
           </div>
           <img
@@ -54,7 +63,7 @@ const Sidebar = ({children}) => {
                 alt="Usuario de perfil"
                 className="icon-img"
               />
-              <input type="text" placeholder="" />
+             <span className="text nav-text"> agregar usuario</span>
             </li>
 
             <ul className="menu-links">
@@ -65,7 +74,7 @@ const Sidebar = ({children}) => {
                     alt="Usuario de perfil"
                     className="icon-img"
                   />
-                  <span className="text nav-text">Dashboard</span>
+                  <span className="text nav-text">     correo</span>
                 </a>
               </li>
 
@@ -76,7 +85,7 @@ const Sidebar = ({children}) => {
                     alt="Revenue"
                     className="icon-img"
                   />
-                  <span className="text nav-text">Revenue</span>
+                  <span className="text nav-text">pagina principal</span>
                 </div>
               </li>
 
@@ -87,7 +96,7 @@ const Sidebar = ({children}) => {
                     alt="Notifications"
                     className="icon-img"
                   />
-                  <span className="text nav-text">Notifications</span>
+                  <span className="text nav-text">agregar tarea</span>
                 </a>
               </li>
 
@@ -98,7 +107,7 @@ const Sidebar = ({children}) => {
                     alt="Notifications"
                     className="icon-img"
                   />
-                  <span className="text nav-text">Analytics</span>
+                  <span className="text nav-text">informacion</span>
                 </a>
               </li>
 
@@ -109,7 +118,7 @@ const Sidebar = ({children}) => {
                     alt="Notifications"
                     className="icon-img"
                   />
-                  <span className="text nav-text">Likes</span>
+                  <span className="text nav-text">usuario</span>
                 </a>
               </li>
             </ul>

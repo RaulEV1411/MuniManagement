@@ -10,18 +10,18 @@ const ProjectCard = ({ project }) => {
   };
 
   return (
-    <div className="project-card" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
-      <div className="card-header">
-        <div className="profile-icon">👤</div>
-        <div className="menu-icon">⋮</div>
+    <div className="project-card-item-wrapper" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
+      <div className="project-card-header-section">
+        <div className="project-card-profile-icon">👤</div>
+        <div className="project-card-menu-icon">⋮</div>
       </div>
-      <div className="card-image">
+      <div className="project-card-image-container">
         <img src={project.image} alt={project.title} />
       </div>
-      <div className="card-body">
-        <h3 className='h3_card_proyect'>{project.name}</h3>
-        <h5 className='h5_card_proyect'>{project.estado_ID.name}</h5>
-        <p>{project.descripcion}</p>
+      <div className="project-card-body-content">
+        <h3 className="project-card-body-title">{project.name}</h3>
+        <h5 className="project-card-body-status">{project.estado_ID.name}</h5>
+        <p className="project-card-body-description">{project.descripcion}</p>
       </div>
     </div>
   );
