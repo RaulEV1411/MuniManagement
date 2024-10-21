@@ -133,6 +133,10 @@
   color: #333; /* Un color gris oscuro para el botón de cerrar */
 }
 
+.titles_h2_project_details{
+  color: black !important;
+}
+
 .add-task-btn-project {
   background-color: #007bff;
   color: white;
