@@ -39,4 +39,4 @@ class ProyectosReadSerializer(ModelSerializer):
 class ProyectosTiposSerializer(ModelSerializer):
     class Meta:
         model = Proyectos_tipos
-        fields = '__all__'
+        fields = '__all__'  

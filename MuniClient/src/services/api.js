@@ -200,7 +200,25 @@ export const getTareasByProjectID = async (projectID) => {
     }
 };
 
+// Función para eliminar un proyecto por ID
+export const deleteProyecto = async (id) => {
+    try {
+        const response = await api.delete(`/projects/proyectosRead/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error al eliminar el proyecto:', error);
+        throw error;
+    }
+};
 
-
+export const updateProyecto = async (id, data) => {
+    try {
+        const response = await api.put(`/projects/proyectosRead/${id}/`, data);
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar el proyecto:', error);
+        throw error;
+    }
+};
 
 export default api;
