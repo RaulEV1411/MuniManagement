@@ -19,8 +19,8 @@ const ProjectCard = ({ project }) => {
         <img src={project.image} alt={project.title} />
       </div>
       <div className="project-card-body-content">
-        <h3 className="project-card-body-title">{project.name}</h3>
-        <h5 className="project-card-body-status">{project.estado_ID.name}</h5>
+        <h3 className="project-card-body-title h3_card_proyect">{project.name}</h3>
+        <h5 className="project-card-body-status h5_card_proyect">{project.estado_ID.name}</h5>
         <p className="project-card-body-description">{project.descripcion}</p>
       </div>
     </div>
