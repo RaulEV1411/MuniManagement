@@ -25,10 +25,13 @@ class LoginView(APIView):
         
         if user is not None:
             refresh = RefreshToken.for_user(user)
+            refresh['role'] = user.role.name
+            
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'user_ID': str(user) 
+                'role': str(user.role.name),
+                'user_ID': str(user.user_ID), 
             })
         else:
             return Response({'error': 'Credenciales incorrectas'}, status=400)

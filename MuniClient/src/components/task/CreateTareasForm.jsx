@@ -67,7 +67,7 @@ const CreateTareasForm = ({ID_proyecto}) => {
             {error && <p className="create-tarea-error">{error}</p>}
             <form onSubmit={handleSubmit}>
                 <div className='div_container_Name_Estado_Prioridad_create_tareas'>
-                    <div>
+                    <div className='div_Name_create_tareas'>
                         <input
                             type="text"
                             name="name"
@@ -86,7 +86,7 @@ const CreateTareasForm = ({ID_proyecto}) => {
                             required
                             className="create-tarea-select"
                         >
-                            <option value="">Seleccione un Estado</option>
+                            <option value="">Estado</option>
                             {estados.map((estado) => (
                                 <option key={estado.estado_ID} value={estado.estado_ID}>
                                     {estado.name}
@@ -100,7 +100,7 @@ const CreateTareasForm = ({ID_proyecto}) => {
                             required
                             className="create-tarea-select"
                         >
-                            <option value="">Seleccione una Prioridad</option>
+                            <option value="">Prioridad</option>
                             {prioridades.map((prioridad) => (
                                 <option key={prioridad.prioridad_ID} value={prioridad.prioridad_ID}>
                                     {prioridad.name}
@@ -118,22 +118,30 @@ const CreateTareasForm = ({ID_proyecto}) => {
                     required
                     className="create-tarea-input-descripcion"
                 />
-                <input
-                    type="date"
-                    name="fecha_inicio"
-                    value={tareaData.fecha_inicio}
-                    onChange={handleChange}
-                    required
-                    className="create-tarea-date"
-                />
-                <input
-                    type="date"
-                    name="fecha_entrega"
-                    value={tareaData.fecha_entrega}
-                    onChange={handleChange}
-                    required
-                    className="create-tarea-date"
-                />
+                <div className='div_date_inputs_create_tareas'>
+                    <div className='div_input_date_create_tareas'>
+                        <p className='p_fechas_create_tareas'>Fecha de inicio:</p>
+                        <input
+                            type="date"
+                            name="fecha_inicio"
+                            value={tareaData.fecha_inicio}
+                            onChange={handleChange}
+                            required
+                            className="create-tarea-date"
+                        />
+                    </div>
+                    <div className='div_input_date_create_tareas'>
+                        <p className='p_fechas_create_tareas'>Fecha de entrega:</p>
+                        <input
+                            type="date"
+                            name="fecha_entrega"
+                            value={tareaData.fecha_entrega}
+                            onChange={handleChange}
+                            required
+                            className="create-tarea-date"
+                        />
+                    </div>
+                </div>
                 <button type="submit" className="create-tarea-button">Crear Tarea</button>
             </form>
         </div>

@@ -42,6 +42,7 @@ const ProjectHome = () => {
       </div>
     </div>
   );
-};
+}; 
+
 
 export default ProjectHome;

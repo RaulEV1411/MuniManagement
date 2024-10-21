@@ -24,26 +24,40 @@
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
     border-radius: 15px;
     font-size: 16px;
+    border: 3px solid #0c3958;
+    color: #0c3958;
+    background-color: #ccc;
 }
 
 .create-tarea-input-descripcion {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
+    border: 3px solid #0c3958;
+    color: #0c3958;
+    background-color: #ccc;
     border-radius: 15px;
     font-size: 16px;
-    background-color: #dc3545;
     height: 110px;
+}
+
+.div_container_Name_Estado_Prioridad_create_tareas{
+    display: flex;
+    gap: 12px;
+}
+
+.div_Name_create_tareas{
+    display: flex;
+    width: 50%;
 }
 
 .div_selects_create_tareas{
     display: flex;
     width: 50%;
     justify-content: center;
+    gap: 6px;
 }
 
 /* Inputs de fecha */
@@ -51,9 +65,29 @@
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 3px solid #0c3958;
+    color: #0c3958 !important;
+    background-color: #ccc;
+    border-radius: 15px;
     font-size: 16px;
+}
+
+.p_fechas_create_tareas{
+    color: #0c3958;
+}
+
+.div_input_date_create_tareas{
+    width: 100%;
+}
+
+
+
+.create-tarea-date::-webkit-calendar-picker-indicator{
+    background-color: #0c3958; /* Cambia el color del ícono */
+    color: white; /* Cambia el color del ícono */
+    border-radius: 50%; /* Añade bordes redondeados */
+    padding: 5px;
+    cursor: pointer;
 }
 
 /* Selects */
@@ -61,8 +95,10 @@
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 3px solid #0c3958;
+    color: #0c3958;
+    background-color: #ccc !important;
+    border-radius: 15px;
     font-size: 16px;
     background-color: #333;
 }
@@ -71,13 +107,18 @@
 .create-tarea-button {
     width: 100%;
     padding: 12px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 5px;
+    background-color: #28a74508;
+    border: 2px solid #0c3958;
+    color: #0c3958;
+    border-radius: 25px;
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+}
+
+.div_date_inputs_create_tareas{
+    display: flex;
+    gap: 12px;
 }
 
 .create-tarea-button:hover {

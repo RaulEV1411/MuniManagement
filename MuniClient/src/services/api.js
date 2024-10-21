@@ -187,6 +187,19 @@ export const getUsuariosById = async (userID) => {
     }
 };
 
+export const getTareasByProjectID = async (projectID) => {
+    try {
+        const response = await api.get(`/task/tareas/`, {
+        params: {
+        project_ID: projectID
+        }
+    });
+        console.log(response.data); // Aquí tienes las tareas filtradas por el project_ID
+    } catch (error) {
+        console.error('Error al obtener las tareas:', error);
+    }
+};
+
 
 
 

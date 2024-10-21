@@ -11,7 +11,7 @@ const Sidebar = ({children}) => {
   const decoded = jwtDecode(token);
   const decoded2 = jwtDecode(token2);
     //const userId = decoded.sub;
-  const userId = decoded.user_ID;
+  const userId = decoded;
   console.log(userId);
   
 

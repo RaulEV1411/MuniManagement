@@ -11,18 +11,23 @@ import Homepages from "../pages/home";
 import AboutPages from '../pages/about';
 import ProjectDetails from '../components/projects/ProjectDetails';
 import UserPerfil from '../pages/perfil';
+import PrivateRoute from '../components/PrivateRoute/PrivateRoute';
 function Routing() {
   return (
     <div>
         <Routes>
+            <Route path='/roles' element={
+              <PrivateRoute allowRoles={["Alcalde"]}>
+                <CreateRoleForm />
+              </PrivateRoute>
+            } />
             <Route path="/" element={<CreateDireccionForm />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/departamentos" element={<CreateDepartamentoForm />} />
-            <Route path="/roles" element={<CreateRoleForm />} />
+            <Route path="/home" element={<Homepages/>} />
             <Route path="/users" element={<CreateUserForm />} />
             <Route path="/proyectos" element={<CreateProjectoForm />} />
             <Route path="/tareas" element={<CreateTareasForm />} />
-            <Route path='/home' element={<Homepages />} />
             <Route path="/projects/:id" element={<ProjectDetails />} />
             <Route path='/about' element={<AboutPages />} /> 
             <Route path='/perfil/:id' element={< UserPerfil  />} /> 
