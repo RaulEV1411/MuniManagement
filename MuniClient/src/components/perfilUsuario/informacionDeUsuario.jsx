@@ -10,13 +10,9 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const token = localStorage.getItem('refreshToken');
-  const token2 = localStorage.getItem('accessToken');
   const decoded = jwtDecode(token);
-  const decoded2 = jwtDecode(token2);
-    //const userId = decoded.sub;
   const userID = decoded.user_ID;
   const navigate = useNavigate();
-console.log(userID);
 
 
   useEffect(() => {
