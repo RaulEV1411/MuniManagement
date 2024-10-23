@@ -35,7 +35,7 @@
     top: 50%;
     left: 20px;
     transform: translateY(-50%);
-    color: white;
+    color: rgb(255, 0, 0);
   }
   
   .title-project-details {
