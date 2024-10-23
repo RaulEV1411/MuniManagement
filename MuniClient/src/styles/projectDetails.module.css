@@ -153,3 +153,7 @@
   background-color: #0056b3; /* Cambia a un azul más oscuro al hacer hover */
 }
 
+.container_h2_addBTN_project_details{
+  display: flex;
+  justify-content: space-between;
+}

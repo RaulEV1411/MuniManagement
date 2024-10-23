@@ -5,6 +5,8 @@ import { getProyectoById, deleteProyecto, updateProyecto,getTareasByProjectID } 
 import ProjectInformation from './ProjectInformation';
 import CreateTareasForm from '../task/CreateTareasForm';
 import TaskCardForProjectDetail from '../task/TaskCardForProjectDetail'
+import Swal from 'sweetalert2'; // Importar SweetAlert2
+import EditProjectForm from './EditProjectForm'; // Asegúrate de crear este componente
 
 const ProjectDetails = () => {
   const { id } = useParams(); // Obtener el ID del proyecto desde los parámetros de la URL
@@ -12,6 +14,7 @@ const ProjectDetails = () => {
   const [tareas, setTareas] = useState([]); // Estado para almacenar las tareas del proyecto
   const [activeTab, setActiveTab] = useState('task'); // Estado para controlar la pestaña activa
   const [isModalOpen, setIsModalOpen] = useState(false); // Estado para controlar el modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const navigate = useNavigate();
 
@@ -67,6 +70,54 @@ const ProjectDetails = () => {
     setIsModalOpen(false);
   };
 
+    // Función para abrir el modal de editar
+    const handleOpenEditModal = () => {
+      setIsEditModalOpen(true);
+    };
+  
+    // Función para cerrar el modal de editar
+    const handleCloseEditModal = () => {
+      setIsEditModalOpen(false);
+    };
+  
+    // Función para manejar la eliminación del proyecto
+    const handleDeleteProject = async () => {
+      const { isConfirmed } = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: "¡Este proyecto se eliminará permanentemente!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+  
+      if (isConfirmed) {
+        try {
+          await deleteProyecto(id);
+          Swal.fire('Eliminado!', 'El proyecto ha sido eliminado.', 'success');
+          navigate('/home'); // Redirigir a la lista de proyectos después de eliminar
+        } catch (error) {
+          console.error('Error al eliminar el proyecto:', error);
+          Swal.fire('Error!', 'No se pudo eliminar el proyecto.', 'error');
+        }
+      }
+    };
+
+    // Función para manejar la actualización del proyecto
+    const handleUpdateProject = async (updatedProject) => {
+      try {
+        await updateProyecto(id, updatedProject);
+        Swal.fire('Actualizado!', 'El proyecto ha sido actualizado.', 'success');
+        setProject(updatedProject); // Actualizar el estado del proyecto con los nuevos datos
+        handleCloseEditModal(); // Cerrar el modal
+      } catch (error) {
+        console.error('Error al actualizar el proyecto:', error);
+        Swal.fire('Error!', 'No se pudo actualizar el proyecto.', 'error');
+      }
+    };
+
   if (!project || !tareas) {
     return <p>Cargando detalles del proyecto...</p>;
   }
@@ -110,10 +161,12 @@ const ProjectDetails = () => {
         {/* Renderizado condicional basado en la pestaña activa */}
         {activeTab === 'task' && (
           <div>
-            <h2 className={styles['titles_h2_project_details']}>Tareas del proyecto</h2>
-            <button onClick={handleOpenModal} className={styles['.add-task-btn-project']}>
-              Agregar tarea
-            </button>
+            <div className={styles['container_h2_addBTN_project_details']}>
+              <h2 className={styles['titles_h2_project_details']}>Tareas del proyecto</h2>
+              <button onClick={handleOpenModal} className={styles['.add-task-btn-project']}>
+                Agregar tarea
+              </button>
+            </div>
 
             {/* Mostrar las tareas */}
             <div className={styles['tasks-list']}>
@@ -143,6 +196,28 @@ const ProjectDetails = () => {
             <ProjectInformation project={project} />
           </div>
         )}
+      </div>
+
+      <div>
+        <button onClick={handleOpenEditModal} className={styles['edit-project-btn']}>
+                Editar Proyecto
+              </button>
+
+              {/* Modal para editar el proyecto */}
+              {isEditModalOpen && (
+                <div className={styles['modal-edit-project']}>
+                  <div className={styles['modal-content-edit']}>
+                    <button onClick={handleCloseEditModal} className={styles['close-modal-edit']}>X</button>
+                    <EditProjectForm project={project} onUpdate={handleUpdateProject} />
+                  </div>
+                </div>
+              )}
+              {/* Botón de eliminar proyecto */}
+        <div className={styles['delete-project-container']}>
+          <button onClick={handleDeleteProject} className={styles['delete-project-btn']}>
+            Eliminar Proyecto
+          </button>
+        </div>
       </div>
     </div>
   );
