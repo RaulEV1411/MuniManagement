@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from '../../styles/projectDetails.module.css'; // Importación de CSS Module
-import { getProyectoById, getTareasByProjectID } from '../../services/api'; // Añadir la función para obtener tareas
+import { getProyectoById, deleteProyecto, updateProyecto,getTareasByProjectID } from '../../services/api'; // Importa la nueva función de actualizar
 import ProjectInformation from './ProjectInformation';
 import CreateTareasForm from '../task/CreateTareasForm';
 import TaskCardForProjectDetail from '../task/TaskCardForProjectDetail'
