@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Para la redirección
 import { createTarea, getProyectos, getEstados, getPrioridades } from '../../services/api';
 import "../../styles/createTareasForm.css"
 
@@ -19,7 +18,6 @@ const CreateTareasForm = ({ID_proyecto}) => {
     const [prioridades, setPrioridades] = useState([]);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
-    const navigate = useNavigate(); // Para redireccionar al home
 
     // Cargar las listas de proyectos, estados y prioridades
     useEffect(() => {
@@ -53,7 +51,6 @@ const CreateTareasForm = ({ID_proyecto}) => {
             await createTarea(tareaData);
             setSuccess(true);
             setError(null);
-            navigate('/');
         } catch (error) {
             setError('Error al crear la tarea');
             setSuccess(false);

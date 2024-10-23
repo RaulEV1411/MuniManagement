@@ -7,12 +7,8 @@ const Sidebar = ({children}) => {
   const [isClosed, setIsClosed] = useState(true);
   const navigate = useNavigate();
   const token = localStorage.getItem('refreshToken');
-  const token2 = localStorage.getItem('accessToken');
   const decoded = jwtDecode(token);
-  const decoded2 = jwtDecode(token2);
-    //const userId = decoded.sub;
-  const userId = decoded;
-  console.log(userId);
+  const userId = decoded.user_ID;
   
 
   const toggleSidebar = () => {
