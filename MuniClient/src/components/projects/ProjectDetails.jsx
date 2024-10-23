@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from '../../styles/projectDetails.module.css'; // Importación de CSS Module
-import { getProyectoById, deleteProyecto, updateProyecto } from '../../services/api'; // Importa la nueva función de actualizar
+import { getProyectoById, deleteProyecto, updateProyecto,getTareasByProjectID } from '../../services/api'; // Importa la nueva función de actualizar
 import ProjectInformation from './ProjectInformation';
 import CreateTareasForm from '../task/CreateTareasForm';
 import Swal from 'sweetalert2'; // Importar SweetAlert2
