@@ -221,5 +221,25 @@ export const updateProyecto = async (id, data) => {
         throw error;
     }
 };
+  export const deleteTask = async (taskId) => {
+    try {
+        const response = await api.delete(`/task/tareas/${taskId}/`); // Ajusta la URL según tu API
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting task", error);
+        throw error;
+    }
+};
+
+export const updateTask = async (taskId, updatedTask) => {
+    try {
+        const response = await api.put(`/task/tareas/${taskId}/`, updatedTask);
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar la tarea:', error);
+        throw error;
+    }
+};
+
 
 export default api;
