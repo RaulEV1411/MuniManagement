@@ -168,15 +168,3 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = 'Users.Users' 
-
-
-
-AWS_ACCESS_KEY_ID = os.environ.get('AKIAV45KSDA7LB7FTLT4')  # Tu Access Key
-AWS_SECRET_ACCESS_KEY = os.environ.get('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')  # Tu Secret Key
-AWS_STORAGE_BUCKET_NAME = 'munimanagement'
-AWS_S3_REGION_NAME = 'us-east-1'  # ej. us-east-1
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-
-# Configuración de archivos estáticos (opcional)
-STATICFILES_STORAGE = 'storages.backends.s3.S3Boto3Storage'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3.S3Boto3Storage'

@@ -120,7 +120,7 @@ const ProjectDetails = () => {
       <div className={styles['header-project-details']}>
         <div className={styles['header-image-container']}>
           <img
-            src={project.image || "https://gstatic.com/classroom/themes/Math.jpg"}
+            src={project.image || "https://via.placeholder.com/150"}
             alt={project.name}
             className={styles['header-background-image']}
           />
@@ -181,29 +181,28 @@ const ProjectDetails = () => {
           <div>
             <h2 className={styles['titles_h2_project_details']}>Información del proyecto</h2>
             <ProjectInformation project={project} />
-            <div className={styles['containere_edit_delete_project_details']}>
-              <button onClick={handleOpenEditModal} className={styles['edit-project-btn']}>
-                      Editar Proyecto
-                    </button>
+          </div>
+        )}
+      </div>
 
-                    {/* Modal para editar el proyecto */}
-                    {isEditModalOpen && (
-                      <div className={styles['modal-edit-project']}>
-                        <div className={styles['modal-content-edit']}>
-                          <button onClick={handleCloseEditModal} className={styles['close-modal-edit']}>X</button>
-                          <EditProjectForm project={project} onUpdate={handleUpdateProject} />
-                        </div>
-                      </div>
-                    )}
-                    {/* Botón de eliminar proyecto */}
-              <div className={styles['delete-project-container']}>
-                <button onClick={handleDeleteProject} className={styles['delete-project-btn']}>
-                  Eliminar Proyecto
-                </button>
-              </div>
+      <div>
+        <button onClick={handleOpenEditModal} className={styles['edit-project-btn']}>
+          Editar Proyecto
+        </button>
+
+        {isEditModalOpen && (
+          <div className={styles['modal-edit-project']}>
+            <div className={styles['modal-content-edit']}>
+              <EditProjectForm project={project} onUpdate={handleUpdateProject} onClose={handleCloseEditModal} />
             </div>
           </div>
         )}
+
+        <div className={styles['delete-project-container']}>
+          <button onClick={handleDeleteProject} className={styles['delete-project-btn']}>
+            Eliminar Proyecto
+          </button>
+        </div>
       </div>
     </div>
   );

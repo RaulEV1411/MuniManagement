@@ -16,7 +16,7 @@ const ProjectCard = ({ project }) => {
         <div className="project-card-menu-icon">⋮</div>
       </div>
       <div className="project-card-image-container">
-        <img src={project?.image || "https://gstatic.com/classroom/themes/Psychology.jpg"} alt={project.title} />
+        <img src={project.image} alt={project.title} />
       </div>
       <div className="project-card-body-content">
         <h3 className="project-card-body-title h3_card_proyect">{project.name}</h3>

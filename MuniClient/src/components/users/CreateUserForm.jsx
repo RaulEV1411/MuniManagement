@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRoles, getDepartamentos } from '../../services/api'; 
-import { createUser } from '../../services/aws'; 
+import { getRoles, getDepartamentos, createUser } from '../../services/api'; 
 import "../../styles/CreateUserForm.css";
 import logo from "../../assets/Logo Circular Color  (Fondo Transparente) (1).png";
 
@@ -16,12 +15,12 @@ const CreateUserForm = () => {
         birthday: '',
         puesto: '',
         role: '',
-        departamento_ID: '',
-        user_photo: null,
+        departamento_ID: ''
     });
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
+    
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -36,30 +35,23 @@ const CreateUserForm = () => {
         fetchData();
     }, []);
 
+  
     const handleChange = (e) => {
-        const { name, value, type, files } = e.target;
+        const { name, value } = e.target;
         setFormData((prevData) => ({
             ...prevData,
-            [name]: type === 'file' ? files[0] : value,
+            [name]: value,
         }));
-
-        if (type === 'file') {
-            console.log("Archivo seleccionado:", files[0]);
-        }
     };
 
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSuccessMessage('');
 
-        const data = formData
-
-        // Imprimir el contenido de FormData para ver que los campos se asignan correctamente
-        console.log("Contenido de FormData:",data);
-
         try {
-            await createUser(data); // Envía el objeto FormData sin definir el encabezado Content-Type
+            await createUser(formData);
             setSuccessMessage('Usuario creado exitosamente.');
             setFormData({
                 first_name: '',
@@ -70,8 +62,7 @@ const CreateUserForm = () => {
                 birthday: '',
                 puesto: '',
                 role: '',
-                departamento_ID: '',
-                user_photo: null,
+                departamento_ID: ''
             });
         } catch (err) {
             setError('Hubo un error al crear el usuario.');
@@ -86,7 +77,7 @@ const CreateUserForm = () => {
                     <img src={logo} alt="Puntarenas Costa Rica" className="Create_users-logo" />
                 </div>
                 <div className='conteiner-inputs_conteiners'>
-                    <form onSubmit={handleSubmit} className='conteiner-inputs_conteiners' encType="multipart/form-data">
+                    <form onSubmit={handleSubmit} className='conteiner-inputs_conteiners'>
                         <div className='order-inputs'>
                             {/* Nombre */}
                             <div className="date-input-container">
@@ -207,7 +198,6 @@ const CreateUserForm = () => {
                                     ))}
                                 </select>
                             </div>
-
                             {/* Dropdown de Departamentos */}
                             <div className="date-input-container">
                                 <label className="date-label" htmlFor="departamento_ID">Departamento:</label>
@@ -228,20 +218,8 @@ const CreateUserForm = () => {
                             </div>
                         </div>
 
-                        {/* Campo de carga de imagen */}
-                        <div className="date-input-container">
-                            <label className="date-label" htmlFor="user_photo">Foto de Usuario:</label>
-                            <input
-                                type="file"
-                                id="user_photo"
-                                name="user_photo"
-                                onChange={handleChange}
-                                className="date-input"
-                            />
-                        </div>
-
                         <div className='order-inputs'>
-                            <button className='button_create_users' type="submit">Crear Usuario</button>
+                        <button className='button_create_users' type="submit">Crear Usuario</button>
                         </div>
 
                         {error && <p style={{ color: 'red' }}>{error}</p>}

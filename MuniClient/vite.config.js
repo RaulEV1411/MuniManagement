@@ -7,9 +7,6 @@ export default defineConfig({
   server: {
     watch: {
       usePolling: true,
-    },
-  },
-  define: {
-    global: {}, // Define `global` como un objeto vacío
-  },
+    },
+  },
 })
