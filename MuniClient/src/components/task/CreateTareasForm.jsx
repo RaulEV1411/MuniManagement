@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createTarea, getProyectos, getEstados, getPrioridades } from '../../services/api';
-import "../../styles/createTareasForm.css"
+import "../../styles/createTareasForm.css";
 
-const CreateTareasForm = ({ID_proyecto}) => {
+const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
     const [tareaData, setTareaData] = useState({
         prioridad_ID: '',
         estado_ID: '',
@@ -51,6 +51,11 @@ const CreateTareasForm = ({ID_proyecto}) => {
             await createTarea(tareaData);
             setSuccess(true);
             setError(null);
+
+            // Llamar a la función `onTaskCreated` si está definida
+            if (onTaskCreated) {
+                onTaskCreated();
+            }
         } catch (error) {
             setError('Error al crear la tarea');
             setSuccess(false);
@@ -143,8 +148,6 @@ const CreateTareasForm = ({ID_proyecto}) => {
             </form>
         </div>
     );
-    
 };
 
 export default CreateTareasForm;
-

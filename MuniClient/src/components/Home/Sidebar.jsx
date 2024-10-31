@@ -30,6 +30,10 @@ const Sidebar = ({children}) => {
   const goperfil = () => {
     navigate(`/perfil/${userId}`);
   };
+  
+  const goabout = () => {
+    navigate("/about");
+  };
 
   return (
     <div className="sidebar_container">
@@ -96,7 +100,7 @@ const Sidebar = ({children}) => {
                 </a>
               </li>
 
-              <li className="nav-link">
+              <li className="nav-link"onClick={goabout}>
                 <a href="#">
                   <img
                     src="src/assets/boton-de-informacion.png"

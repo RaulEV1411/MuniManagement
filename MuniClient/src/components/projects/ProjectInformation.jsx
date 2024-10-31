@@ -2,9 +2,6 @@ import React from 'react'
 import "../../styles/ProjectInformation.css"
 import { jwtDecode } from "jwt-decode";
 
-
-
-
 function ProjectInformation({project}) {
     const token = localStorage.getItem('refreshToken');
     const token2 = localStorage.getItem('accessToken');
