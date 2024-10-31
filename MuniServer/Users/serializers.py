@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 from .models import Roles, Users
 from django.contrib.auth.hashers import make_password
 import random
@@ -15,13 +16,6 @@ class RolesSerializer(ModelSerializer):
         model = Roles
         fields = '__all__'
 
-class UsersSerializer(ModelSerializer):
-    def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
-        return super(UsersSerializer, self).create(validated_data)
-    class Meta:
-        model = Users
-        fields = '__all__'
 
 class UsersSerializer(ModelSerializer):
     
@@ -53,4 +47,4 @@ class UsersSerializer(ModelSerializer):
     
     class Meta:
         model = Users
-        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday']
+        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo']
