@@ -40,7 +40,7 @@ const UserProfile = () => {
       </div>
       <div className='container_img_info_user_profile'>
         <img 
-          src={usuario?.profileImage || defaultProfileImage} 
+          src={usuario?.user_photo|| defaultProfileImage} 
           alt="User Profile" 
           className="profile-image" 
         />

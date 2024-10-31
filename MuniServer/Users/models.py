@@ -19,11 +19,12 @@ class Users(AbstractBaseUser):
     password = models.CharField(max_length=255)
     birthday = models.DateField()
     puesto = models.CharField(max_length=25)
+    user_photo = models.TextField(null=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name','last_name', 'role', 'departamento_ID', 'cedula', 'phone_number', 'birthday', 'puesto']
+    REQUIRED_FIELDS = ['first_name','last_name', 'role', 'departamento_ID', 'cedula', 'phone_number', 'birthday', 'puesto','user_photo']
 
     def _str_(self):
         return self.email
