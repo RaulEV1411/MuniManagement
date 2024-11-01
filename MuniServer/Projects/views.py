@@ -17,6 +17,15 @@ class TiposViewSet(ModelViewSet):
 class ProyectosReadViewSet(ModelViewSet):
     queryset = Proyectos.objects.select_related('departamento_ID', 'estado_ID', 'prioridad_ID', 'user_ID').all()
     serializer_class = ProyectosReadSerializer
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user_ID = self.request.query_params.get('user_ID')  # Obtiene el parámetro user_ID de los query params
+
+        if user_ID:
+            queryset = queryset.filter(user_ID=user_ID)
+
+        return queryset
 
 class ProyectosWriteViewSet(ModelViewSet):
     queryset = Proyectos.objects.select_related('departamento_ID', 'estado_ID', 'prioridad_ID', 'user_ID').all()

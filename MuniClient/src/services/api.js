@@ -72,35 +72,26 @@ export const getDepartamentos = async () => {
 };
 
 
-// export const createUser = async (data) => {
-//     try {
-//         const response = await api.post('/users/users/', data);
-//         return response.data;
-//     } catch (error) {
-//         console.error('Error al crear el usuario:', error);
-//         throw error;
-//     }
-// };
-
-
 export const login = async (email, password) => {
     try {
-      const response = await api.post(`/users/login/`, { email, password });
-      
-      // Aquí aseguramos que estamos tomando el campo 'access' de la respuesta
-      const accessToken = response.data.access;
-      const refreshToken = response.data.refresh;
-  
-      // Guardar ambos tokens si lo necesitas
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-  
+        const response = await api.post(`/users/login/`, { email, password });
+        
+        const accessToken = response.data.access;
+        const refreshToken = response.data.refresh;
+        // Configuración de la cookie con el token de actualización (duración de 7 días)
+        document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}; secure; HttpOnly; SameSite=Strict`;
+
+        const d = new Date();
+        d.setTime(d.getTime() + 7 * 24 * 60 * 60 * 1000);
+        let expires = "expires=" + d.toUTCString();
+        document.cookie = "accessToken" + "=" + accessToken + ";" + expires + ";path=/";
+
     } catch (error) {
-      console.error('Error en la autenticación:', error);
-      throw error;
+        console.error('Error en la autenticación:', error);
+        throw error;
     }
-  };
-  
+};
+
 
 export const createProyecto = async (data) => {
     console.log(data);
@@ -187,6 +178,20 @@ export const getUsuariosById = async (userID) => {
         throw error;
     }
 };
+
+export const getProyectosByUserID = async (userID) => {
+    try {
+        const response = await api.get(`/projects/proyectosRead/`, {
+            params: {
+                user_ID: userID
+            }
+        });
+        return response.data; // Aquí tienes los proyectos filtrados por el user_ID
+    } catch (error) {
+        console.error('Error al obtener los proyectos:', error);
+    }
+};
+
 
 export const getTareasByProjectID = async (projectID) => {
     try {
