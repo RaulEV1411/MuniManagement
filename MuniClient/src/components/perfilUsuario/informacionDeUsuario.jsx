@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getUsuariosById } from '../../services/api';
+import { getCookie } from '../../services/read_cookie';
 import "../../styles/info.css";
 import {  useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
@@ -9,9 +10,10 @@ const UserProfile = () => {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const token = localStorage.getItem('refreshToken');
-  const decoded = jwtDecode(token);
-  const userID = decoded.user_ID;
+  const token = getCookie('accessToken');
+  const decoded = token ? jwtDecode(token) : null;
+  
+  const userID = decoded?.user_ID;
   const navigate = useNavigate();
 
 

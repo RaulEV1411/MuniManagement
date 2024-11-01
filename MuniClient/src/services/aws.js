@@ -1,4 +1,5 @@
 import AWS from 'aws-sdk';
+import { createProyecto } from './api';
 
 // Configura AWS S3
 const S3_BUCKET = 'munimanagement'; // Cambia esto por el nombre de tu bucket
@@ -23,25 +24,26 @@ export const uploadImageToS3 = async (file) => {
     return s3.upload(params).promise();
 };
 
-// Función para guardar el producto
-export const createUser = async (data) => {
-    // Primero, sube la imagen a S3
-    console.log("casita",data.user_photo);
-    
+
+const postAWS = async (imgFile) => {
     let imagenUrl = '';
-    if (data.user_photo) {
+    if (imgFile) {
         try {
-            const result = await uploadImageToS3(data.user_photo);
+            const result = await uploadImageToS3(imgFile);
             imagenUrl = result.Location; // Obtén la URL de la imagen subida
             console.log(imagenUrl);
+            return imagenUrl
             
         } catch (error) {
             console.error('Error al subir la imagen a S3:', error);
             throw new Error('No se pudo subir la imagen a S3');
         }
     }
+}
 
-    console.log(data);
+// Función para guardar el producto
+export const createUser = async (data) => {
+    let imagenUrl = await postAWS(data.user_photo)
     data.user_photo = imagenUrl
     try {
         const response = await fetch('http://127.0.0.1:8000/users/users/', {
@@ -64,5 +66,16 @@ export const createUser = async (data) => {
         throw error;
     }
 };
+
+export const createProject = async (data) => {
+    let imagenUrl = await postAWS(data.user_photo)
+    data.user_photo = imagenUrl
+    try{
+        await createProyecto(data)
+    } catch (error) {
+        console.error('Error al crear el proyecto:', error);
+        throw error;
+    }
+}
 
 export default { createUser };

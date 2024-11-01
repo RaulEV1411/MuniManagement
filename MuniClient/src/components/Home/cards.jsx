@@ -12,7 +12,7 @@ const ProjectCard = ({ project }) => {
   return (
     <div className="project-card-item-wrapper" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
       <div className="project-card-header-section">
-        <div className="project-card-profile-icon">👤</div>
+        <div className="project-card-profile-icon">👤 {project.user_ID.first_name} {project.user_ID.last_name}</div>
         <div className="project-card-menu-icon">⋮</div>
       </div>
       <div className="project-card-image-container">

@@ -6,8 +6,8 @@ import AssignedProjects from '../components/perfilUsuario/listaProyectos';
 function  UserPerfil () {
   return (
     <div>
-     <UserProfile/>
-     <AssignedProjects/>
+      <UserProfile/>
+      <AssignedProjects/>
     </div>
   );
 }
