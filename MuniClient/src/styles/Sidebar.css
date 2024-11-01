@@ -343,3 +343,57 @@ body.dark .home .text {
 .section_bar{
   width: 100%;
 }
+@media screen and (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: 49%;
+  }
+
+  .sidebar.close {
+    width: 0;
+  }
+
+  .home {
+    left: 70px;
+    width: calc(100% - 70px);
+    padding: 0;
+  }
+
+  .sidebar_container {
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .sidebar header .image img {
+    width: 30px;
+  }
+
+  .sidebar header .toggle {
+    right: -15px;
+    height: 20px;
+    width: 20px;
+    font-size: 18px;
+  }
+
+  .sidebar .menu {
+    margin-top: 20px;
+  }
+
+  .sidebar li {
+    height: 40px;
+  }
+
+  .sidebar .text {
+    font-size: 14px;
+  }
+
+  .icon-img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .home .text {
+    font-size: 20px;
+    padding: 12px 20px;
+  }
+}

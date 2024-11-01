@@ -190,8 +190,7 @@ const ProjectDetails = () => {
                     {isEditModalOpen && (
                       <div className={styles['modal-edit-project']}>
                         <div className={styles['modal-content-edit']}>
-                          <button onClick={handleCloseEditModal} className={styles['close-modal-edit']}>X</button>
-                          <EditProjectForm project={project} onUpdate={handleUpdateProject} />
+                          <EditProjectForm project={project} onUpdate={handleUpdateProject} onClose={handleCloseEditModal}/>
                         </div>
                       </div>
                     )}
