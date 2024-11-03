@@ -11,3 +11,4 @@ class Tareas(models.Model):
     descripcion = models.CharField(max_length=255, unique=True)
     fecha_inicio = models.DateField()
     fecha_entrega = models.DateField()
+    task_photo = models.TextField(null=True)

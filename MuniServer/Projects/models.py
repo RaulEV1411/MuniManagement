@@ -26,6 +26,7 @@ class Proyectos(models.Model):
     fecha_inicio = models.DateField()
     fecha_entrega = models.DateField()
     costo = models.IntegerField()
+    project_photo = models.TextField(null=True)
 
 class Proyectos_tipos(models.Model):
     proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE)

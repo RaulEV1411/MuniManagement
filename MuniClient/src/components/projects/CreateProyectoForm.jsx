@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { createProyecto, getDepartamentos, getEstados, getPrioridades, getUsuarios } from '../../services/api';
+import { getDepartamentos, getEstados, getPrioridades, getUsuarios } from '../../services/api';
+import { createProject } from '../../services/aws';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/CreateProyectoForm.css';  
 
 const CreateProjectoForm = () => {
-
     const [departamentos, setDepartamentos] = useState([]);
     const [estados, setEstados] = useState([]);
     const [prioridades, setPrioridades] = useState([]);
@@ -22,7 +22,8 @@ const CreateProjectoForm = () => {
         descripcion: '',
         fecha_inicio: '',
         fecha_entrega: '',
-        costo: ''
+        costo: '',
+        project_photo: null  // Agregamos un campo para la imagen
     });
 
     useEffect(() => {
@@ -46,16 +47,28 @@ const CreateProjectoForm = () => {
     }, []);
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setProyectoData({
             ...proyectoData,
-            [e.target.name]: e.target.value,
+            [name]: value,
+        });
+    };
+
+    const handleFileChange = (e) => {
+        setProyectoData({
+            ...proyectoData,
+            project_photo: e.target.files[0],  // Guardamos el archivo seleccionado
         });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Crear una instancia de FormData
+        const data = proyectoData;
+
         try {
-            await createProyecto(proyectoData);
+            await createProject(data);  // Enviar el FormData
             setSuccess(true);
             setError(null);
             navigate('/home');
@@ -65,12 +78,14 @@ const CreateProjectoForm = () => {
         }
     };
 
+    
+
     return (
         <div className='create_project_container'>
             <h2 className="Title_create_project">Crear Nuevo Proyecto</h2>
             {success && <p>Proyecto creado exitosamente</p>}
             {error && <p>{error}</p>}
-            <form onSubmit={handleSubmit} className="container-inputs-project">
+            <form onSubmit={handleSubmit} className="container-inputs-project" encType="multipart/form-data">
                 <div className="order-inputs-project">
                     <div className="project-input-container">
                         <label className="project-label" htmlFor="name">Nombre:</label>
@@ -85,7 +100,7 @@ const CreateProjectoForm = () => {
                             required
                         />
                     </div>
-
+                    
                     <div className="project-input-container">
                         <label className="project-label" htmlFor="descripcion">Descripción:</label>
                         <input
@@ -99,6 +114,18 @@ const CreateProjectoForm = () => {
                             required
                         />
                     </div>
+                </div>
+
+                {/* Campo para subir la imagen */}
+                <div className="project-input-container">
+                    <label className="project-label" htmlFor="project_photo">Foto del Proyecto:</label>
+                    <input
+                        type="file"
+                        name="project_photo"
+                        id="project_photo"
+                        onChange={handleFileChange}
+                        className="project-input"
+                    />
                 </div>
 
                 <div className="order-inputs-project">
@@ -156,7 +183,7 @@ const CreateProjectoForm = () => {
                         >
                             <option value="">Seleccione un Departamento</option>
                             {departamentos.map(departamento => (
-                                <option key={departamento.id} value={departamento.departamentos_ID}>
+                                <option key={departamento.departamentos_ID} value={departamento.departamentos_ID}>
                                     {departamento.name}
                                 </option>
                             ))}
@@ -177,7 +204,7 @@ const CreateProjectoForm = () => {
                         >
                             <option value="">Seleccione un Estado</option>
                             {estados.map(estado => (
-                                <option key={estado.id} value={estado.estado_ID}>
+                                <option key={estado.estado_ID} value={estado.estado_ID}>
                                     {estado.name}
                                 </option>
                             ))}
@@ -196,7 +223,7 @@ const CreateProjectoForm = () => {
                         >
                             <option value="">Seleccione una Prioridad</option>
                             {prioridades.map(prioridad => (
-                                <option key={prioridad.id} value={prioridad.prioridad_ID}>
+                                <option key={prioridad.prioridad_ID} value={prioridad.prioridad_ID}>
                                     {prioridad.name}
                                 </option>
                             ))}
@@ -218,12 +245,13 @@ const CreateProjectoForm = () => {
                             <option value="">Seleccione un Responsable</option>
                             {usuarios.map(usuario => (
                                 <option key={usuario.user_ID} value={usuario.user_ID}>
-                                    {usuario.user_ID}
+                                    {usuario.first_name} {usuario.last_name}
                                 </option>
                             ))}
                         </select>
                     </div>
                 </div>
+
                 <button type="submit" className="button_create_project">Crear Proyecto</button>
             </form>
         </div>

@@ -72,6 +72,17 @@ export const getDepartamentos = async () => {
 };
 
 
+export const createUser = async (data) => {
+    try {
+        const response = await api.post('/users/users/', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error al crear el usuario:', error);
+        throw error;
+    }
+};
+
+
 export const login = async (email, password) => {
     try {
         const response = await api.post(`/users/login/`, { email, password });

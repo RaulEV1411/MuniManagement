@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk';
-import { createProyecto } from './api';
+import { createProyecto,createTarea,createUser } from './api';
 
 // Configura AWS S3
 const S3_BUCKET = 'munimanagement'; // Cambia esto por el nombre de tu bucket
@@ -42,25 +42,11 @@ const postAWS = async (imgFile) => {
 }
 
 // Función para guardar el producto
-export const createUser = async (data) => {
+export const createUserPost = async (data) => {
     let imagenUrl = await postAWS(data.user_photo)
     data.user_photo = imagenUrl
     try {
-        const response = await fetch('http://127.0.0.1:8000/users/users/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-
-            },
-            body: JSON.stringify(data),
-        });
-        if (!response.ok) {
-            throw new Error('Error al guardar el producto. Token inválido o expirado.');
-        }
-
-        const nuevoProducto = await response.json();
-        console.log('Producto guardado:', nuevoProducto);
-        return nuevoProducto;
+        await createUser(data)
     } catch (error) {
         console.error('Error en la solicitud:', error);
         throw error;
@@ -68,10 +54,21 @@ export const createUser = async (data) => {
 };
 
 export const createProject = async (data) => {
-    let imagenUrl = await postAWS(data.user_photo)
-    data.user_photo = imagenUrl
+    let imagenUrl = await postAWS(data.project_photo)
+    data.project_photo = imagenUrl
     try{
         await createProyecto(data)
+    } catch (error) {
+        console.error('Error al crear el proyecto:', error);
+        throw error;
+    }
+}
+
+export const createTask = async (data) => {
+    let imagenUrl = await postAWS(data.task_photo)
+    data.task_photo = imagenUrl
+    try{
+        await createTarea(data)
     } catch (error) {
         console.error('Error al crear el proyecto:', error);
         throw error;

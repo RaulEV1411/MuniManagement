@@ -79,7 +79,7 @@ function TaskCardForProjectDetail({ task, onTaskDeleted, onTaskUpdated }) {
             <ul className="projects-list">
                 <li className="project-item">
                     <div className="project-card">
-                        <img src={defaultTaskIcon} alt="Task Icon" className="project-icon" />
+                        <img src={task.task_photo || defaultTaskIcon} alt="Task Icon" className="project-icon" />
                         <div className="project-info">
                             <h4>{task.name || "Título de Tarea"}</h4>
                             <p>{task.descripcion || "Descripción de la tarea"}</p>
