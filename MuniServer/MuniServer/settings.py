@@ -16,7 +16,6 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -52,6 +51,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -169,7 +169,9 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'Users.Users' 
 
-
+CRONJOBS = [
+    ('0 18 * * *', 'Task.cron.send_due_date_reminder')  # Todos los días a medianoche
+] 
 
 AWS_ACCESS_KEY_ID = os.environ.get('AKIAV45KSDA7LB7FTLT4')  # Tu Access Key
 AWS_SECRET_ACCESS_KEY = os.environ.get('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')  # Tu Secret Key

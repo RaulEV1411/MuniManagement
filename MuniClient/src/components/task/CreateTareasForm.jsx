@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createTarea, getProyectos, getEstados, getPrioridades } from '../../services/api';
+import { getProyectos, getEstados, getPrioridades } from '../../services/api';
+import { createTask} from '../../services/aws';
 import "../../styles/createTareasForm.css";
 
 const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
@@ -10,7 +11,8 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
         name: '',
         descripcion: '',
         fecha_inicio: '',
-        fecha_entrega: ''
+        fecha_entrega: '',
+        task_photo: null,  // Agrega el campo para la imagen
     });
 
     const [proyectos, setProyectos] = useState([]);
@@ -39,16 +41,26 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
     }, []);
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setTareaData({
             ...tareaData,
-            [e.target.name]: e.target.value,
+            [name]: value,
+        });
+    };
+
+    const handleFileChange = (e) => {
+        setTareaData({
+            ...tareaData,
+            task_photo: e.target.files[0],  // Guarda el archivo en el estado
         });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const data = tareaData
+
         try {
-            await createTarea(tareaData);
+            await createTask(data);  // Envía formData en lugar de tareaData
             setSuccess(true);
             setError(null);
 
@@ -67,7 +79,7 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
             <h2 className="create-tarea-title">Crear Nueva Tarea</h2>
             {success && <p className="create-tarea-success">Tarea creada exitosamente</p>}
             {error && <p className="create-tarea-error">{error}</p>}
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} encType="multipart/form-data">
                 <div className='div_container_Name_Estado_Prioridad_create_tareas'>
                     <div className='div_Name_create_tareas'>
                         <input
@@ -144,6 +156,19 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
                         />
                     </div>
                 </div>
+                
+                {/* Input para la imagen */}
+                <div className="file-input-container">
+                    <label htmlFor="task_photo">Imagen de la tarea:</label>
+                    <input
+                        type="file"
+                        name="task_photo"
+                        onChange={handleFileChange}
+                        className="create-tarea-file-input"
+                        accept="image/*"
+                    />
+                </div>
+
                 <button type="submit" className="create-tarea-button">Crear Tarea</button>
             </form>
         </div>

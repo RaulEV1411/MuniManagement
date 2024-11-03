@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getRoles, getDepartamentos } from '../../services/api'; 
-import { createUser } from '../../services/aws'; 
+import { createUserPost } from '../../services/aws'; 
 import "../../styles/CreateUserForm.css";
 import logo from "../../assets/Logo Circular Color  (Fondo Transparente) (1).png";
 
@@ -59,7 +59,7 @@ const CreateUserForm = () => {
         console.log("Contenido de FormData:",data);
 
         try {
-            await createUser(data); // Envía el objeto FormData sin definir el encabezado Content-Type
+            await createUserPost(data); // Envía el objeto FormData sin definir el encabezado Content-Type
             setSuccessMessage('Usuario creado exitosamente.');
             setFormData({
                 first_name: '',
