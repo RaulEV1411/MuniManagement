@@ -16,11 +16,6 @@ console.log("perrito",decoded2)
     return (
         <div className='project_information_container'>
             <div className='container_fechas_description_project_info'>
-                <div className='description_div_project_info'>
-                    <h2>Descripcion</h2>
-                    <hr className='hr_project_info' />
-                    <p>{project.descripcion}</p>
-                </div>
                 <div className='div_container_project_info_fechas'>
                     <div className='fechas_project_info'>
                         <h4>Fecha de inicio: </h4>
@@ -31,6 +26,11 @@ console.log("perrito",decoded2)
                         <p>{project.fecha_entrega}</p>
                     </div>
                 </div>
+            </div>
+            <div className='description_div_project_info'>
+                    <h2>Descripcion</h2>
+                    <hr className='hr_project_info' />
+                    <p>{project.descripcion}</p>
             </div>
             <div className='div_container_project_info_responsables'>
                 <div className='divs_responsables_project_info'>
@@ -43,9 +43,7 @@ console.log("perrito",decoded2)
                     <hr className='hr_project_info' />
                     <h3>{project.departamento_ID.name}</h3>
                 </div>
-            </div>
-            <div className='div_container_project_info_costos'>
-                <div className='div_costos_project_info'>
+                <div className='divs_responsables_project_info'>
                     <h2>Costo</h2>
                     <hr className='hr_project_info' />
                     <p>{project.costo}</p>

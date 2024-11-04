@@ -163,3 +163,52 @@
   gap: 1%;
   justify-content: end;
 }
+
+.not-task-div{
+  margin-top: 1%;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #333 !important;
+  border: solid 1px #333;
+  border-radius: 10px;
+}
+
+.not-task-img{
+  width: auto;
+  height: auto;
+  cursor: pointer;
+}
+
+
+.delete-project-btn{
+  color: white;
+  padding: 10px 20px;
+  background-color: #b91616;
+  border:  solid 2px #b91616;
+  border-radius: 20px;
+  margin: 0 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.delete-project-btn-img{
+  width: 3%;
+}
+
+.edit-project-btn{
+  color: white;
+  padding: 10px 20px;
+  background-color: #0c3857;
+  border:  solid 2px #1c2b5e;
+  border-radius: 20px;
+  margin: 0 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tasks-list{
+  margin-top: 1%;
+}

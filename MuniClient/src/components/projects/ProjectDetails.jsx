@@ -190,11 +190,18 @@ const ProjectDetails = () => {
             </div>
 
             <div className={styles['tasks-list']}>
-              {tareas.map((tarea) => (
-                <div key={tarea.tareas_ID} className={styles['task-item']}>
-                  <TaskCardForProjectDetail task={tarea} />
+              {tareas.length > 0 ? (
+                tareas.map((tarea) => (
+                  <div key={tarea.tareas_ID} className={styles['task-item']}>
+                    <TaskCardForProjectDetail task={tarea} />
+                  </div>
+                ))
+              ) : (
+                <div className={styles['not-task-div']}>
+                  <img src="/src/assets/library_add_16dp_333_FILL0_wght400_GRAD0_opsz20.png" alt="img_add_task" className={styles['not-task-img']} onClick={handleOpenModal} />
+                  <h3>No hay tareas existentes</h3>
                 </div>
-              ))}
+              )}
             </div>
 
             {isModalOpen && (

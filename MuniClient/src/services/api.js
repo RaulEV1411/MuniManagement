@@ -257,5 +257,25 @@ export const updateTask = async (taskId, updatedTask) => {
     }
 };
 
+export const deleteDepartamento = async (id) => {
+    try {
+        const response = await api.delete(`/departments/departamentos/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error al eliminar el departamento:', error);
+        throw error;
+    }
+};
+
+export const updateDepartamento = async (Id, updatedData) => {
+    try {
+        const response = await api.put(`/departments/departamentos/${Id}/`, updatedData);
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar el departamento:', error);
+        throw error;
+    }
+};
+
 
 export default api;
