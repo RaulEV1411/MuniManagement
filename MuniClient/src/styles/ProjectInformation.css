@@ -15,18 +15,18 @@
 .container_fechas_description_project_info{
     width: 100%;
     display: flex;
+    justify-content: end;
 }
 
 .div_container_project_info_fechas{
     display: flex;
-    justify-content: center;
+    justify-content: end;
     gap: 3%;
-    width: 40%;
+    width: 25%;
 }
 
 .fechas_project_info{
     color: #0c3958;
-    padding: 1px;
     border: solid 2px #0c3958;
     border-radius: 10px;
     width: 40%;
