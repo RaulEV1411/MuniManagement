@@ -1,0 +1,57 @@
+.project_information_container{
+    color: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+
+.description_div_project_info, .div_container_project_info_costos{
+    width: 100%;
+}
+
+.container_fechas_description_project_info{
+    width: 100%;
+    display: flex;
+    justify-content: end;
+}
+
+.div_container_project_info_fechas{
+    display: flex;
+    justify-content: end;
+    gap: 3%;
+    width: 25%;
+}
+
+.fechas_project_info{
+    color: #0c3958;
+    border: solid 2px #0c3958;
+    border-radius: 10px;
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.hr_project_info{
+    height: 3px;
+    width: 100%;
+    background-color: #0c3958;
+}
+
+.div_container_project_info_responsables{
+    width: 100%;
+    display: flex;
+    gap: 5%;
+}
+
+.divs_responsables_project_info{
+    width: 33.3%;
+}
+
+.div_costos_project_info{
+    width: 100%;
+}

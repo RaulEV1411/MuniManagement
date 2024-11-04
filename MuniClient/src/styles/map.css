@@ -1,0 +1,19 @@
+.about-page {
+  text-align: center;
+}
+
+.about-title {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: black;
+}
+
+.about-description {
+  margin-bottom: 20px;
+  color: black;
+}
+
+#map {
+  width: 80%;   /* Ajusta el ancho al 80% */
+  height: 300px; /* Ajusta el alto a 300px */
+}

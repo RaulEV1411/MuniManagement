@@ -1,0 +1,90 @@
+
+
+.project-card-item-wrapper {
+  width: 310px; /* Tamaño más pequeño para las tarjetas */
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 2%;
+}
+
+.project-card-header-section {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.project-card-profile-icon, .project-card-menu-icon {
+  font-size: 20px; /* Tamaño de los íconos */
+  color: #000;
+}
+
+.project-card-image-container {
+  width: 100%;
+  border-radius: 10px 10px 0 0;
+  height: 100px;
+}
+
+img{
+  width: 100%;
+  height: 100%;
+}
+
+.project-card-body-content {
+  padding: 10px; /* Padding más pequeño */
+}
+
+.project-card-body-title {
+  margin: 0;
+  font-size: 1em; /* Ajuste del tamaño del título */
+}
+
+.project-card-body-status {
+  font-size: 0.9em; /* Ajuste del tamaño del estado */
+  color: #000;
+}
+
+.project-card-body-description {
+  font-size: 0.8em; /* Ajuste del tamaño de la descripción */
+  color: #666;
+}
+
+.project-search-bar-container {
+  display: flex;
+  justify-content: center;
+  margin: 50px 0px 50px 10px;
+}
+
+.project-search-bar-input-field {
+  width: 70%;
+  padding: 10px;
+  border-radius: 25px;
+  border: 3px solid #0C3958;
+  background-color: transparent;
+  color: #000;
+}
+
+.app-layout-wrapper {
+  display: flex;
+}
+
+.app-sidebar-navigation {
+  width: 250px;
+}
+
+.app-projects-home-section {
+  flex-grow: 1;
+}
+
+.h3_card_proyect, .h5_card_proyect {
+  color: #000;
+}
+
+.project-list{
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2%;
+  width: 80%;
+  margin-left: 10%;
+}

@@ -1,0 +1,102 @@
+/* LoginForm.css */
+
+    .login-container {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: url('/src/assets/Base PPT 2.jpg') no-repeat center center fixed;
+      background-size: cover;  
+      display: flex;
+      place-items: center;
+      align-items: end;
+      justify-content: center;
+      min-width: 320px;
+      min-height: 100vh;
+    }
+  
+  .login-card {
+    background-color: #004d66;
+    border-radius: 10px;
+    padding: 40px;
+    width: 320px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    margin-bottom: 10%;
+  }
+  
+  .login-logo {
+    width: 220px;
+    height: auto;
+  }
+  
+  .login-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .login-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+   margin-top:20px ;
+  }
+  
+  .login-button:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .login-error {
+    color: red;
+    margin-top: 10px;
+  }
+  
+  @media screen and (max-width: 768px) {
+    .login-card {
+      width: 90%;
+    }
+  }
+
+/* From Uiverse.io by kamehame-ha */
+.coolinput {
+    display: flex;
+    flex-direction: column;
+    position: static;
+  }
+  
+  .coolinput label.text {
+    font-size: 0.75rem;
+    color: #004d66;
+    font-weight: 700;
+    position: relative;
+    top: 0.5rem;
+    margin: 0 0 0 7px;
+    padding: 0 3px;
+    background: #e8e8e8;
+    width: fit-content;
+    
+  }
+  
+  .coolinput input[type="text"].input, 
+  .coolinput input[type="email"].input, 
+  .coolinput input[type="password"].input {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    border: 2px #ffffff solid;
+    border-radius: 5px;
+    background-color: #004d66;
+ 
+  }
+  
+  .coolinput input[type="text"].input:focus,
+  .coolinput input[type="email"].input:focus,
+  .coolinput input[type="password"].input:focus {
+    outline: none;
+  }
+  
