@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { createDepartamento, getDirecciones, getDepartamentos, updateDepartamento, deleteDepartamento } from '../../services/api';
 
 const CreateDepartamentoForm = () => {
@@ -40,7 +41,7 @@ const CreateDepartamentoForm = () => {
         setDepartamentos((prev) =>
             prev.map((d) =>
                 d.departamentos_ID === departamento.departamentos_ID
-                    ? { ...d, editingName: d.name, editingDireccionId: d.direccion}
+                    ? { ...d, editingName: d.name, editingDireccionId: d.direccion }
                     : d
             )
         );
@@ -53,21 +54,45 @@ const CreateDepartamentoForm = () => {
             direccion: departamentoToUpdate.editingDireccionId || departamentoToUpdate.direccion_ID,
         };
 
-        try {
-            await updateDepartamento(id, updatedDepartamento);
-            setMessage('Departamento actualizado exitosamente');
-            setEditingDepartamentoId(null);
-        } catch (error) {
-            setMessage('Error al actualizar el departamento');
+        // SweetAlert para confirmar la actualización
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¿Deseas actualizar este departamento?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, actualizar',
+            cancelButtonText: 'Cancelar',
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await updateDepartamento(id, updatedDepartamento);
+                setMessage('Departamento actualizado exitosamente');
+                setEditingDepartamentoId(null);
+            } catch (error) {
+                setMessage('Error al actualizar el departamento');
+            }
         }
     };
 
     const handleDelete = async (id) => {
-        try {
-            await deleteDepartamento(id);
-            setMessage('Departamento eliminado exitosamente');
-        } catch (error) {
-            setMessage('Error al eliminar el departamento');
+        // SweetAlert para confirmar la eliminación
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¿Deseas eliminar este departamento?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await deleteDepartamento(id);
+                setMessage('Departamento eliminado exitosamente');
+            } catch (error) {
+                setMessage('Error al eliminar el departamento');
+            }
         }
     };
 
@@ -107,7 +132,7 @@ const CreateDepartamentoForm = () => {
                         >
                             <option value="">-- Selecciona una Dirección --</option>
                             {direcciones.map((direccion) => (
-                                <option key={direccion.direccion} value={direccion.direccion}>
+                                <option key={direccion.direccion} value={direccion.direccion_ID}>
                                     {direccion.name}
                                 </option>
                             ))}
