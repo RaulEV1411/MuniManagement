@@ -1,71 +1,137 @@
-import React, { useState } from 'react';
-import { createDireccion } from '../../services/api';
-import '../../styles/common.css';
+import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
+import "../../styles/assignedProjects.css";
+import { deleteTask, updateTask } from '../../services/api';
 
-const CreateDireccionForm = () => {
-  const [name, setName] = useState('');
-  const [message, setMessage] = useState('');
-  const [direcciones, setDirecciones] = useState([]); // Estado para almacenar direcciones
+const defaultTaskIcon = 'https://via.placeholder.com/50';
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+function TaskCardForProjectDetail({ task, onTaskDeleted, onTaskUpdated }) {
+    const [isDeleted, setIsDeleted] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editedTask, setEditedTask] = useState(task);
 
-    const newDireccion = {
-      name: name,
+    const navigateToTask = (id) => {
+        window.location.href = `/tasks/${id}`;
     };
 
-    try {
-      const data = await createDireccion(newDireccion);
-      setDirecciones([...direcciones, data]); // Agregar nueva dirección al estado
-      setMessage('Dirección creada exitosamente');
-      setName(''); // Limpiar el input después de crear
-    } catch (error) {
-      setMessage('Error al crear la dirección');
-    }
-  };
+    const handleDelete = async () => {
+        const { isConfirmed } = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¡Esta tarea se eliminará permanentemente!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
 
-  // Función para eliminar una dirección
-  const handleDelete = (id) => {
-    const updatedDirecciones = direcciones.filter((direccion) => direccion.id !== id);
-    setDirecciones(updatedDirecciones);
-    setMessage('Dirección eliminada exitosamente');
-  };
+        if (isConfirmed) {
+            try {
+                await deleteTask(task.tareas_ID);
+                setIsDeleted(true);
+                onTaskDeleted(task.tareas_ID);
+            } catch (error) {
+                console.error('Error al eliminar la tarea:', error);
+            }
+        }
+    };
 
-  return (
-    <div className='standard_container'>
-      <div className='standard_div_container'>
-        <h2 className='standard_title'>Crear Nueva Dirección</h2>
-        {/* Sección para mostrar direcciones */}
-        <div className='card_container'>
-          {direcciones.map((direccion) => (
-            <div key={direccion.id} className='card'>
-              <span>{direccion.name}</span>
-              <button className='standard_button' onClick={() => handleDelete(direccion.id)}>
-                <img src="/src/assets/borrar.png" alt="Delete" className="icon_delete" /> {/* Imagen de eliminar */}
-              </button>
-            </div>
-          ))}
+    const openModal = () => {
+        setEditedTask(task);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEditedTask(task);
+    };
+
+    const handleSaveEdit = async () => {
+        try {
+            await updateTask(editedTask.tareas_ID, editedTask);
+            setIsModalOpen(false);
+            onTaskUpdated(editedTask);
+        } catch (error) {
+            console.error('Error al actualizar la tarea:', error);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditedTask((prevTask) => ({
+            ...prevTask,
+            [name]: value,
+        }));
+    };
+
+    useEffect(() => {
+        if (isDeleted) {
+            const timer = setTimeout(() => {}, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [isDeleted]);
+
+    if (isDeleted) return null;
+
+    return (
+        <div className="assigned-projects-container">
+            <ul className="projects-list">
+                <li className="project-item">
+                    <div className="project-card">
+                        <img src={task.task_photo || defaultTaskIcon} alt="Task Icon" className="project-icon" />
+                        <div className="project-info">
+                            <h4>{task.name || "Título de Tarea"}</h4>
+                            <p>{task.descripcion || "Descripción de la tarea"}</p>
+                            <p className="project-time">
+                                Hoy - {task.fecha_entrega || "Fecha límite no especificada"}
+                            </p>
+                        </div>
+                        <button className="delete-button_" onClick={openModal}>
+                            <img src="/src/assets/editar-texto.png" alt="Edit" className="icon_delete" />
+                        </button>
+                        <button className="delete-button_" onClick={handleDelete}>
+                            <img src="/src/assets/borrar.png" alt="Delete" className="icon_delete" />
+                        </button>
+                        <button className="project-arrow" onClick={() => navigateToTask(task.tareas_ID)}>
+                            →
+                        </button>
+                    </div>
+                </li>
+            </ul>
+            {isModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <button className="modal-close" onClick={closeModal}>X</button>
+                        <h2>Actualizar Tarea</h2>
+                        <input
+                            type="text"
+                            name="name"
+                            value={editedTask.name}
+                            onChange={handleInputChange}
+                            placeholder="Título de Tarea"
+                            className="modal-input"
+                        />
+                        <textarea
+                            name="descripcion"
+                            value={editedTask.descripcion}
+                            onChange={handleInputChange}
+                            placeholder="Descripción de la tarea"
+                            className="modal-input"
+                        />
+                        <input
+                            type="date"
+                            name="fecha_entrega"
+                            value={editedTask.fecha_entrega}
+                            onChange={handleInputChange}
+                            className="modal-date"
+                        />
+                        <button className="save-button" onClick={handleSaveEdit}>Guardar</button>
+                    </div>
+                </div>
+            )}
         </div>
-        <form className='standard_form_container' onSubmit={handleSubmit}>
-          <div className='standard_input_container'>
-            <label className='standard_input_label' htmlFor="name">Nombre de la Dirección:</label>
-            <br />
-            <input
-              className='standard_input'
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <br />
-          <button className='standard_button' type="submit">Crear</button>
-        </form>
-        {message && <p>{message}</p>}
-      </div>
-    </div>
-  );
-};
+    );
+}
 
-export default CreateDireccionForm;
+export default TaskCardForProjectDetail;

@@ -72,6 +72,17 @@ export const getDepartamentos = async () => {
 };
 
 
+export const createUser = async (data) => {
+    try {
+        const response = await api.post('/users/users/', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error al crear el usuario:', error);
+        throw error;
+    }
+};
+
+
 export const login = async (email, password) => {
     try {
         const response = await api.post(`/users/login/`, { email, password });
@@ -286,10 +297,29 @@ export const updateDireccion = async (id, direccionData) => {
         return response.data;
     } catch (error) {
         console.error('Error al actualizar la dirección:', error);
+      }
+    };
+  
+export const deleteDepartamento = async (id) => {
+    try {
+        const response = await api.delete(`/departments/departamentos/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error al eliminar el departamento:', error);
         throw error;
     }
 };
+  
 
+export const updateDepartamento = async (Id, updatedData) => {
+    try {
+        const response = await api.put(`/departments/departamentos/${Id}/`, updatedData);
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar el departamento:', error);
+        throw error;
+    }
+};
 // Función para eliminar un rol
 export const deleteRole = async (roleId) => {
     try {
@@ -310,8 +340,6 @@ export const updateRole = async (roleId, roleData) => {
         throw error;
     }
 };
-
-
 
   
 export default api;

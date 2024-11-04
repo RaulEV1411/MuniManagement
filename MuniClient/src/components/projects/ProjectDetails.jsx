@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from '../../styles/projectDetails.module.css';
-import { getProyectoById, deleteProyecto, updateProyecto, getTareasByProjectID } from '../../services/api';
+import { getProyectoById, deleteProyecto, updateProyecto, getTareasByProjectID,getDirecciones } from '../../services/api';
 import ProjectInformation from './ProjectInformation';
 import CreateTareasForm from '../task/CreateTareasForm';
 import TaskCardForProjectDetail from '../task/TaskCardForProjectDetail';
 import Swal from 'sweetalert2';
 import EditProjectForm from './EditProjectForm';
+
+const departmentImages = {
+  "Alcaldia": "https://www.gstatic.com/classroom/themes/img_code.jpg",
+  "Marketing": "https://example.com/marketing.jpg",
+  "Finanzas": "https://example.com/finanzas.jpg",
+  // Añadir más nombres de direcciones y sus respectivas imágenes
+};
 
 const ProjectDetails = () => {
   const { id } = useParams();
@@ -15,6 +22,24 @@ const ProjectDetails = () => {
   const [activeTab, setActiveTab] = useState('task');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [direcciones, setDirecciones] = useState({});
+
+  useEffect(() => {
+    const fetchDirecciones = async () => {
+      try {
+        const data = await getDirecciones(); // Llama a la función exportada
+        const direccionesMap = data.reduce((acc, direccion) => {
+          acc[direccion.direccion_ID] = direccion.name;
+          return acc;
+        }, {});
+        setDirecciones(direccionesMap);
+      } catch (error) {
+        console.error("Error al obtener las direcciones:", error);
+      }
+    };
+
+    fetchDirecciones();
+  }, []);
   
   const navigate = useNavigate();
 
@@ -110,17 +135,22 @@ const ProjectDetails = () => {
     setIsModalOpen(false);
     await fetchTareas();
   };
+  
+
+
+
 
   if (!project || !tareas) {
     return <p>Cargando detalles del proyecto...</p>;
   }
-
+  const departmentName = direcciones[project.departamento_ID?.direccion];
+  const projectImage = project.project_photo || departmentImages[departmentName] || "https://gstatic.com/classroom/themes/Psychology.jpg";
   return (
     <div className={styles['container-project-details']}>
       <div className={styles['header-project-details']}>
         <div className={styles['header-image-container']}>
           <img
-            src={project.image || "https://gstatic.com/classroom/themes/Math.jpg"}
+            src={projectImage}
             alt={project.name}
             className={styles['header-background-image']}
           />
@@ -160,11 +190,18 @@ const ProjectDetails = () => {
             </div>
 
             <div className={styles['tasks-list']}>
-              {tareas.map((tarea) => (
-                <div key={tarea.tareas_ID} className={styles['task-item']}>
-                  <TaskCardForProjectDetail task={tarea} />
+              {tareas.length > 0 ? (
+                tareas.map((tarea) => (
+                  <div key={tarea.tareas_ID} className={styles['task-item']}>
+                    <TaskCardForProjectDetail task={tarea} />
+                  </div>
+                ))
+              ) : (
+                <div className={styles['not-task-div']}>
+                  <img src="/src/assets/library_add_16dp_333_FILL0_wght400_GRAD0_opsz20.png" alt="img_add_task" className={styles['not-task-img']} onClick={handleOpenModal} />
+                  <h3>No hay tareas existentes</h3>
                 </div>
-              ))}
+              )}
             </div>
 
             {isModalOpen && (
