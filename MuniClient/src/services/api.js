@@ -226,7 +226,7 @@ export const updateProyecto = async (id, data) => {
         throw error;
     }
 };
-  export const deleteTask = async (taskId) => {
+export const deleteTask = async (taskId) => {
     try {
         const response = await api.delete(`/task/tareas/${taskId}/`); // Ajusta la URL según tu API
         return response.data;
@@ -246,5 +246,72 @@ export const updateTask = async (taskId, updatedTask) => {
     }
 };
 
+// Función para actualizar un usuario por ID
+export const updateUsuario = async (userID, updatedData) => {
+    try {
+        const response = await api.put(`/users/users/${userID}/`, updatedData);
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar el usuario:', error);
+        throw error;
+    }
+};
+// Función para eliminar un usuario por ID
+export const deleteUsuario = async (userID) => {
+    try {
+        const response = await api.delete(`/users/users/${userID}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error al eliminar el usuario:', error);
+        throw error;
+    }
+};
 
+// Función para eliminar una dirección por ID
+export const deleteDireccion = async (id) => {
+    try {
+        const response = await api.delete(`/departments/direcciones/${id}/`); 
+        return response.data;
+    } catch (error) {
+        console.error('Error al eliminar la dirección:', error);
+        throw error;
+    }
+};
+
+
+// Función para actualizar una dirección por ID
+export const updateDireccion = async (id, direccionData) => {
+    try {
+        const response = await api.put(`/departments/direcciones/${id}/`, direccionData); 
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar la dirección:', error);
+        throw error;
+    }
+};
+
+// Función para eliminar un rol
+export const deleteRole = async (roleId) => {
+    try {
+        const response = await api.delete(`/users/roles/${roleId}/`); // Asegúrate de que la URL sea correcta
+        return response.data;
+    } catch (error) {
+        console.error('Error al eliminar el rol:', error);
+        throw error;
+    }
+};
+// Función para actualizar un rol por ID
+export const updateRole = async (roleId, roleData) => {
+    try {
+        const response = await api.put(`/users/roles/${roleId}/`, roleData); // Asegúrate de que la URL sea correcta
+        return response.data;
+    } catch (error) {
+        console.error('Error al actualizar el rol:', error);
+        throw error;
+    }
+};
+
+
+
+  
 export default api;
