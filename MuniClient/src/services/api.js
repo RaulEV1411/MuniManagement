@@ -1,4 +1,7 @@
+import { getCookie } from './read_cookie';
 import axios from 'axios';
+const token = getCookie('accessToken');
+console.log(token);
 
 // Configuración de Axios
 const api = axios.create({
@@ -7,6 +10,17 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+// Configuración de Axios
+const api2 = axios.create({
+    baseURL: 'http://localhost:8000',
+    headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+    },
+});
+
+
 
 // Función para crear una nueva dirección
 export const createDireccion = async (data) => {
@@ -107,7 +121,7 @@ export const login = async (email, password) => {
 export const createProyecto = async (data) => {
     console.log(data);
     try {
-        const response = await api.post('/projects/proyectosWrite/', data);
+        const response = await api2.post('/projects/proyectosWrite/', data);
         return response.data;
     } catch (error) {
         console.error('Error al crear el proyecto:', error);
@@ -117,7 +131,7 @@ export const createProyecto = async (data) => {
 
 export const getProyectoById = async (id) => {
     try {
-      const response = await api.get(`/projects/proyectosRead/${id}/`);
+      const response = await api2.get(`/projects/proyectosRead/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener el proyecto:', error);
@@ -160,7 +174,7 @@ export const getUsuarios = async () => {
 
 export const createTarea = async (data) => {
     try {
-        const response = await api.post('/task/tareas/', data);
+        const response = await api2.post('/task/tareas/', data);
         return response.data;
     } catch (error) {
         console.error('Error al crear la tarea:', error);
@@ -170,7 +184,7 @@ export const createTarea = async (data) => {
 
 export const getProyectos = async () => {
     try {
-        const response = await api.get('/projects/proyectosRead/');
+        const response = await api2.get('/projects/proyectosRead/');
         return response.data;
     } catch (error) {
         console.error('Error al obtener los proyectos:', error);
@@ -192,7 +206,7 @@ export const getUsuariosById = async (userID) => {
 
 export const getProyectosByUserID = async (userID) => {
     try {
-        const response = await api.get(`/projects/proyectosRead/`, {
+        const response = await api2.get(`/projects/proyectosRead/`, {
             params: {
                 user_ID: userID
             }
@@ -205,22 +219,24 @@ export const getProyectosByUserID = async (userID) => {
 
 
 export const getTareasByProjectID = async (projectID) => {
+
     try {
-        const response = await api.get(`/task/tareas/`, {
-        params: {
-            proyecto_ID: projectID
-        }
-    });
+        const response = await api2.get(`/task/tareas/`, {
+            params: {
+                proyecto_ID: projectID
+            }
+        });
         return response.data; // Aquí tienes las tareas filtradas por el project_ID
     } catch (error) {
         console.error('Error al obtener las tareas:', error);
     }
 };
 
+
 // Función para eliminar un proyecto por ID
 export const deleteProyecto = async (id) => {
     try {
-        const response = await api.delete(`/projects/proyectosRead/${id}/`);
+        const response = await api2.delete(`/projects/proyectosRead/${id}/`);
         return response.data;
     } catch (error) {
         console.error('Error al eliminar el proyecto:', error);
@@ -230,7 +246,7 @@ export const deleteProyecto = async (id) => {
 
 export const updateProyecto = async (id, data) => {
     try {
-        const response = await api.put(`/projects/proyectosRead/${id}/`, data);
+        const response = await api2.put(`/projects/proyectosRead/${id}/`, data);
         return response.data;
     } catch (error) {
         console.error('Error al actualizar el proyecto:', error);
@@ -239,7 +255,7 @@ export const updateProyecto = async (id, data) => {
 };
   export const deleteTask = async (taskId) => {
     try {
-        const response = await api.delete(`/task/tareas/${taskId}/`); // Ajusta la URL según tu API
+        const response = await api2.delete(`/task/tareas/${taskId}/`); // Ajusta la URL según tu API
         return response.data;
     } catch (error) {
         console.error("Error deleting task", error);
@@ -249,7 +265,7 @@ export const updateProyecto = async (id, data) => {
 
 export const updateTask = async (taskId, updatedTask) => {
     try {
-        const response = await api.put(`/task/tareas/${taskId}/`, updatedTask);
+        const response = await api2.put(`/task/tareas/${taskId}/`, updatedTask);
         return response.data;
     } catch (error) {
         console.error('Error al actualizar la tarea:', error);

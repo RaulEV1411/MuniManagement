@@ -11,7 +11,6 @@ from django.contrib.auth import authenticate
 class RolesViewSet(ModelViewSet):
     queryset = Roles.objects.all()
     serializer_class = RolesSerializer
-    authentication_classes = [SessionAuthentication]
 
 class UsersViewSet(ModelViewSet):
     queryset = Users.objects.all()

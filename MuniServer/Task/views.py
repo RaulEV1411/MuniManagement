@@ -3,10 +3,14 @@ from .models import Tareas
 from .serializers import TareasSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class TareasViewSet(ModelViewSet):
     queryset = Tareas.objects.all()
     serializer_class = TareasSerializer
+    authentication_classes = [JWTAuthentication]  # Añadir autenticación
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()
