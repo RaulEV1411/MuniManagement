@@ -7,6 +7,7 @@ import "../../styles/cards.css";
 const ProjectHome = () => {
   const [projects, setProjects] = useState([]); // Inicialmente vacío
   const [filteredProjects, setFilteredProjects] = useState([]);
+  const [loading, setLoading] = useState(true); // Estado de carga
 
   // Obtener los proyectos desde la API
   useEffect(() => {
@@ -17,6 +18,8 @@ const ProjectHome = () => {
         setFilteredProjects(data); // Inicialmente, los proyectos filtrados son los mismos
       } catch (error) {
         console.error('Error al obtener los proyectos:', error);
+      } finally {
+        setLoading(false); // Finaliza la carga, ya sea éxito o error
       }
     };
 
@@ -29,20 +32,28 @@ const ProjectHome = () => {
       project.name.toLowerCase().startsWith(query.toLowerCase())
     );
     setFilteredProjects(result);
-    console.log(filteredProjects);
   };
-  
+
   return (
     <div className="project-home">
       <SearchBar onSearch={handleSearch} />
-      <div className="project-list">
-        {filteredProjects.map((projects) => (
-          <ProjectCard key={projects.proyect_ID} project={projects} />
-        ))}
-      </div>
+
+      {/* Mostrar loader mientras carga */}
+      {loading ? (
+        <div className="loader">Cargando proyectos...</div>
+      ) : (
+        <div className="project-list">
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((project) => (
+              <ProjectCard key={project.proyect_ID} project={project} />
+            ))
+          ) : (
+            <div className="no-projects">No hay proyectos existentes.</div>
+          )}
+        </div>
+      )}
     </div>
   );
-}; 
-
+};
 
 export default ProjectHome;

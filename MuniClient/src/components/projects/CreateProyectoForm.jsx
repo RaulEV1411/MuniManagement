@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDepartamentos, getEstados, getPrioridades, getUsuarios } from '../../services/api';
 import { createProject } from '../../services/aws';
 import { useNavigate } from 'react-router-dom';
+import ButtonBack from '../common/ButtonBack';
 import '../../styles/CreateProyectoForm.css';  
 
 const CreateProjectoForm = () => {
@@ -82,6 +83,7 @@ const CreateProjectoForm = () => {
 
     return (
         <div className='create_project_container'>
+            <ButtonBack to={"/home"}></ButtonBack>
             <h2 className="Title_create_project">Crear Nuevo Proyecto</h2>
             {success && <p>Proyecto creado exitosamente</p>}
             {error && <p>{error}</p>}
@@ -117,14 +119,15 @@ const CreateProjectoForm = () => {
                 </div>
 
                 {/* Campo para subir la imagen */}
-                <div className="project-input-container">
-                    <label className="project-label" htmlFor="project_photo">Foto del Proyecto:</label>
+                <div className="project-input-container_file">
+                    <label className="project-label_file">Foto del Proyecto:</label>
+                    <label className="project-label_file2" htmlFor="project_photo">Seleccione Foto</label> <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#F3951B"><path d="M440-320v-326L336-542l-56-58 200-200 200 200-56 58-104-104v326h-80ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>
                     <input
                         type="file"
                         name="project_photo"
                         id="project_photo"
                         onChange={handleFileChange}
-                        className="project-input"
+                        className="project-input_file"
                     />
                 </div>
 
@@ -245,7 +248,7 @@ const CreateProjectoForm = () => {
                             <option value="">Seleccione un Responsable</option>
                             {usuarios.map(usuario => (
                                 <option key={usuario.user_ID} value={usuario.user_ID}>
-                                    {usuario.first_name} {usuario.last_name}
+                                    {usuario.cedula} {usuario.first_name} {usuario.last_name}
                                 </option>
                             ))}
                         </select>

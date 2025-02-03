@@ -84,7 +84,7 @@ function TaskCardForProjectDetail({ task, onTaskDeleted, onTaskUpdated }) {
                             <h4>{task.name || "Título de Tarea"}</h4>
                             <p>{task.descripcion || "Descripción de la tarea"}</p>
                             <p className="project-time">
-                                Hoy - {task.fecha_entrega || "Fecha límite no especificada"}
+                                {task.fecha_entrega || "Fecha límite no especificada"}
                             </p>
                         </div>
                         <button className="delete-button_" onClick={openModal}>

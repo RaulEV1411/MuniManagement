@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { createDireccion } from '../../services/api';
-import '../../styles/common.css'
+import '../../styles/common.css';
 
 const CreateDireccionForm = () => {
   const [name, setName] = useState('');
-  const [message, setMessage] = useState('');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -15,16 +15,25 @@ const CreateDireccionForm = () => {
 
     try {
       const data = await createDireccion(newDireccion);
-      setMessage('Dirección creada exitosamente');
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: 'Dirección creada exitosamente',
+      });
+      setName(''); // Limpiar el campo después de crear la dirección
     } catch (error) {
-      setMessage('Error al crear la dirección');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al crear la dirección',
+      });
     }
   };
 
   return (
     <div className='standard_container'>
       <div className='standard_div_container'>
-        <h2 className='standard_title' >Crear Nueva Dirección</h2>
+        <h2 className='standard_title'>Crear Nueva Dirección</h2>
         <form className='standard_form_container' onSubmit={handleSubmit}>
           <div className='standard_input_container'>
             <label className='standard_input_label' htmlFor="name">Nombre de la Dirección:</label>
@@ -41,7 +50,6 @@ const CreateDireccionForm = () => {
           <br />
           <button className='standard_button' type="submit">Crear</button>
         </form>
-        {message && <p>{message}</p>}
       </div>
     </div>
   );

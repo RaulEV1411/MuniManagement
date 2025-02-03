@@ -1,8 +1,8 @@
-.standard_container{
+.standard_container {
     margin: 0;
     font-family: 'Arial', sans-serif;
     background: url('/src/assets/Fondo_Prueba_1.png') no-repeat center center fixed;
-    background-size: cover;  
+    background-size: cover;
     display: flex;
     place-items: center;
     align-items: center;
@@ -11,7 +11,7 @@
     min-height: 100vh;
 }
 
-.standard_input{
+.standard_input {
     border: none;
     background: transparent;
     font-size: 17px;
@@ -20,7 +20,7 @@
     outline: none;
 }
 
-.standard_input_label{
+.standard_input_label {
     position: absolute;
     top: -10px;
     left: 20px;
@@ -30,7 +30,7 @@
     color: #0C3857;
 }
 
-.standard_input_container{
+.standard_input_container {
     position: relative;
     width: 200px;
     height: 45px;
@@ -49,7 +49,7 @@
     color: #333;
     height: 45px;
     padding: 8px;
-    border-radius:25px;
+    border-radius: 25px;
     border: 2.5px solid #333;
     box-shadow: 0px 0px 20px -20px;
     cursor: pointer;
@@ -59,11 +59,11 @@
     font-family: 'Poppins', sans-serif;
 }
 
-.standard_title{
+.standard_title {
     color: #ffffff;
 }
 
-.standard_div_container{
+.standard_div_container {
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -73,11 +73,21 @@
     background-color: #0C3857;
 }
 
-.standard_form_container{
+.standard_form_container {
     display: flex;
     align-items: center;
     flex-direction: row;
     justify-content: center;
     padding: 10px;
     border-radius: 25px;
+}
+
+.button-back {
+    background-color: #0c385700;
+    border-radius: 50px;
+    border: #0C3857 solid;
+}
+
+.button-back:hover {
+    background-color: #d0d0d0;
 }

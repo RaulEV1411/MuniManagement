@@ -40,15 +40,15 @@ const ProjectCard = ({ project }) => {
   const projectImage = project.project_photo || departmentImages[departmentName] || "https://gstatic.com/classroom/themes/Psychology.jpg";
 
   return (
-    <div className="project-card-item-wrapper" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
+    <div className="project-card-item-wrapper" style={{ cursor: 'pointer' }}>
       <div className="project-card-header-section">
-        <div className="project-card-profile-icon">👤 {project.user_ID.first_name} {project.user_ID.last_name}</div>
+        <div className="project-card-profile-icon" onClick={()=>navigate(`/perfil/${project.user_ID.user_ID}`)}> <img className='img-user-projrctCard' src={project.user_ID.user_photo} alt="" /> {project.user_ID.first_name} {project.user_ID.last_name}</div>
         <div className="project-card-menu-icon">⋮</div>
       </div>
-      <div className="project-card-image-container">
+      <div className="project-card-image-container" onClick={handleCardClick}>
         <img src={projectImage} alt={project.title} />
       </div>
-      <div className="project-card-body-content">
+      <div className="project-card-body-content" onClick={handleCardClick}>
         <h3 className="project-card-body-title h3_card_proyect">{project.name}</h3>
         <h5 className="project-card-body-status h5_card_proyect">{project.estado_ID.name}</h5>
         <p className="project-card-body-description">{project.descripcion}</p>

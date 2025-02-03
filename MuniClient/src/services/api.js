@@ -98,22 +98,37 @@ export const createUser = async (data) => {
 
 
 export const login = async (email, password) => {
+    // Define y exporta una función asincrónica llamada login que toma el email y password como parámetros.
+
     try {
         const response = await api.post(`/users/login/`, { email, password });
+        // Intenta enviar una solicitud POST a la ruta /users/login/ de la API, pasando el email y el password en el cuerpo de la solicitud.
         
         const accessToken = response.data.access;
         const refreshToken = response.data.refresh;
+        // Extrae los tokens de acceso y de actualización de la respuesta de la API.
+
         // Configuración de la cookie con el token de actualización (duración de 7 días)
         document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${7 * 24 * 60 * 60}; secure; HttpOnly; SameSite=Strict`;
-
+        // Crea una cookie llamada refreshToken con el valor del token de actualización, configurada para durar 7 días, 
+        // y que solo es accesible por HTTPS, no por JavaScript (HttpOnly), y solo se envía en solicitudes de origen similar (SameSite=Strict).
+        
         const d = new Date();
         d.setTime(d.getTime() + 7 * 24 * 60 * 60 * 1000);
+        // Crea un objeto de fecha actual y establece su tiempo de expiración en 7 días a partir de la fecha actual.
+        
         let expires = "expires=" + d.toUTCString();
+        // Convierte la fecha de expiración a una cadena en formato UTC para utilizarla en la configuración de la cookie.
+        
         document.cookie = "accessToken" + "=" + accessToken + ";" + expires + ";path=/";
-
+        // Crea una cookie llamada accessToken con el valor del token de acceso, que expira en 7 días y está disponible en todo el sitio.
+        
     } catch (error) {
         console.error('Error en la autenticación:', error);
+        // Muestra un mensaje de error en la consola en caso de que ocurra un error en la autenticación.
+        
         throw error;
+        // Lanza el error para que pueda ser manejado por el código que llame a la función login.
     }
 };
 
@@ -121,7 +136,7 @@ export const login = async (email, password) => {
 export const createProyecto = async (data) => {
     console.log(data);
     try {
-        const response = await api2.post('/projects/proyectosWrite/', data);
+        const response = await api.post('/projects/proyectosWrite/', data);
         return response.data;
     } catch (error) {
         console.error('Error al crear el proyecto:', error);
@@ -131,7 +146,7 @@ export const createProyecto = async (data) => {
 
 export const getProyectoById = async (id) => {
     try {
-      const response = await api2.get(`/projects/proyectosRead/${id}/`);
+      const response = await api.get(`/projects/proyectosRead/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener el proyecto:', error);
@@ -174,7 +189,7 @@ export const getUsuarios = async () => {
 
 export const createTarea = async (data) => {
     try {
-        const response = await api2.post('/task/tareas/', data);
+        const response = await api.post('/task/tareas/', data);
         return response.data;
     } catch (error) {
         console.error('Error al crear la tarea:', error);
@@ -184,7 +199,7 @@ export const createTarea = async (data) => {
 
 export const getProyectos = async () => {
     try {
-        const response = await api2.get('/projects/proyectosRead/');
+        const response = await api.get('/projects/proyectosRead/');
         return response.data;
     } catch (error) {
         console.error('Error al obtener los proyectos:', error);
@@ -206,7 +221,7 @@ export const getUsuariosById = async (userID) => {
 
 export const getProyectosByUserID = async (userID) => {
     try {
-        const response = await api2.get(`/projects/proyectosRead/`, {
+        const response = await api.get(`/projects/proyectosRead/`, {
             params: {
                 user_ID: userID
             }
@@ -221,7 +236,7 @@ export const getProyectosByUserID = async (userID) => {
 export const getTareasByProjectID = async (projectID) => {
 
     try {
-        const response = await api2.get(`/task/tareas/`, {
+        const response = await api.get(`/task/tareas/`, {
             params: {
                 proyecto_ID: projectID
             }
@@ -236,7 +251,7 @@ export const getTareasByProjectID = async (projectID) => {
 // Función para eliminar un proyecto por ID
 export const deleteProyecto = async (id) => {
     try {
-        const response = await api2.delete(`/projects/proyectosRead/${id}/`);
+        const response = await api.delete(`/projects/proyectosRead/${id}/`);
         return response.data;
     } catch (error) {
         console.error('Error al eliminar el proyecto:', error);
@@ -246,7 +261,7 @@ export const deleteProyecto = async (id) => {
 
 export const updateProyecto = async (id, data) => {
     try {
-        const response = await api2.put(`/projects/proyectosRead/${id}/`, data);
+        const response = await api.put(`/projects/proyectosRead/${id}/`, data);
         return response.data;
     } catch (error) {
         console.error('Error al actualizar el proyecto:', error);
@@ -255,7 +270,7 @@ export const updateProyecto = async (id, data) => {
 };
   export const deleteTask = async (taskId) => {
     try {
-        const response = await api2.delete(`/task/tareas/${taskId}/`); // Ajusta la URL según tu API
+        const response = await api.delete(`/task/tareas/${taskId}/`); // Ajusta la URL según tu API
         return response.data;
     } catch (error) {
         console.error("Error deleting task", error);
@@ -265,7 +280,7 @@ export const updateProyecto = async (id, data) => {
 
 export const updateTask = async (taskId, updatedTask) => {
     try {
-        const response = await api2.put(`/task/tareas/${taskId}/`, updatedTask);
+        const response = await api.put(`/task/tareas/${taskId}/`, updatedTask);
         return response.data;
     } catch (error) {
         console.error('Error al actualizar la tarea:', error);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getProyectos, getEstados, getPrioridades } from '../../services/api';
-import { createTask} from '../../services/aws';
+import { createTask } from '../../services/aws';
 import "../../styles/createTareasForm.css";
+
 
 const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
     const [tareaData, setTareaData] = useState({
@@ -12,7 +13,7 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
         descripcion: '',
         fecha_inicio: '',
         fecha_entrega: '',
-        task_photo: null,  // Agrega el campo para la imagen
+        task_photo: null,
     });
 
     const [proyectos, setProyectos] = useState([]);
@@ -21,7 +22,6 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
 
-    // Cargar las listas de proyectos, estados y prioridades
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -51,20 +51,18 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
     const handleFileChange = (e) => {
         setTareaData({
             ...tareaData,
-            task_photo: e.target.files[0],  // Guarda el archivo en el estado
+            task_photo: e.target.files[0],
         });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const data = tareaData
 
         try {
-            await createTask(data);  // Envía formData en lugar de tareaData
+            await createTask(tareaData);
             setSuccess(true);
             setError(null);
 
-            // Llamar a la función `onTaskCreated` si está definida
             if (onTaskCreated) {
                 onTaskCreated();
             }
@@ -158,13 +156,14 @@ const CreateTareasForm = ({ ID_proyecto, onTaskCreated }) => {
                 </div>
                 
                 {/* Input para la imagen */}
-                <div className="file-input-container">
-                    <label htmlFor="task_photo">Imagen de la tarea:</label>
+                <div className="file-input-container_task">
+                    <label htmlFor="task_photo" className="file-input-label_task">Seleccionar imagen <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#0c3958"><path d="M440-320v-326L336-542l-56-58 200-200 200 200-56 58-104-104v326h-80ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg> </label>
                     <input
                         type="file"
+                        id="task_photo"
                         name="task_photo"
                         onChange={handleFileChange}
-                        className="create-tarea-file-input"
+                        className="create-tarea-file-input_task"
                         accept="image/*"
                     />
                 </div>

@@ -12,6 +12,7 @@ import AboutPages from '../pages/about';
 import ProjectDetails from '../components/projects/ProjectDetails';
 import UserPerfil from '../pages/perfil';
 import PrivateRoute from '../components/PrivateRoute/PrivateRoute';
+import Users from '../pages/Users';
 function Routing() {
   return (
     <div>
@@ -25,7 +26,8 @@ function Routing() {
             <Route path="/login" element={<LoginForm />} />
             <Route path="/departamentos" element={<CreateDepartamentoForm />} />
             <Route path="/home" element={<Homepages/>} />
-            <Route path="/users" element={<CreateUserForm />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/CreateUsers" element={<CreateUserForm />} />
             <Route path="/proyectos" element={<CreateProjectoForm />} />
             <Route path="/tareas" element={<CreateTareasForm />} />
             <Route path="/projects/:id" element={<ProjectDetails />} />
