@@ -7,6 +7,7 @@ import CreateTareasForm from '../task/CreateTareasForm';
 import TaskCardForProjectDetail from '../task/TaskCardForProjectDetail';
 import Swal from 'sweetalert2';
 import EditProjectForm from './EditProjectForm';
+import ButtonBack from '../common/ButtonBack';
 
 const departmentImages = {
   "Alcaldia": "https://www.gstatic.com/classroom/themes/img_code.jpg",
@@ -137,9 +138,6 @@ const ProjectDetails = () => {
   };
   
 
-
-
-
   if (!project || !tareas) {
     return <p>Cargando detalles del proyecto...</p>;
   }
@@ -148,6 +146,7 @@ const ProjectDetails = () => {
   return (
     <div className={styles['container-project-details']}>
       <div className={styles['header-project-details']}>
+        <ButtonBack to={"/home"}></ButtonBack>
         <div className={styles['header-image-container']}>
           <img
             src={projectImage}

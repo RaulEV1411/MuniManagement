@@ -1,59 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import {jwtDecode} from "jwt-decode";
 import { getProyectosByUserID } from '../../services/api';
-import { getCookie } from '../../services/read_cookie';
+import { useParams,useNavigate } from 'react-router-dom';
 import "../../styles/assignedProjects.css";
 
 const defaultProjectIcon = 'https://via.placeholder.com/50';
 
 const AssignedProjects = () => {
   const [projects, setProjects] = useState([]);
-  
-  // Obtener el token desde la cookie
-  const token = getCookie('accessToken');
-  const decoded = token ? jwtDecode(token) : null;
-  
-  const user_ID = decoded?.user_ID;
+  const [loading, setLoading] = useState(true); // Estado de carga
+  const navigate = useNavigate();
+  const { id } = useParams();
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        if (user_ID) {
-          const projectsData = await getProyectosByUserID(user_ID);
+        if (id) {
+          const projectsData = await getProyectosByUserID(id);
           setProjects(projectsData);
         }
       } catch (error) {
         console.error("Error al obtener los proyectos asignados:", error);
+      } finally {
+        setLoading(false); // Finaliza la carga, ya sea éxito o error
       }
     };
 
     fetchProjects();
-  }, [user_ID]);
+  }, [id]);
 
-  const navigateToProject = (id) => {
-    window.location.href = `/projects/${id}`;
-  };
 
   return (
     <div className="assigned-projects-container">
       <h3>Assigned Projects</h3>
-      <ul className="projects-list">
-        {projects.map((project) => (
-          <li className="project-item" key={project.id}>
-            <div className="project-card">
-              <img src={defaultProjectIcon} alt="Project Icon" className="project-icon" />
-              <div className="project-info">
-                <h4>{project.nombre}</h4>
-                <p>{project.descripcion}</p>
-                <p className="project-time">Today - {project.fecha}</p>
-              </div>
-              <button className="project-arrow" onClick={() => navigateToProject(project.id)}>
-                →
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+
+      {/* Mostrar loader mientras carga */}
+      {loading ? (
+        <div className="loader">Cargando proyectos...</div>
+      ) : (
+        <ul className="projects-list">
+          {projects.length > 0 ? (
+            projects.map((project) => (
+              <li className="project-item" key={project.proyect_ID}>
+                <div className="project-card">
+                  <img src={project?.project_photo} alt="Project Icon" className="project-icon" />
+                  <div className="project-info">
+                    <h4>{project.nombre}</h4>
+                    <p>{project.descripcion}</p>
+                    <p className="project-time">Today - {project.fecha}</p>
+                  </div>
+                  <button className="project-arrow" onClick={() => navigate(`/projects/${project.proyect_ID}`)}>
+                    →
+                  </button>
+                </div>
+              </li>
+            ))
+          ) : (
+            <div className="no-projects">No tienes proyectos asignados.</div>
+          )}
+        </ul>
+      )}
     </div>
   );
 };

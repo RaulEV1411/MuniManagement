@@ -37,7 +37,7 @@ const MunicipalityCards = () => {
   ];
 
   return (
-    <div style={{ backgroundColor: "#ffffff", padding: "20px", minHeight: "100vh" }}>
+    <div style={{padding: "20px", minHeight: "100vh" }}>
       <div className="municipality-cards">
         {cardsData.map((card, index) => (
           <Card key={index} {...card} />

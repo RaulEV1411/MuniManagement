@@ -1,12 +1,15 @@
 import About from "../components/about/about"; 
 import Map from "../components/about/map";
+import Sidebar from "../components/Home/Sidebar";
 function AboutPages() {
   return (
     <div>
-      <Map /> 
-      <About /> 
-
-
+      <Sidebar>
+        <div>
+          <Map /> 
+          <About /> 
+        </div>
+      </Sidebar>
     </div>
   );
 }

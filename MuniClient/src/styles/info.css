@@ -1,61 +1,90 @@
 .user-profile-container {
-  padding: 20px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-
-.profile-header {
   display: flex;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: Arial, sans-serif;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-.profile-image {
-  width: 130px;
-  height: 130px;
-  border-radius: 25px;
-  margin-right: 20px;
 }
 
 .user-profile-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
-  color: black;
+  color: #202124;
+  margin-bottom: 25px;
 }
 
-.user-info {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.container_img_info_user_profile{
+.profile-section {
+  border: #dadce0 solid 1px;
   display: flex;
-  justify-content: flex-start;
-  gap: 8%;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 20px;
+  width: 80%;
 }
 
-.div_info_user_profile{
-  width: 100% ;
+.section-title {
+  line-height: 1.75rem;
+  font-size: 1.375rem;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: #202124;
+  margin-bottom: 12px;
+}
+
+.section-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-description {
+  font-size: 16px;
+  color: #5f6368;
+}
+
+.profile-image {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 3px solid #dadce0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #dadce000;
+  margin: 20px 0;
+}
+
+.photo-item{
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  font-size: 18px;
+  align-items: center;
+  flex-direction: column;
 }
 
 .info-item {
   display: flex;
-  justify-content: start ;
-  gap: 5%;
+  justify-content: space-between;
+  padding: 12px 0;
+  font-size: 18px;
   align-items: center;
-  padding: 5px;
-  font-size: 16px;
 }
 
-.label {
+.info-label {
+  color: #5f6368;
   font-weight: bold;
-  color: black;
 }
 
-.value {
-  font-size: 14px;
-  color: black;
+.info-value {
+  color: #202124;
+}
+
+.conector-userPerfil {
+  margin-left: 5%;
+  background-color: #fff !important;
 }

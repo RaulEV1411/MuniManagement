@@ -14,9 +14,18 @@
   padding: 10px;
 }
 
+.img-user-projrctCard{
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
 .project-card-profile-icon, .project-card-menu-icon {
-  font-size: 20px; /* Tamaño de los íconos */
+  display: flex;
+  gap: 5px;
+  font-size: 20px;
   color: #000;
+  align-items: center;
 }
 
 .project-card-image-container {

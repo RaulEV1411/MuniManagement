@@ -3,6 +3,7 @@ import { getRoles, getDepartamentos } from '../../services/api';
 import { createUserPost } from '../../services/aws'; 
 import "../../styles/CreateUserForm.css";
 import logo from "../../assets/Logo Circular Color  (Fondo Transparente) (1).png";
+import ButtonBack from '../common/ButtonBack';
 
 const CreateUserForm = () => {
     const [roles, setRoles] = useState([]);
@@ -80,6 +81,7 @@ const CreateUserForm = () => {
 
     return (
         <div className='user-form-container'>
+            <ButtonBack to={"/home"}></ButtonBack>
             <h1 className='Title_create_users'>Crear Usuario</h1>
             <div className='conteiner_order_divs_user'>
                 <div className='conteiner_create_users-logo'>

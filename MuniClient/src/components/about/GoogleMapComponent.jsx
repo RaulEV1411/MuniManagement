@@ -16,13 +16,9 @@ const GoogleMapComponent = () => {
   // Estado para manejar la ubicación central del mapa
   const [center, setCenter] = useState(puntarenasLocation); // Inicializa con la ubicación de Puntarenas
 
-  // Función para recentrar el mapa en Puntarenas
-  const recenterMap = () => {
-    setCenter(puntarenasLocation);
-  };
 
   return (
-    <div style={{ backgroundColor: "#ffffff", padding: "20px", minHeight: "400px" }}>
+    <div style={{padding: "20px", minHeight: "400px" }}>
       <LoadScript googleMapsApiKey="AIzaSyB_hI98nI70LFDaonZ56y-aKMXlH8ZRyeE">
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
@@ -32,7 +28,6 @@ const GoogleMapComponent = () => {
           <MarkerF position={puntarenasLocation} />
         </GoogleMap>
       </LoadScript>
-      <button onClick={recenterMap}>Recentrar en la Municipalidad de Puntarenas</button>
     </div>
   );
 };

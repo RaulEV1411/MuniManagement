@@ -113,10 +113,7 @@
 }
 
 .modal-content-task {
-  background-color: white;
-  padding: 20px;
   border-radius: 8px;
-  width: 500px;
   max-width: 100%; /* Para adaptarse a pantallas más pequeñas */
   position: relative;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra para darle profundidad */

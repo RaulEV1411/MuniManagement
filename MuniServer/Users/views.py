@@ -25,11 +25,13 @@ class LoginView(APIView):
         if user is not None:
             refresh = RefreshToken.for_user(user)
             refresh['role'] = user.role.name
+            refresh['user_photo'] = user.user_photo
             
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'role': str(user.role.name),
+                "user_photo": str(user.user_photo),
                 'user_ID': str(user.user_ID), 
             })
         else:
