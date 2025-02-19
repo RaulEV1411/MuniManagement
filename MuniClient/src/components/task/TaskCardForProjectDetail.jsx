@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import "../../styles/assignedProjects.css";
-import { deleteTask, updateTask } from '../../services/api';
+import { deleteTask} from '../../services/api';
+import CreateTareasForm from './CreateTareasForm';
 
 const defaultTaskIcon = 'https://via.placeholder.com/50';
 
 function TaskCardForProjectDetail({ task, onTaskDeleted, onTaskUpdated }) {
     const [isDeleted, setIsDeleted] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editedTask, setEditedTask] = useState(task);
-
+    
     const navigateToTask = (id) => {
         window.location.href = `/tasks/${id}`;
     };
@@ -38,32 +38,13 @@ function TaskCardForProjectDetail({ task, onTaskDeleted, onTaskUpdated }) {
     };
 
     const openModal = () => {
-        setEditedTask(task);
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
-        setEditedTask(task);
     };
 
-    const handleSaveEdit = async () => {
-        try {
-            await updateTask(editedTask.tareas_ID, editedTask);
-            setIsModalOpen(false);
-            onTaskUpdated(editedTask);
-        } catch (error) {
-            console.error('Error al actualizar la tarea:', error);
-        }
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setEditedTask((prevTask) => ({
-            ...prevTask,
-            [name]: value,
-        }));
-    };
 
     useEffect(() => {
         if (isDeleted) {
@@ -100,34 +81,13 @@ function TaskCardForProjectDetail({ task, onTaskDeleted, onTaskUpdated }) {
                 </li>
             </ul>
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <button className="modal-close" onClick={closeModal}>X</button>
-                        <h2>Actualizar Tarea</h2>
-                        <input
-                            type="text"
-                            name="name"
-                            value={editedTask.name}
-                            onChange={handleInputChange}
-                            placeholder="Título de Tarea"
-                            className="modal-input"
-                        />
-                        <textarea
-                            name="descripcion"
-                            value={editedTask.descripcion}
-                            onChange={handleInputChange}
-                            placeholder="Descripción de la tarea"
-                            className="modal-input"
-                        />
-                        <input
-                            type="date"
-                            name="fecha_entrega"
-                            value={editedTask.fecha_entrega}
-                            onChange={handleInputChange}
-                            className="modal-date"
-                        />
-                        <button className="save-button" onClick={handleSaveEdit}>Guardar</button>
-                    </div>
+                <div className='modal-Updatetask'>
+                    <p className='close-modal-Updatetask' onClick={closeModal}>x</p>
+                    <CreateTareasForm
+                        task={task}
+                        ID_proyecto={task.proyecto_ID}
+                        onTaskCreated={onTaskUpdated}
+                    />
                 </div>
             )}
         </div>
