@@ -45,14 +45,17 @@ const UserProfile = () => {
           <span className="info-label">Nombre</span>
           <span className="info-value">{`${usuario?.first_name} ${usuario?.last_name}` || 'N/A'}</span>
         </div>
+        <hr className='hr-divider-profile'/>
         <div className="info-item">
           <span className="info-label">Número de Cédula</span>
           <span className="info-value">{usuario?.cedula || 'N/A'}</span>
         </div>
+        <hr />
         <div className="info-item">
           <span className="info-label">Fecha de Nacimiento</span>
           <span className="info-value">{usuario?.birthday || 'N/A'}</span>
         </div>
+        <hr />
       </div>
 
       <hr className="divider" />
@@ -64,10 +67,12 @@ const UserProfile = () => {
           <span className="info-label">Correo Electrónico</span>
           <span className="info-value">{usuario?.email || 'N/A'}</span>
         </div>
+        <hr />
         <div className="info-item">
           <span className="info-label">Número de Teléfono</span>
           <span className="info-value">{usuario?.phone_number || 'N/A'}</span>
         </div>
+        <hr />
       </div>
 
       <hr className="divider" />
@@ -79,6 +84,7 @@ const UserProfile = () => {
           <span className="info-label">Puesto</span>
           <span className="info-value">{usuario?.puesto || 'N/A'}</span>
         </div>
+        <hr />
       </div>
 
       <hr className="divider" />

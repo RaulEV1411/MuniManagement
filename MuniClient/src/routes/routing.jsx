@@ -1,7 +1,5 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom';
-import CreateDireccionForm from '../components/departments/CreateDireccionForm';
-import CreateDepartamentoForm from '../components/departments/CreateDepartamentoForm';
 import CreateRoleForm from '../components/users/CreateRoleForm';
 import CreateUserForm from '../components/users/CreateUserForm';
 import LoginForm from '../components/users/LoginForm';
@@ -13,6 +11,8 @@ import ProjectDetails from '../components/projects/ProjectDetails';
 import UserPerfil from '../pages/perfil';
 import PrivateRoute from '../components/PrivateRoute/PrivateRoute';
 import Users from '../pages/Users';
+import Directions from '../pages/directions';
+import Departament from '../pages/departament';
 function Routing() {
   return (
     <div>
@@ -22,17 +22,17 @@ function Routing() {
                 <CreateRoleForm />
               </PrivateRoute>
             } />
-            <Route path="/" element={<CreateDireccionForm />} />
             <Route path="/login" element={<LoginForm />} />
-            <Route path="/departamentos" element={<CreateDepartamentoForm />} />
+            <Route path='/perfil/:id' element={< UserPerfil  />} /> 
             <Route path="/home" element={<Homepages/>} />
+            <Route path="/proyectos" element={<CreateProjectoForm />} />
+            <Route path="/projects/:id" element={<ProjectDetails />} />
             <Route path="/users" element={<Users />} />
             <Route path="/CreateUsers" element={<CreateUserForm />} />
-            <Route path="/proyectos" element={<CreateProjectoForm />} />
+            <Route path="/directions" element={<Directions />} />
+            <Route path="/departamentos" element={<Departament/>} />
             <Route path="/tareas" element={<CreateTareasForm />} />
-            <Route path="/projects/:id" element={<ProjectDetails />} />
             <Route path='/about' element={<AboutPages />} /> 
-            <Route path='/perfil/:id' element={< UserPerfil  />} /> 
         </Routes>
     </div>
   )
