@@ -31,7 +31,6 @@ const AssignedProjects = () => {
 
   return (
     <div className="assigned-projects-container">
-      <h3>Assigned Projects</h3>
 
       {/* Mostrar loader mientras carga */}
       {loading ? (
@@ -55,7 +54,7 @@ const AssignedProjects = () => {
               </li>
             ))
           ) : (
-            <div className="no-projects">No tienes proyectos asignados.</div>
+            <div className="no-projects"><h2 className='h2-no-projects-project-list'>No tienes proyectos asignados.</h2></div>
           )}
         </ul>
       )}

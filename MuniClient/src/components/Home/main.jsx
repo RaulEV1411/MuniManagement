@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from './searchbar';
 import ProjectCard from './cards';
+import { useNavigate } from "react-router-dom";
 import { getProyectos } from '../../services/api'; // Importa el método de axios
 import "../../styles/cards.css";
 
@@ -8,6 +9,7 @@ const ProjectHome = () => {
   const [projects, setProjects] = useState([]); // Inicialmente vacío
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [loading, setLoading] = useState(true); // Estado de carga
+  const navigate = useNavigate()
 
   // Obtener los proyectos desde la API
   useEffect(() => {
@@ -36,8 +38,13 @@ const ProjectHome = () => {
 
   return (
     <div className="project-home">
-      <SearchBar onSearch={handleSearch} />
-
+      <h2 className='h2-main'>Lista de Proyectos</h2>
+      <div className='top-bar-main'>
+        <SearchBar onSearch={handleSearch} />
+        <button className="add-project-button-main" onClick={() => navigate('/proyectos')}>
+            Agregar Usuario
+        </button>
+      </div>
       {/* Mostrar loader mientras carga */}
       {loading ? (
         <div className="loader">Cargando proyectos...</div>

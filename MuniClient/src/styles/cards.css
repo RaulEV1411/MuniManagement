@@ -1,4 +1,9 @@
-
+.project-home{
+  width: 80%;
+  margin: auto;
+  padding: 20px;
+  color: #0C3958;
+}
 
 .project-card-item-wrapper {
   width: 310px; /* Tamaño más pequeño para las tarjetas */
@@ -6,6 +11,12 @@
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   margin: 2%;
+}
+
+.h2-main {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #0C3958;
 }
 
 .project-card-header-section {
@@ -96,4 +107,22 @@ img{
   gap: 2%;
   width: 80%;
   margin-left: 10%;
+}
+
+.add-project-button-main{
+  background: #28a74500;
+  color: #0C3958;
+  border: #0C3958 solid;
+  padding: 8px 15px;
+  font-size: 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.top-bar-main{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }

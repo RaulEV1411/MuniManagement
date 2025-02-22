@@ -2,7 +2,7 @@
     width: 80%;
     margin: auto;
     padding: 20px;
-    color: #0056b3;
+    color: #9E1D18;
 }
 
 .h2-viewallusers {
@@ -101,15 +101,15 @@
     width: 40%;
     padding: 10px;
     border-radius: 25px;
-    border: 3px solid #0C3958;
+    border: 3px solid #9E1D18;
     background-color: transparent;
     color: #000;
 }
 
 .add-user-button-viewallusers {
     background: #28a74500;
-    color: #D04919;
-    border: #D04919 solid;
+    color: #9E1D18;
+    border: #9E1D18 solid;
     padding: 8px 15px;
     font-size: 16px;
     border-radius: 50px;

@@ -76,8 +76,8 @@ const Sidebar = ({ children }) => {
 
               <li className="nav-link" onClick={goHome}>
                   <a href="#">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#F3951B"><path d="M226.67-186.67h140v-246.66h226.66v246.66h140v-380L480-756.67l-253.33 190v380ZM160-120v-480l320-240 320 240v480H526.67v-246.67h-93.34V-120H160Zm320-352Z"/></svg>
-                    <span className="text nav-text">pagina principal</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#0C3958"><path d="M226.67-186.67h140v-246.66h226.66v246.66h140v-380L480-756.67l-253.33 190v380ZM160-120v-480l320-240 320 240v480H526.67v-246.67h-93.34V-120H160Zm320-352Z"/></svg>
+                    <span className="text nav-text">Pagina principal</span>
                   </a>
               </li>
 
@@ -88,32 +88,26 @@ const Sidebar = ({ children }) => {
                 </a>
               </li>
 
-              <li className="nav-link" onClick={goTask}>
+              <li className="nav-link" onClick={()=>navigate("/directions")}>
                 <a href="#">
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#0C3958"><path d="M186.67-120q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h192.66q7.67-35.33 35.84-57.67Q443.33-920 480-920t64.83 22.33Q573-875.33 580.67-840h192.66q27.5 0 47.09 19.58Q840-800.83 840-773.33v586.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66ZM280-280h275.33v-66.67H280V-280Zm0-166.67h400v-66.66H280v66.66Zm0-166.66h400V-680H280v66.67Zm200-181.34q13.67 0 23.5-9.83t9.83-23.5q0-13.67-9.83-23.5t-23.5-9.83q-13.67 0-23.5 9.83t-9.83 23.5q0 13.67 9.83 23.5t23.5 9.83Zm-293.33 608v-586.66 586.66Z"/></svg>
-                  <span className="text nav-text">Ver Proyectos</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#CF8B78"><path d="M208-254v-319.33h66.67V-254H208Zm241.33 0v-319.33H516V-254h-66.67ZM80-120.67v-66.66h800v66.66H80ZM685.33-254v-319.33H752V-254h-66.67ZM80-640v-62l400-218.67L880-702v62H80Zm148.67-66.67h502.66-502.66Zm0 0h502.66L480-844.67l-251.33 138Z"/></svg>
+                  <span className="text nav-text">Direcciones</span>
+                </a>
+              </li>
+
+              <li className="nav-link" onClick={()=>navigate("/departamentos")}>
+                <a href="#">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#0C3958"><path d="M120-120v-556.67h163.33V-840h393.34v326.67H840V-120H528.67v-163.33h-97.34V-120H120Zm66.67-66.67h96.66v-96.66h-96.66v96.66Zm0-163.33h96.66v-96.67h-96.66V-350Zm0-163.33h96.66V-610h-96.66v96.67ZM350-350h96.67v-96.67H350V-350Zm0-163.33h96.67V-610H350v96.67Zm0-163.34h96.67v-96.66H350v96.66ZM513.33-350H610v-96.67h-96.67V-350Zm0-163.33H610V-610h-96.67v96.67Zm0-163.34H610v-96.66h-96.67v96.66Zm163.34 490h96.66v-96.66h-96.66v96.66Zm0-163.33h96.66v-96.67h-96.66V-350Z"/></svg>
+                  <span className="text nav-text">Departamentos</span>
                 </a>
               </li>
 
               <li className="nav-link" onClick={goabout}>
                 <a href="#">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#D04919"><path d="M448.67-280h66.66v-240h-66.66v240Zm31.32-316q15.01 0 25.18-9.97 10.16-9.96 10.16-24.7 0-15.3-10.15-25.65-10.16-10.35-25.17-10.35-15.01 0-25.18 10.35-10.16 10.35-10.16 25.65 0 14.74 10.15 24.7 10.16 9.97 25.17 9.97Zm.19 516q-82.83 0-155.67-31.5-72.84-31.5-127.18-85.83Q143-251.67 111.5-324.56T80-480.33q0-82.88 31.5-155.78Q143-709 197.33-763q54.34-54 127.23-85.5T480.33-880q82.88 0 155.78 31.5Q709-817 763-763t85.5 127Q880-563 880-480.18q0 82.83-31.5 155.67Q817-251.67 763-197.46q-54 54.21-127 85.84Q563-80 480.18-80Zm.15-66.67q139 0 236-97.33t97-236.33q0-139-96.87-236-96.88-97-236.46-97-138.67 0-236 96.87-97.33 96.88-97.33 236.46 0 138.67 97.33 236 97.33 97.33 236.33 97.33ZM480-480Z"/></svg>
-                  <span className="text nav-text">informacion</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon-img" height="40px" viewBox="0 -960 960 960" width="40px" fill="#F3951B"><path d="M448.67-280h66.66v-240h-66.66v240Zm31.32-316q15.01 0 25.18-9.97 10.16-9.96 10.16-24.7 0-15.3-10.15-25.65-10.16-10.35-25.17-10.35-15.01 0-25.18 10.35-10.16 10.35-10.16 25.65 0 14.74 10.15 24.7 10.16 9.97 25.17 9.97Zm.19 516q-82.83 0-155.67-31.5-72.84-31.5-127.18-85.83Q143-251.67 111.5-324.56T80-480.33q0-82.88 31.5-155.78Q143-709 197.33-763q54.34-54 127.23-85.5T480.33-880q82.88 0 155.78 31.5Q709-817 763-763t85.5 127Q880-563 880-480.18q0 82.83-31.5 155.67Q817-251.67 763-197.46q-54 54.21-127 85.84Q563-80 480.18-80Zm.15-66.67q139 0 236-97.33t97-236.33q0-139-96.87-236-96.88-97-236.46-97-138.67 0-236 96.87-97.33 96.88-97.33 236.46 0 138.67 97.33 236 97.33 97.33 236.33 97.33ZM480-480Z"/></svg>
+                  <span className="text nav-text">Informacion</span>
                 </a>
               </li>
-
-
-              <li className="nav-link">
-                <a href="#">
-                  <img
-                    src="src/assets/correo.png"
-                    alt="Usuario de perfil"
-                    className="icon-img"
-                  />
-                  <span className="text nav-text"> correo</span>
-                </a>
-              </li>
-
 
             </ul>
           </div>
