@@ -1,9 +1,9 @@
 import AWS from 'aws-sdk';
-import { createProyecto,createTarea,createUser } from './api';
+import { createProyecto, createTarea, createUser } from './api';
 
 // Configura AWS S3
-const S3_BUCKET = 'munimanagement'; // Cambia esto por el nombre de tu bucket
-const REGION = 'us-east-1'; // Cambia esto por la región de tu bucket
+const S3_BUCKET = 'munimanagement';
+const REGION = 'us-east-1';
 
 const s3 = new AWS.S3({
     accessKeyId: 'AKIAV45KSDA7LB7FTLT4',
@@ -15,64 +15,67 @@ const s3 = new AWS.S3({
 export const uploadImageToS3 = async (file) => {
     const params = {
         Bucket: S3_BUCKET,
-        Key: file.name, // Puedes usar un identificador único para evitar sobrescribir archivos
+        Key: file.name, // Puedes generar un identificador único si es necesario
         Body: file,
         ContentType: file.type,
-        // ACL: 'public-read', // Se eliminó esta línea para evitar el error de ACL
     };
 
     return s3.upload(params).promise();
 };
 
-
 const postAWS = async (imgFile) => {
-    let imagenUrl = '';
-    if (imgFile) {
+    // Si es un objeto File, se sube; si no, se asume que ya es una URL.
+    if (imgFile && imgFile instanceof File) {
         try {
             const result = await uploadImageToS3(imgFile);
-            imagenUrl = result.Location; // Obtén la URL de la imagen subida
-            console.log(imagenUrl);
-            return imagenUrl
-            
+            return result.Location;
         } catch (error) {
             console.error('Error al subir la imagen a S3:', error);
             throw new Error('No se pudo subir la imagen a S3');
         }
     }
-}
+    return imgFile;
+};
 
-// Función para guardar el producto
+// Función para crear un usuario
 export const createUserPost = async (data) => {
-    let imagenUrl = await postAWS(data.user_photo)
-    data.user_photo = imagenUrl
+    let imagenUrl = await postAWS(data.user_photo);
+    data.user_photo = imagenUrl;
     try {
-        await createUser(data)
+        await createUser(data);
     } catch (error) {
         console.error('Error en la solicitud:', error);
         throw error;
     }
 };
 
+// Función para crear un proyecto
 export const createProject = async (data) => {
-    let imagenUrl = await postAWS(data.project_photo)
-    data.project_photo = imagenUrl
-    try{
-        await createProyecto(data)
+    // Si project_photo es un objeto File, se sube a S3; si ya es una URL, se utiliza directamente.
+    if (data.project_photo && data.project_photo instanceof File) {
+        let imagenUrl = await postAWS(data.project_photo);
+        data.project_photo = imagenUrl;
+    }
+    try {
+        await createProyecto(data);
     } catch (error) {
         console.error('Error al crear el proyecto:', error);
         throw error;
     }
-}
+};
 
+// Función para crear una tarea
 export const createTask = async (data) => {
-    let imagenUrl = await postAWS(data.task_photo)
-    data.task_photo = imagenUrl
-    try{
-        await createTarea(data)
+    if (data.task_photo && data.task_photo instanceof File) {
+        let imagenUrl = await postAWS(data.task_photo);
+        data.task_photo = imagenUrl;
+    }
+    try {
+        await createTarea(data);
     } catch (error) {
-        console.error('Error al crear el proyecto:', error);
+        console.error('Error al crear la tarea:', error);
         throw error;
     }
-}
+};
 
 export default { createUser };

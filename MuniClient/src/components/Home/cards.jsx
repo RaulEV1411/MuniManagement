@@ -6,8 +6,10 @@ import { getDirecciones } from '../../services/api'; // Importar la función
 // Definir las imágenes basadas en el nombre de la dirección
 const departmentImages = {
   "Alcaldia": "https://www.gstatic.com/classroom/themes/img_code.jpg",
-  "Marketing": "https://example.com/marketing.jpg",
-  "Finanzas": "https://example.com/finanzas.jpg",
+  "Marketing": "https://www.gstatic.com/classroom/themes/img_repair_thumb.jpg",
+  "Finanzas": "https://www.gstatic.com/classroom/themes/img_sailing_thumb.jpg",
+  "Ventas": "https://www.gstatic.com/classroom/themes/Economics_thumb.jpg",
+  "Recursos Humanos": "https://www.gstatic.com/classroom/themes/Physics_thumb.jpg"
   // Añadir más nombres de direcciones y sus respectivas imágenes
 };
 

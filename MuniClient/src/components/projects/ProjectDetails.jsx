@@ -72,9 +72,6 @@ const ProjectDetails = () => {
     }
   }, [id]);
 
-  const handleBackClick = () => {
-    navigate('/home');
-  };
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -145,8 +142,8 @@ const ProjectDetails = () => {
   const projectImage = project.project_photo || departmentImages[departmentName] || "https://gstatic.com/classroom/themes/Psychology.jpg";
   return (
     <div className={styles['container-project-details']}>
+      <ButtonBack to={"/home"} text={"Volver"}></ButtonBack>
       <div className={styles['header-project-details']}>
-        <ButtonBack to={"/home"}></ButtonBack>
         <div className={styles['header-image-container']}>
           <img
             src={projectImage}
@@ -215,13 +212,11 @@ const ProjectDetails = () => {
         )}
         {activeTab === 'information' && (
           <div>
-            <h2 className={styles['titles_h2_project_details']}>Información del proyecto</h2>
             <ProjectInformation project={project} />
             <div className={styles['containere_edit_delete_project_details']}>
               <button onClick={handleOpenEditModal} className={styles['edit-project-btn']}>
                       Editar Proyecto
                     </button>
-
                     {/* Modal para editar el proyecto */}
                     {isEditModalOpen && (
                       <div className={styles['modal-edit-project']}>

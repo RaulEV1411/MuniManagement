@@ -1,0 +1,70 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modalContent {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    text-align: center;
+  }
+  
+  .closeButton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .imageGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .imageItem {
+    width: 100%;
+    height: auto;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.3s;
+  }
+  
+  .imageItem:hover {
+    border: 2px solid #0C3857;
+  }
+  
+  /* Área para subir imagen propia */
+  .uploadOwnContainer {
+    margin-top: 20px;
+    border: 2px dashed #0C3857;
+    padding: 20px;
+    cursor: pointer;
+  }
+  
+  .uploadOwnLabel {
+    display: block;
+    font-weight: bold;
+    color: #0C3857;
+  }
+  
+  .uploadOwnInput {
+    display: none; /* Se oculta el input, se activa al hacer clic en la etiqueta */
+  }
+  

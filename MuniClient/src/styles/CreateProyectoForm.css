@@ -7,13 +7,13 @@
     display: flex;
     place-items: center;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-width: 320px;
     min-height: 100vh;
 }
 
 .project-input::-webkit-calendar-picker-indicator{
-    background-color: #F3951B; 
+    background-color: #0C3857; 
     color: white; 
     border-radius: 50%;
     padding: 5px;
@@ -26,7 +26,7 @@
     height: 38px;
     background-color: #f5f5f5;
     border-radius: 25px;
-    border: 2px solid #F3951B;
+    border: 2px solid #0C3857;
     display: flex;
     align-items: center;
     padding: 0px 20px;
@@ -40,15 +40,16 @@
     background-color: #f5f5f5;
     padding: 0 5px;
     font-size: 12px;
-    color: #F3951B;
+    color: #0C3857;
 }
 
 .project-label_file2{
     padding: 0 5px;
     margin-left: 30%;
     font-size: 15px;
-    color: #F3951B;
+    color: #0C3857;
     cursor: pointer;
+    fill: #0C3857;
 }
 
 .project-input_file{
@@ -57,6 +58,8 @@
 
 .Title_create_project {
     color: black;
+    text-align: center;
+    margin-bottom: 8%;
 }
 
 .project-input-container {
@@ -65,12 +68,28 @@
     height: 38px;
     background-color: #f5f5f5;
     border-radius: 25px;
-    border: 2px solid #F3951B;
+    border: 2px solid #0C3857;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0px 20px;
     margin-bottom: 7%;
+}
+
+.create_project_order_top{
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.create_project_order_divs{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.create_project_order_div_card_example{
+    width: 65%;
 }
 
 .project-label {
@@ -80,7 +99,7 @@
     background-color: #f5f5f5;
     padding: 0 5px;
     font-size: 12px;
-    color: #F3951B;
+    color: #0C3857;
 }
 
 .project-input {
@@ -126,11 +145,11 @@
 .button_create_project {
     width: fit-content;
     min-width: 470px;
-    color: #F3951B;
+    color: #0C3857;
     height: 45px;
     padding: 8px;
     border-radius: 25px;
-    border: 2.5px solid #F3951B;
+    border: 2.5px solid #0C3857;
     box-shadow: 0px 0px 20px -20px;
     cursor: pointer;
     background-color: white;
