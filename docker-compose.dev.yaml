@@ -1,0 +1,37 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: muni_mysql_dev
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - muni_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  django:
+    build:
+      context: ./MuniServer
+    container_name: muni_django_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./MuniServer:/app
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+    command: ["bash", "/app/entrypoint.sh"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  muni_mysql_data:

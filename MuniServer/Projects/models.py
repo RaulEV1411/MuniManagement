@@ -3,17 +3,21 @@ from django.db import models
 from Departments.models import Departamentos
 from Users.models import Users
 
+
 class Estado(models.Model):
     estado_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
+
 
 class Prioridad(models.Model):
     prioridad_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
 
+
 class Tipos(models.Model):
     tipos_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
+
 
 class Proyectos(models.Model):
     proyect_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -26,7 +30,15 @@ class Proyectos(models.Model):
     fecha_inicio = models.DateField()
     fecha_entrega = models.DateField()
     costo = models.IntegerField()
-    project_photo = models.TextField(null=True)
+
+
+class ProjectImage(models.Model):
+    imagen_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE, related_name='images')
+    url = models.TextField()
+    public_id = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 class Proyectos_tipos(models.Model):
     proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE)
