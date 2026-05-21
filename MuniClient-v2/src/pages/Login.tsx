@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { Eye, EyeOff, MapPin, Loader2 } from 'lucide-react'
-import { login } from '@/lib/api'
+import { login, getResumenLogin } from '@/lib/api'
 import { setCookie } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 
@@ -31,6 +31,22 @@ export default function LoginPage() {
       setCookie('accessToken',  res.access,  0.02)
       setCookie('refreshToken', res.refresh,  7)
       loadUserFromToken()
+      // Fire-and-forget: no bloquear navegación si el resumen tarda
+      getResumenLogin()
+        .then(resumen => {
+          const total =
+            (resumen?.proyectos_por_vencer?.length ?? 0) +
+            (resumen?.tareas_por_vencer?.length ?? 0)
+          if (total > 0) {
+            toast.warning(
+              `Tienes ${total} pendiente(s) próximos a vencer en los siguientes 4 días.`,
+              { duration: 6000 },
+            )
+          } else if (resumen?.no_leidas > 0) {
+            toast.info(`Tienes ${resumen.no_leidas} notificación(es) sin leer.`)
+          }
+        })
+        .catch(() => {})
       navigate('/dashboard')
     } catch {
       toast.error('Credenciales incorrectas. Intenta de nuevo.')

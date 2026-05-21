@@ -13,6 +13,9 @@ import DepartmentsPage from '@/pages/Departments'
 import ConfigPage from '@/pages/Config'
 import TimelinePage from '@/pages/Timeline'
 import ReportsPage from '@/pages/Reports'
+import PublicProjectsPage from '@/pages/PublicProjects'
+import PublicProjectDetailPage from '@/pages/PublicProjectDetail'
+import AyudaPage from '@/pages/Ayuda'
 
 function Guard() {
   const token = getCookie('accessToken')
@@ -22,6 +25,8 @@ function Guard() {
 export const router = createBrowserRouter([
   { path: '/',      element: <Navigate to="/login" replace /> },
   { path: '/login', element: <LoginPage /> },
+  { path: '/publico',                  element: <PublicProjectsPage /> },
+  { path: '/publico/proyectos/:id',    element: <PublicProjectDetailPage /> },
   {
     element: <Guard />,
     children: [{
@@ -38,6 +43,7 @@ export const router = createBrowserRouter([
         { path: '/config',            element: <ConfigPage /> },
         { path: '/timeline',          element: <TimelinePage /> },
         { path: '/reports',           element: <ReportsPage /> },
+        { path: '/ayuda',             element: <AyudaPage /> },
       ],
     }],
   },

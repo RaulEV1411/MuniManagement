@@ -25,4 +25,6 @@ urlpatterns = [
     path('task/', include('Task.urls')),
     path('feedback/', include('Feedback.urls')),
     path('historial/', include('Historial.urls')),
+    path('notifications/', include('Notifications.urls')),
+    path('public/', include('Projects.public_urls')),
 ]

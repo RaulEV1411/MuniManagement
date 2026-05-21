@@ -31,11 +31,17 @@ export interface User {
 export interface Estado {
   estado_ID: string
   name: string
+  color?: string
+  orden?: number
+  is_system?: boolean
 }
 
 export interface Prioridad {
   prioridad_ID: string
   name: string
+  color?: string
+  orden?: number
+  is_system?: boolean
 }
 
 export interface Tipo {
@@ -111,4 +117,41 @@ export interface AuthTokens {
   role: string
   user_photo: string | null
   user_ID: string
+}
+
+export interface Notificacion {
+  notificacion_ID: string
+  usuario: string
+  tipo: string
+  titulo: string
+  mensaje: string
+  link: string
+  leida: boolean
+  created_at: string
+}
+
+export interface Delegacion {
+  delegacion_ID: string
+  proyecto: string
+  supervisor: string
+  otorgado_por: string
+  puede_editar: boolean
+  activa: boolean
+  creada_en: string
+  expira_en: string | null
+  supervisor_info?: User
+  otorgado_por_info?: User
+}
+
+export interface AjustePresupuesto {
+  ajuste_ID: string
+  proyecto: string | null
+  tarea: string | null
+  tipo: 'aumento' | 'rebajo'
+  monto: number
+  motivo: string
+  usuario: string
+  aprobado_por: string | null
+  fecha: string
+  usuario_info?: User
 }

@@ -14,7 +14,8 @@ from .models import Users
 class RolesSerializer(ModelSerializer):
     class Meta:
         model = Roles
-        fields = '__all__'
+        fields = ['role_ID', 'name', 'is_system', 'puede_delegar', 'puede_recibir_delegacion']
+        read_only_fields = ['is_system', 'puede_delegar', 'puede_recibir_delegacion']
 
 
 class UsersSerializer(ModelSerializer):
@@ -24,27 +25,27 @@ class UsersSerializer(ModelSerializer):
         characters = string.ascii_letters + string.digits + string.punctuation
         return ''.join(random.choice(characters) for _ in range(length))
     
-    def send_password_email(self, email, random_password):
-        subject = 'Tu nueva contraseña'
-        html_message = render_to_string('Users/email_card.html', {'username': email, 'password': random_password})
-        plain_message = strip_tags(html_message)  # Para el caso de que se necesite un texto plano
-        from_email = 'tu_email@gmail.com'
-        send_mail(subject, plain_message, from_email, [email], html_message=html_message)
-
     def create(self, validated_data):
-        # Generar una contraseña aleatoria
+        # Generar contraseña temporal
         random_password = self.generate_random_password()
-        
-        # Enviar la contraseña por correo electrónico al usuario
         email = validated_data.get('email')
-        self.send_password_email(email, random_password)
-        
-        # Hacer el hash de la contraseña antes de guardarla
+
+        # Hashear y crear el usuario primero (el correo va async, no bloquea creación)
         validated_data['password'] = make_password(random_password)
-        
-        # Crear el usuario
-        return super(UsersSerializer, self).create(validated_data)
+        instance = super(UsersSerializer, self).create(validated_data)
+
+        # Encolar envío de credenciales vía Celery; si el broker no está disponible,
+        # registrar pero no romper la creación.
+        try:
+            from Task.tasks import enviar_credenciales_async
+            enviar_credenciales_async.delay(email, random_password)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('No se pudo encolar enviar_credenciales_async')
+
+        return instance
     
     class Meta:
         model = Users
-        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo']
+        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado']
+        read_only_fields = ['user_ID']

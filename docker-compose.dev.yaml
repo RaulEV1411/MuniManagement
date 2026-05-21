@@ -16,6 +16,17 @@ services:
       retries: 20
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    container_name: muni_redis_dev
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   django:
     build:
       context: ./MuniServer
@@ -28,10 +39,61 @@ services:
       - .env
     environment:
       DB_HOST: mysql
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     command: ["bash", "/app/entrypoint.sh"]
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_worker:
+    build:
+      context: ./MuniServer
+    container_name: muni_celery_worker_dev
+    volumes:
+      - ./MuniServer:/app
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    command: ["bash", "/app/entrypoint-celery.sh", "worker"]
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      django:
+        condition: service_started
+
+  celery_beat:
+    build:
+      context: ./MuniServer
+    container_name: muni_celery_beat_dev
+    volumes:
+      - ./MuniServer:/app
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    command: ["bash", "/app/entrypoint-celery.sh", "beat"]
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      django:
+        condition: service_started
 
 volumes:
   muni_mysql_data:

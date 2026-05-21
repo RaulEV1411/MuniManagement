@@ -13,6 +13,14 @@ class Tareas(models.Model):
     descripcion = models.CharField(max_length=255, blank=True, default='')
     fecha_inicio = models.DateField()
     fecha_entrega = models.DateField()
+    costo = models.IntegerField(default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['fecha_entrega']),
+            models.Index(fields=['asignado_a', 'fecha_entrega']),
+            models.Index(fields=['proyecto_ID', 'estado_ID']),
+        ]
 
 
 class TaskImage(models.Model):

@@ -11,13 +11,18 @@ import ImageLightbox from '@/components/common/ImageLightbox'
 import { toast } from 'sonner'
 import {
   getProjectById, getTasksByProject, getFeedback,
-  createTask, updateTask, patchTask, deleteTask, updateProject,
+  createTask, updateTask, patchTask, deleteTask, updateProject, patchProject,
   deleteProject, createFeedback, deleteFeedback,
   uploadProjectImage, deleteProjectImage,
   uploadTaskImage, deleteTaskImage,
   getEstados, getPrioridades, getDepartments, getUsers,
   getHistorial,
 } from '@/lib/api'
+import StatusStepper from '@/components/projects/StatusStepper'
+import BudgetSection from '@/components/projects/BudgetSection'
+import DelegacionPanel from '@/components/projects/DelegacionPanel'
+
+const ROLES_DELEGADORES = new Set(['Alcalde', 'Vicealcalde', 'Jefe de Dirección', 'Jefe de Departamento'])
 import {
   type Project, type Task, type TaskImage, type Feedback,
   type Estado, type Prioridad, type Department, type User as UserModel,
@@ -1013,6 +1018,7 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { user } = useAppStore()
+  const canDelegate = !!user?.role && ROLES_DELEGADORES.has(user.role)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
   const [showTaskModal, setShowTaskModal]       = useState(false)
@@ -1373,7 +1379,7 @@ export default function ProjectDetailPage() {
                       </span>
                     </InfoRow>
                     {project.costo != null && (
-                      <InfoRow label="Costo estimado">
+                      <InfoRow label="Costo base">
                         <span className="flex items-center gap-1.5">
                           <DollarSign size={12} className="text-muted-foreground flex-shrink-0" />
                           ₡{project.costo.toLocaleString('es-CR')}
@@ -1381,6 +1387,32 @@ export default function ProjectDetailPage() {
                       </InfoRow>
                     )}
                   </div>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Estado</h3>
+                    <StatusStepper
+                      estados={estados}
+                      currentId={project.estado_ID?.estado_ID ?? ''}
+                      onChange={async (nuevoId, motivo) => {
+                        await patchProject(project.proyect_ID, { estado_ID: nuevoId, razon: motivo ?? '' })
+                        await qc.invalidateQueries({ queryKey: ['project', id] })
+                        await qc.invalidateQueries({ queryKey: ['projects'] })
+                        toast.success('Estado actualizado')
+                      }}
+                    />
+                  </div>
+
+                  <BudgetSection
+                    proyectoId={project.proyect_ID}
+                    costoBase={project.costo ?? 0}
+                  />
+
+                  <DelegacionPanel
+                    proyectoId={project.proyect_ID}
+                    canManage={canDelegate}
+                  />
                 </div>
               </div>
             )}

@@ -15,7 +15,7 @@ const TABS = ['Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
-interface GenericItem { id: string; name: string }
+interface GenericItem { id: string; name: string; isSystem?: boolean; color?: string }
 
 function ItemRow({
   item,
@@ -74,21 +74,37 @@ function ItemRow({
         </>
       ) : (
         <>
+          {item.color && (
+            <span
+              aria-hidden
+              className="h-3 w-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: item.color }}
+            />
+          )}
           <span className="flex-1 text-sm font-medium text-foreground">{item.name}</span>
-          <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => setEditing(true)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          {item.isSystem ? (
+            <span
+              title="Definido por el sistema. No se puede modificar."
+              className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
             >
-              <Pencil size={13} />
-            </button>
-            <button
-              onClick={() => onDelete(item.id, item.name)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
+              Sistema
+            </span>
+          ) : (
+            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => setEditing(true)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                onClick={() => onDelete(item.id, item.name)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          )}
         </>
       )}
     </motion.div>
@@ -103,6 +119,8 @@ function CrudSection({
   onSave,
   onDelete,
   onCreate,
+  readOnly,
+  readOnlyMessage,
 }: {
   items: GenericItem[]
   isLoading: boolean
@@ -110,6 +128,8 @@ function CrudSection({
   onSave: (id: string, name: string) => Promise<void>
   onDelete: (id: string, name: string) => Promise<void>
   onCreate: (name: string) => Promise<void>
+  readOnly?: boolean
+  readOnlyMessage?: string
 }) {
   const [newName, setNewName]   = useState('')
   const [creating, setCreating] = useState(false)
@@ -128,22 +148,27 @@ function CrudSection({
 
   return (
     <div className="space-y-4 max-w-lg">
-      {/* Formulario crear */}
-      <form onSubmit={handleCreate} className="flex gap-2">
-        <input
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          placeholder={`Nuevo ${emptyLabel.toLowerCase()}...`}
-          className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        <button
-          type="submit"
-          disabled={creating || !newName.trim()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98] flex-shrink-0 disabled:opacity-60"
-        >
-          <Plus size={13} /> Crear
-        </button>
-      </form>
+      {readOnly ? (
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          {readOnlyMessage ?? 'Estos registros son definidos por el sistema y no pueden modificarse.'}
+        </div>
+      ) : (
+        <form onSubmit={handleCreate} className="flex gap-2">
+          <input
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder={`Nuevo ${emptyLabel.toLowerCase()}...`}
+            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            type="submit"
+            disabled={creating || !newName.trim()}
+            className="flex items-center gap-1.5 px-4 py-2 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98] flex-shrink-0 disabled:opacity-60"
+          >
+            <Plus size={13} /> Crear
+          </button>
+        </form>
+      )}
 
       {/* Lista */}
       {isLoading ? (
@@ -178,7 +203,12 @@ export default function ConfigPage() {
   const { data: tipos = [],       isLoading: loadingTipos }       = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
 
   // ── Estados ──
-  const estadoItems: GenericItem[] = estados.map(e => ({ id: e.estado_ID, name: e.name }))
+  const estadoItems: GenericItem[] = estados.map(e => ({
+    id: e.estado_ID,
+    name: e.name,
+    color: e.color,
+    isSystem: e.is_system,
+  }))
   const onSaveEstado  = async (id: string, name: string) => {
     await updateEstado(id, { name })
     qc.invalidateQueries({ queryKey: ['estados'] })
@@ -197,7 +227,12 @@ export default function ConfigPage() {
   }
 
   // ── Prioridades ──
-  const prioridadItems: GenericItem[] = prioridades.map(p => ({ id: p.prioridad_ID, name: p.name }))
+  const prioridadItems: GenericItem[] = prioridades.map(p => ({
+    id: p.prioridad_ID,
+    name: p.name,
+    color: p.color,
+    isSystem: p.is_system,
+  }))
   const onSavePrioridad  = async (id: string, name: string) => {
     await updatePrioridad(id, { name })
     qc.invalidateQueries({ queryKey: ['prioridades'] })
@@ -286,6 +321,8 @@ export default function ConfigPage() {
                 onSave={onSaveEstado}
                 onDelete={onDeleteEstado}
                 onCreate={onCreateEstado}
+                readOnly={estadoItems.every(e => e.isSystem)}
+                readOnlyMessage="Los estados de proyectos y tareas son definidos por el sistema."
               />
             )}
             {tab === 'Prioridades' && (
@@ -296,6 +333,8 @@ export default function ConfigPage() {
                 onSave={onSavePrioridad}
                 onDelete={onDeletePrioridad}
                 onCreate={onCreatePrioridad}
+                readOnly={prioridadItems.every(p => p.isSystem)}
+                readOnlyMessage="Las prioridades son definidas por el sistema."
               />
             )}
             {tab === 'Tipos' && (

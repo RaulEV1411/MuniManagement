@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  MapPin, Sliders, GanttChartSquare, FileDown,
+  MapPin, Sliders, GanttChartSquare, FileDown, HelpCircle,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getProjects } from '@/lib/api'
@@ -38,7 +38,8 @@ const NAV = [
   {
     label: 'Sistema',
     items: [
-      { icon: Sliders, label: 'Configuración', path: '/config', match: (p: string) => p === '/config' },
+      { icon: Sliders,     label: 'Configuración', path: '/config', match: (p: string) => p === '/config' },
+      { icon: HelpCircle,  label: 'Ayuda',         path: '/ayuda',  match: (p: string) => p === '/ayuda' },
     ],
   },
 ]
@@ -245,9 +246,11 @@ export default function Sidebar() {
             {expanded && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-foreground truncate">
-                  {user ? `${user.first_name} ${user.last_name}` : 'Usuario'}
+                  {user?.first_name || user?.last_name
+                    ? `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim()
+                    : user?.email ?? 'Usuario'}
                 </p>
-                <p className="text-[10px] text-muted-foreground truncate">{user?.role ?? 'Ver perfil'}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{user?.role || 'Ver perfil'}</p>
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,22 +1,32 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-dev-only-no-usar-en-produccion')
-
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
+# Secret key: en DEBUG permite fallback; en producción exige env.
+_SECRET = os.environ.get('SECRET_KEY')
+if not _SECRET:
+    if DEBUG:
+        _SECRET = 'fallback-dev-only-no-usar-en-produccion'
+    else:
+        raise ImproperlyConfigured('SECRET_KEY es obligatorio cuando DEBUG=False.')
+SECRET_KEY = _SECRET
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 CORS_ALLOWED_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-] + [o for o in CORS_ALLOWED_ORIGINS_ENV.split(',') if o]
+CORS_ALLOWED_ORIGINS = [o for o in CORS_ALLOWED_ORIGINS_ENV.split(',') if o]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5174',
+    ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -31,10 +41,13 @@ INSTALLED_APPS = [
     'Task.apps.TaskConfig',
     'Feedback.apps.FeedbackConfig',
     'Historial.apps.HistorialConfig',
+    'Notifications.apps.NotificationsConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
-    'django_crontab',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_celery_beat',
+    'anymail',
 ]
 
 MIDDLEWARE = [
@@ -68,12 +81,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'MuniServer.wsgi.application'
 
+_DB_PASSWORD = os.environ.get('DB_PASSWORD')
+if not _DB_PASSWORD:
+    if DEBUG:
+        _DB_PASSWORD = 'root'
+    else:
+        raise ImproperlyConfigured('DB_PASSWORD es obligatorio cuando DEBUG=False.')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.environ.get('DB_NAME', 'MuniManagement'),
         'USER': os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'root'),
+        'PASSWORD': _DB_PASSWORD,
         'HOST': os.environ.get('DB_HOST', 'mysql'),
         'PORT': os.environ.get('DB_PORT', '3306'),
     }
@@ -86,15 +106,30 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER', '')
+# ── Email: prioriza Resend → SendGrid → SMTP genérico ──
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '').strip()
 
-LANGUAGE_CODE = 'en-us'
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+    ANYMAIL = {'RESEND_API_KEY': RESEND_API_KEY}
+    EMAIL_HOST_USER = 'resend'
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
+elif SENDGRID_API_KEY:
+    EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+    ANYMAIL = {'SENDGRID_API_KEY': SENDGRID_API_KEY}
+    EMAIL_HOST_USER = 'apikey'
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@muni.local')
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@muni.local')
+
+LANGUAGE_CODE = 'es-cr'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
@@ -108,12 +143,23 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
+    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 200,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '120/min',
+        'user': '600/min',
+        'public': '60/min',
+    },
 }
 
 SIMPLE_JWT = {
@@ -121,13 +167,40 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_ID',
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
 }
+
+# Cookies seguras solo en producción
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 AUTH_USER_MODEL = 'Users.Users'
 
-CRONJOBS = [
-    ('0 18 * * *', 'Task.cron.send_due_date_reminder')
-]
+# ── Celery + Redis ──────────────────────────────────────────
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/Costa_Rica'
+CELERY_ENABLE_UTC = True
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_TASK_ALWAYS_EAGER = os.environ.get('CELERY_TASK_ALWAYS_EAGER', 'False') == 'True'
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'avisos-vencimiento-diarios': {
+        'task': 'Task.tasks.enviar_alertas_diarias',
+        'schedule': crontab(hour=8, minute=0),  # 8 AM Costa Rica
+    },
+}
 
 import cloudinary
 cloudinary.config(

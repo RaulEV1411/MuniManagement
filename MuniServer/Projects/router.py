@@ -3,6 +3,7 @@ from .views import (
     EstadoViewSet, PrioridadViewSet, TiposViewSet,
     ProyectosWriteViewSet, ProyectosReadViewSet,
     ProyectosTiposViewSet, ProjectImageViewSet,
+    DelegacionSupervisionViewSet, AjustePresupuestoViewSet,
 )
 
 router_projects = DefaultRouter()
@@ -13,3 +14,5 @@ router_projects.register(r'proyectosWrite', ProyectosWriteViewSet, basename='pro
 router_projects.register(r'proyectosRead', ProyectosReadViewSet, basename='proyectosRead')
 router_projects.register(r'proyectos-tipos', ProyectosTiposViewSet, basename='proyectos-tipos')
 router_projects.register(r'project-images', ProjectImageViewSet, basename='project-images')
+router_projects.register(r'delegaciones', DelegacionSupervisionViewSet, basename='delegaciones')
+router_projects.register(r'ajustes-presupuesto', AjustePresupuestoViewSet, basename='ajustes-presupuesto')

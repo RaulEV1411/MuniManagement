@@ -6,6 +6,13 @@ from Departments.models import Departamentos
 class Roles(models.Model):
     role_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
+    is_system = models.BooleanField(default=False)
+    puede_delegar = models.BooleanField(default=False)
+    puede_recibir_delegacion = models.BooleanField(default=False)
+    puede_ver_todo = models.BooleanField(
+        default=False,
+        help_text='Si es True, ve todos los proyectos sin importar si es dueño/jefe/delegado.',
+    )
 
 class Users(AbstractBaseUser):
     user_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -20,6 +27,7 @@ class Users(AbstractBaseUser):
     birthday = models.DateField()
     puesto = models.CharField(max_length=25)
     user_photo = models.TextField(null=True)
+    onboarding_completado = models.BooleanField(default=False)
 
     objects = UserManager()
 
