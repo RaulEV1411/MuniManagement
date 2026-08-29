@@ -161,3 +161,7 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
+# Secretos: nunca a git
+.env
+.env.local
+.env.*.local
