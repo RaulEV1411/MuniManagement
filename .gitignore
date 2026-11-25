@@ -165,3 +165,12 @@ GitHub.sublime-settings
 .env
 .env.local
 .env.*.local
+
+# Entornos, credenciales y respaldos
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+dumps/
+*.sql
