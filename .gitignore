@@ -82,6 +82,7 @@ downloads/
 eggs/ 
 .eggs/ 
 lib/ 
+!MuniClient-v2/src/lib/
 lib64/ 
 parts/ 
 sdist/ 
