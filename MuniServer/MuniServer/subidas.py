@@ -34,6 +34,35 @@ def _formato_de(archivo):
     return _formato(cabecera)
 
 
+MAX_BYTES_DOCUMENTO = 10 * 1024 * 1024
+FORMATOS_DOCUMENTO = {'pdf', 'jpg', 'png', 'webp'}
+
+
+def _formato_documento(archivo):
+    cabecera = archivo.read(16)
+    archivo.seek(0)
+    return 'pdf' if cabecera.startswith(b'%PDF-') else _formato(cabecera)
+
+
+def error_de_documento(archivo):
+    """Actas y documentos: PDF o imagen, hasta 10 MB (el tipo se mira en los primeros bytes)."""
+    if archivo.size > MAX_BYTES_DOCUMENTO:
+        return 'El documento pesa más de 10 MB.'
+    if _formato_documento(archivo) not in FORMATOS_DOCUMENTO:
+        return 'Solo se aceptan documentos PDF o imágenes JPG, PNG o WebP.'
+    return None
+
+
+def subir_documento(archivo, carpeta):
+    """Como subir_imagen, pero admite PDF. Devuelve {'secure_url', 'public_id'}."""
+    formato = _formato_documento(archivo)
+    if _es_local():
+        ruta = default_storage.save(f'{carpeta}/{uuid.uuid4().hex}.{formato}', archivo)
+        return {'secure_url': f'{settings.MEDIA_URL}{ruta}', 'public_id': ruta}
+    import cloudinary.uploader
+    return cloudinary.uploader.upload(archivo, folder=carpeta, resource_type='raw' if formato == 'pdf' else 'image')
+
+
 def _es_local():
     return getattr(settings, 'ALMACENAMIENTO_FOTOS', 'local') != 'cloudinary'
 

@@ -6,12 +6,21 @@ from Departments.models import Departamentos
 from Users.models import Users
 
 
+# Cada estado cae en una de tres categorías: las pestañas de Proyectos y Reportes, y la regla de
+# cierre (a un estado finalizado se llega solo cerrando el proyecto, y de ahí se sale reabriéndolo).
+ACTIVO = 'activo'
+PAUSADO = 'pausado'
+FINALIZADO = 'finalizado'
+CATEGORIAS_DE_ESTADO = [(ACTIVO, 'Activo'), (PAUSADO, 'Pausado'), (FINALIZADO, 'Finalizado')]
+
+
 class Estado(models.Model):
     estado_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
     color = models.CharField(max_length=7, default='#64748b')
     orden = models.IntegerField(default=0)
     is_system = models.BooleanField(default=False)
+    categoria = models.CharField(max_length=12, choices=CATEGORIAS_DE_ESTADO, default=ACTIVO)
 
     class Meta:
         ordering = ['orden', 'name']
@@ -46,6 +55,10 @@ class Proyectos(models.Model):
     costo = models.IntegerField()
     es_publico = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
+    # Los proyectos no se borran: el Administrador archiva los cerrados y salen de las listas.
+    archivado = models.BooleanField(default=False)
+    archivado_en = models.DateTimeField(null=True, blank=True)
+    archivado_por = models.ForeignKey(Users, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
 
     class Meta:
         ordering = ['-created_at']
@@ -139,3 +152,43 @@ class AjustePresupuesto(models.Model):
                 name='ajuste_requiere_proyecto_o_tarea',
             ),
         ]
+
+
+class CierreProyecto(models.Model):
+    """El cierre de un proyecto: cómo terminó, cuándo, cuánto costó y qué se aprendió.
+    Si se reabre, el cierre queda con quién y por qué; un nuevo cierre agrega otro."""
+
+    cierre_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE, related_name='cierres')
+    estado = models.ForeignKey(Estado, on_delete=models.PROTECT, related_name='+')
+    fecha_fin_real = models.DateField()
+    costo_real = models.PositiveIntegerField()
+    motivo = models.TextField()
+    lecciones = models.TextField(blank=True, default='')
+    cerrado_por = models.ForeignKey(Users, on_delete=models.SET_NULL, null=True, related_name='+')
+    cerrado_en = models.DateTimeField(default=timezone.now)
+    reabierto_en = models.DateTimeField(null=True, blank=True)
+    reabierto_por = models.ForeignKey(Users, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    motivo_reapertura = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-cerrado_en']
+
+
+class DocumentoProyecto(models.Model):
+    """Documentos del proyecto (PDF o imagen). El acta de cierre va unida a su cierre."""
+
+    TIPOS = [('acta', 'Acta de cierre'), ('otro', 'Otro')]
+
+    documento_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE, related_name='documentos')
+    cierre = models.ForeignKey(CierreProyecto, on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos')
+    tipo = models.CharField(max_length=10, choices=TIPOS, default='otro')
+    nombre = models.CharField(max_length=120)
+    url = models.TextField()
+    public_id = models.CharField(max_length=255)
+    subido_por = models.ForeignKey(Users, on_delete=models.SET_NULL, null=True, related_name='+')
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-creado_en']

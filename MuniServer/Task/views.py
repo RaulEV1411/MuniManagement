@@ -10,6 +10,11 @@ from Historial.models import HistorialCambios
 from Projects import authz
 from Notifications.servicios import nombre, notificar
 
+def _exigir_abierto(proyecto):
+    if authz.esta_cerrado(proyecto):
+        raise PermissionDenied('El proyecto está cerrado: reábralo para cambiar sus tareas.')
+
+
 # Quien tiene la tarea asignada pero no puede editar el proyecto solo puede cambiarle el estado.
 CAMPOS_DEL_ASIGNADO = {'estado_ID'}
 
@@ -37,6 +42,7 @@ class TareasViewSet(ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        _exigir_abierto(serializer.validated_data['proyecto_ID'])
         if not authz.puede(self.request.user, 'tareas.gestionar', serializer.validated_data['proyecto_ID']):
             raise PermissionDenied('No tiene permisos para crear tareas en este proyecto.')
         tarea = serializer.save()
@@ -47,6 +53,7 @@ class TareasViewSet(ModelViewSet):
         self._avisar_asignacion(tarea)
 
     def perform_destroy(self, instance):
+        _exigir_abierto(instance.proyecto_ID)
         if not authz.puede(self.request.user, 'tareas.gestionar', instance.proyecto_ID):
             raise PermissionDenied('No tiene permisos para borrar tareas de este proyecto.')
         datos = {'name': instance.name, 'tareas_ID': str(instance.tareas_ID)}
@@ -72,6 +79,7 @@ class TareasViewSet(ModelViewSet):
         nuevo_proyecto = serializer.validated_data.get('proyecto_ID', prev.proyecto_ID)
         if nuevo_proyecto.pk != prev.proyecto_ID_id:
             raise ValidationError({'proyecto_ID': 'Una tarea no se puede mover a otro proyecto.'})
+        _exigir_abierto(prev.proyecto_ID)
         if not authz.puede(user, 'tareas.gestionar', prev.proyecto_ID):
             cambios = {
                 campo for campo, valor in serializer.validated_data.items()

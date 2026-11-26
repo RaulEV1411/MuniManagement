@@ -78,17 +78,20 @@ class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
         self.client.force_authenticate(None)
         self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').data['avance'], 100)
 
-        # 7. Cancelar exige motivo; queda en el historial y el proyecto sale del portal.
+        # 7. Cancelar es cerrar el proyecto: no con un PATCH, sí con el cierre y su motivo; queda en
+        #    el historial y el proyecto sale del portal.
         jefe = self.como(self.jefe_a)
-        self.assertEqual(jefe.patch(f'{API}/projects/proyectosWrite/{pid}/', {'estado_ID': str(cancelado.pk)}, format='json').status_code, 400)
-        r = jefe.patch(f'{API}/projects/proyectosWrite/{pid}/', {'estado_ID': str(cancelado.pk), 'razon': 'Sin terreno'}, format='json')
-        self.assertEqual(r.status_code, 200, r.data)
-        self.assertTrue(HistorialCambios.objects.filter(proyecto_ID=pid, tipo='cancelacion', razon='Sin terreno').exists())
+        self.assertEqual(jefe.patch(f'{API}/projects/proyectosWrite/{pid}/', {'estado_ID': str(cancelado.pk), 'razon': 'x'}, format='json').status_code, 400)
+        cierre = {'estado_ID': str(cancelado.pk), 'fecha_fin_real': timezone.localdate().isoformat(), 'costo_real': 0}
+        self.assertEqual(jefe.post(f'{API}/projects/proyectosWrite/{pid}/cerrar/', cierre, format='json').status_code, 400)
+        r = jefe.post(f'{API}/projects/proyectosWrite/{pid}/cerrar/', {**cierre, 'motivo': 'Sin terreno'}, format='json')
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertTrue(HistorialCambios.objects.filter(proyecto_ID=pid, tipo='cierre', razon='Sin terreno').exists())
         self.client.force_authenticate(None)
         self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').status_code, 404)
 
         tipos = set(HistorialCambios.objects.filter(proyecto_ID=pid).values_list('tipo', flat=True))
-        self.assertTrue({'creacion', 'cambio_estado_tarea', 'solicitud_presupuesto', 'cancelacion'} <= tipos, tipos)
+        self.assertTrue({'creacion', 'cambio_estado_tarea', 'solicitud_presupuesto', 'cierre'} <= tipos, tipos)
 
 
 class EquipoDePrincipioAFinTests(Escenario, APITestCase):

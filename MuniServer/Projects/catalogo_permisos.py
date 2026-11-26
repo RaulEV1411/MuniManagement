@@ -37,7 +37,7 @@ PERMISOS = {
     'proyectos.ver': ('Ver proyectos', True, True),
     'proyectos.crear': ('Crear proyectos', True, False),
     'proyectos.editar': ('Editar proyectos', True, True),
-    'proyectos.eliminar': ('Eliminar proyectos', True, False),
+    'proyectos.reabrir': ('Reabrir proyectos cerrados', True, False),
     'tareas.gestionar': ('Crear, editar y borrar tareas', True, True),
     'fotos.subir': ('Subir y borrar fotos', True, True),
     'presupuesto.ajustar': ('Registrar ajustes de presupuesto', True, True),
@@ -72,14 +72,14 @@ _ALCALDIA = {c: TODOS for c in PERMISOS if c not in ('catalogos.gestionar', 'con
 def _jefatura(alcance):
     return {
         'proyectos.ver': alcance, 'proyectos.crear': alcance, 'proyectos.editar': alcance,
-        'proyectos.eliminar': alcance, 'tareas.gestionar': alcance, 'fotos.subir': alcance,
+        'proyectos.reabrir': alcance, 'tareas.gestionar': alcance, 'fotos.subir': alcance,
         'presupuesto.ajustar': alcance, 'equipo.gestionar': alcance, 'equipo.integrar': TODOS,
         'reportes.exportar': alcance,
     }
 
 
 _BASE = {
-    'proyectos.ver': PROPIO, 'proyectos.editar': PROPIO, 'proyectos.eliminar': PROPIO,
+    'proyectos.ver': PROPIO, 'proyectos.editar': PROPIO,
     'tareas.gestionar': PROPIO, 'fotos.subir': PROPIO, 'presupuesto.ajustar': PROPIO,
     'equipo.integrar': TODOS, 'reportes.exportar': PROPIO,
 }

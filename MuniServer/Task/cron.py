@@ -13,7 +13,6 @@ from Notifications.models import Notificacion
 
 DIAS_AVISO = 4
 # Lo terminado o cancelado ya no necesita avisos.
-ESTADOS_CERRADOS = ['Completado', 'Cancelado']
 MAX_NOMBRE = 80
 
 
@@ -139,7 +138,7 @@ def send_due_date_warnings():
     proyectos = list(
         Proyectos.objects
         .filter(fecha_entrega__lte=limite)
-        .exclude(estado_ID__name__in=ESTADOS_CERRADOS)
+        .exclude(estado_ID__categoria='finalizado').filter(archivado=False)
         .select_related('user_ID', 'departamento_ID__direccion__jefe', 'departamento_ID__jefe')
     )
     alcaldia = _alcaldia_cache()
@@ -160,8 +159,8 @@ def send_due_date_warnings():
     tareas = list(
         Tareas.objects
         .filter(fecha_entrega__lte=limite)
-        .exclude(estado_ID__name__in=ESTADOS_CERRADOS)
-        .exclude(proyecto_ID__estado_ID__name__in=ESTADOS_CERRADOS)
+        .exclude(estado_ID__categoria='finalizado')
+        .exclude(proyecto_ID__estado_ID__categoria='finalizado')
         .select_related(
             'proyecto_ID__user_ID',
             'proyecto_ID__departamento_ID__direccion__jefe',
