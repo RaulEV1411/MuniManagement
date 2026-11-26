@@ -40,6 +40,7 @@ export default function PublicProjectsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre, descripción o departamento…"
+            aria-label="Buscar proyectos"
             className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white text-base focus:outline-none focus:ring-2 focus:ring-ocean-500"
           />
         </div>

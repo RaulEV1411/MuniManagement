@@ -129,13 +129,13 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
           >
             <header className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Delegar supervisión</h3>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button aria-label="Cerrar" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </header>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Supervisor</label>
-            <select
+            <label htmlFor="delegacionpanel-supervisor" className="block text-sm font-medium text-foreground mb-1">Supervisor</label>
+            <select id="delegacionpanel-supervisor"
               value={supervisor}
               onChange={e => setSupervisor(e.target.value)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -158,8 +158,8 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
               Puede editar (no solo ver)
             </label>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Expira (opcional)</label>
-            <input
+            <label htmlFor="delegacionpanel-expira-opcional" className="block text-sm font-medium text-foreground mb-1">Expira (opcional)</label>
+            <input id="delegacionpanel-expira-opcional"
               type="date"
               value={expira}
               onChange={e => setExpira(e.target.value)}

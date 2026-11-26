@@ -53,12 +53,12 @@ const slideVariants = {
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-muted-foreground">
+    <label className="block space-y-1.5">
+      <span className="block text-xs font-semibold text-muted-foreground">
         {label} {required && <span className="text-destructive">*</span>}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   )
 }
 

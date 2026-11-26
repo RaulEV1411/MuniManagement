@@ -53,14 +53,14 @@ function CreateModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Nuevo departamento</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre <span className="text-destructive">*</span></label>
-            <input
+            <label htmlFor="departments-nombre" className="text-xs font-semibold text-muted-foreground">Nombre <span className="text-destructive">*</span></label>
+            <input id="departments-nombre"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Ej: Departamento de Proyectos"
@@ -69,8 +69,8 @@ function CreateModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Dirección *</label>
-            <select value={dirId} onChange={e => setDirId(e.target.value)} className={inputCls}>
+            <label htmlFor="departments-direccion" className="text-xs font-semibold text-muted-foreground">Dirección *</label>
+            <select id="departments-direccion" value={dirId} onChange={e => setDirId(e.target.value)} className={inputCls}>
               <option value="">Seleccionar dirección...</option>
               {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
             </select>
@@ -162,7 +162,7 @@ function DepartmentRow({
     >
       <td className="px-5 py-3.5 min-w-0">
         {editing ? (
-          <input
+          <input aria-label="Nombre del departamento"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Escape') handleCancel() }}
@@ -175,7 +175,7 @@ function DepartmentRow({
       </td>
       <td className="px-5 py-3.5 min-w-0">
         {editing ? (
-          <select value={dirId} onChange={e => setDirId(e.target.value)} className={cellInput}>
+          <select aria-label="Dirección" value={dirId} onChange={e => setDirId(e.target.value)} className={cellInput}>
             <option value="">Seleccionar dirección...</option>
             {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
           </select>
@@ -197,24 +197,24 @@ function DepartmentRow({
         <div className="flex items-center justify-end gap-1.5">
           {editing ? (
             <>
-              <button onClick={handleSave} disabled={saving}
+              <button aria-label="Guardar" onClick={handleSave} disabled={saving}
                 className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors disabled:opacity-60">
                 <Check size={13} />
               </button>
-              <button onClick={handleCancel}
+              <button aria-label="Cancelar" onClick={handleCancel}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent transition-colors">
                 <X size={13} />
               </button>
             </>
           ) : (
             <>
-              <button
+              <button aria-label={`Editar ${dept.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 <Pencil size={13} />
               </button>
-              <button
+              <button aria-label={`Eliminar ${dept.name}`}
                 onClick={handleDelete}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >

@@ -114,50 +114,50 @@ function EditModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">Editar usuario</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Nombre</label>
-              <input value={form.first_name} onChange={e => set('first_name', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-nombre" className="text-xs font-semibold text-muted-foreground">Nombre</label>
+              <input id="userprofile-nombre" value={form.first_name} onChange={e => set('first_name', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Apellido</label>
-              <input value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-apellido" className="text-xs font-semibold text-muted-foreground">Apellido</label>
+              <input id="userprofile-apellido" value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Cédula</label>
-            <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            <label htmlFor="userprofile-cedula" className="text-xs font-semibold text-muted-foreground">Cédula</label>
+            <input id="userprofile-cedula" type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            <label htmlFor="userprofile-correo-electronico" className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
+            <input id="userprofile-correo-electronico" type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Teléfono</label>
-              <input type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-telefono" className="text-xs font-semibold text-muted-foreground">Teléfono</label>
+              <input id="userprofile-telefono" type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Puesto</label>
-              <input value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-puesto" className="text-xs font-semibold text-muted-foreground">Puesto</label>
+              <input id="userprofile-puesto" value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Rol</label>
-              <select value={form.role} onChange={e => set('role', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
+              <label htmlFor="userprofile-rol" className="text-xs font-semibold text-muted-foreground">Rol</label>
+              <select id="userprofile-rol" value={form.role} onChange={e => set('role', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin rol</option>
                 {roles.map(r => <option key={r.role_ID} value={r.role_ID}>{r.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
-              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
+              <label htmlFor="userprofile-departamento" className="text-xs font-semibold text-muted-foreground">Departamento</label>
+              <select id="userprofile-departamento" value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin departamento</option>
                 {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
               </select>
@@ -212,22 +212,22 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Cambiar contraseña</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Contraseña actual</label>
-            <input type="password" value={form.current} onChange={e => set('current', e.target.value)} className={inputCls} autoFocus />
+            <label htmlFor="userprofile-contrasena-actual" className="text-xs font-semibold text-muted-foreground">Contraseña actual</label>
+            <input id="userprofile-contrasena-actual" type="password" value={form.current} onChange={e => set('current', e.target.value)} className={inputCls} autoFocus />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nueva contraseña</label>
-            <input type="password" value={form.next} onChange={e => set('next', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-nueva-contrasena" className="text-xs font-semibold text-muted-foreground">Nueva contraseña</label>
+            <input id="userprofile-nueva-contrasena" type="password" value={form.next} onChange={e => set('next', e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Confirmar nueva contraseña</label>
-            <input type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-confirmar-nueva-contrasena" className="text-xs font-semibold text-muted-foreground">Confirmar nueva contraseña</label>
+            <input id="userprofile-confirmar-nueva-contrasena" type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} className={inputCls} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
@@ -347,7 +347,7 @@ export default function UserProfilePage() {
       {/* ── Header ── */}
       <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-center gap-3 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex-shrink-0 active:scale-[0.98]"
           >

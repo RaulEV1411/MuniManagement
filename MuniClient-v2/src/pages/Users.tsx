@@ -187,10 +187,11 @@ export default function UsersPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPagina(1) }}
             placeholder="Buscar usuarios..."
+            aria-label="Buscar usuarios"
             className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button aria-label="Borrar la búsqueda" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               <X size={12} />
             </button>
           )}
@@ -198,6 +199,7 @@ export default function UsersPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por rol"
             value={roleFilter}
             onChange={e => { setRole(e.target.value); setPagina(1) }}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -210,6 +212,7 @@ export default function UsersPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por departamento"
             value={deptFilter}
             onChange={e => { setDept(e.target.value); setPagina(1) }}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -236,6 +239,8 @@ export default function UsersPage() {
           {(['list', 'grid'] as const).map(v => (
             <button
               key={v}
+              aria-label={v === 'list' ? 'Vista de lista' : 'Vista de cuadrícula'}
+              aria-pressed={view === v}
               onClick={() => setView(v)}
               className={cn('px-2.5 py-1.5 transition-colors', v === 'grid' ? 'border-l border-border' : '',
                 view === v ? 'bg-ocean-500 text-white' : 'text-muted-foreground hover:bg-accent')}
@@ -245,7 +250,7 @@ export default function UsersPage() {
           ))}
         </div>
 
-        <button onClick={() => refetch()}
+        <button aria-label="Actualizar" onClick={() => refetch()}
           className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
           <RefreshCw size={13} />
         </button>

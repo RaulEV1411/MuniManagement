@@ -92,7 +92,7 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
           <LogoInstitucion tamano={56} />
           {esAdmin && (
             <div className="flex gap-2">
-              <input ref={archivo} id="logo" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={cambiarLogo} />
+              <input ref={archivo} id="logo" type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={cambiarLogo} />
               <button type="button" onClick={() => archivo.current?.click()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border hover:bg-accent">
                 <ImageUp size={13} aria-hidden="true" /> {marca.logo ? 'Cambiar logo' : 'Subir logo'}
               </button>

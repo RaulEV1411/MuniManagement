@@ -21,15 +21,15 @@ export default function RazonModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <div className="p-6 space-y-4">
           {description && <p className="text-sm text-muted-foreground">{description}</p>}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Motivo *</label>
-            <textarea
+            <label htmlFor="razonmodal-motivo" className="text-xs font-semibold text-muted-foreground">Motivo *</label>
+            <textarea id="razonmodal-motivo"
               value={razon}
               onChange={e => setRazon(e.target.value)}
               rows={3}

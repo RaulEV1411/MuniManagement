@@ -40,7 +40,7 @@ export default function ImageLightbox({
       </div>
 
       {/* Cerrar */}
-      <button
+      <button aria-label="Cerrar"
         onClick={onClose}
         className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
       >
@@ -49,7 +49,7 @@ export default function ImageLightbox({
 
       {/* Prev */}
       {idx > 0 && (
-        <button
+        <button aria-label="Foto anterior"
           onClick={e => { e.stopPropagation(); setIdx(i => i - 1) }}
           className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
         >
@@ -75,7 +75,7 @@ export default function ImageLightbox({
 
       {/* Next */}
       {idx < images.length - 1 && (
-        <button
+        <button aria-label="Foto siguiente"
           onClick={e => { e.stopPropagation(); setIdx(i => i + 1) }}
           className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
         >
@@ -90,7 +90,7 @@ export default function ImageLightbox({
           onClick={e => e.stopPropagation()}
         >
           {images.map((img, i) => (
-            <button
+            <button aria-label={`Ver la foto ${i + 1}`}
               key={img.imagen_ID}
               onClick={() => setIdx(i)}
               className={cn(

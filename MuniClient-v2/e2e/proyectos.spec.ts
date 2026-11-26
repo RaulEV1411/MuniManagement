@@ -54,7 +54,7 @@ test('los jefes se ven y se editan en Departamentos', async ({ page }) => {
 })
 
 test('la notificación se puede marcar como leída', async ({ page }) => {
-  await page.getByRole('button', { name: /notificaciones/i }).first().click()
+  await page.getByRole('button', { name: /notificaci(ón|ones)/i }).first().click()
   const marcar = page.getByRole('button', { name: 'Marcar como leída' }).first()
   await expect(marcar).toBeVisible()
   const patch = page.waitForResponse(r => r.url().includes('/notificaciones/') && r.request().method() === 'PATCH')

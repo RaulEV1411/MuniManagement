@@ -97,6 +97,7 @@ export default function TimelinePage() {
         </div>
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por departamento"
             value={deptFilter}
             onChange={e => setDeptFilter(e.target.value)}
             className="pl-2.5 pr-7 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"

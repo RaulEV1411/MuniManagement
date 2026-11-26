@@ -97,7 +97,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               <h3 className="text-lg font-semibold text-foreground">
                 Cambiar a "{confirmando.name}"
               </h3>
-              <button onClick={() => setConfirmando(null)} className="text-muted-foreground hover:text-foreground">
+              <button aria-label="Cerrar" onClick={() => setConfirmando(null)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -105,6 +105,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               Esta acción queda registrada en el historial. Indique el motivo.
             </p>
             <textarea
+              aria-label="Motivo del cambio"
               autoFocus
               value={motivo}
               onChange={e => setMotivo(e.target.value)}

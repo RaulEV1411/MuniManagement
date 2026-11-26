@@ -76,7 +76,7 @@ export default function UserCreatePage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
-        <button
+        <button aria-label="Volver"
           onClick={() => navigate('/users')}
           className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
         >
@@ -104,30 +104,30 @@ export default function UserCreatePage() {
             <h2 className="text-sm font-bold text-foreground">Información personal</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-                <input value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="Juan" className={inputCls} />
+                <label htmlFor="usercreate-nombre" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+                <input id="usercreate-nombre" value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="Juan" className={inputCls} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Apellido *</label>
-                <input value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Pérez" className={inputCls} />
+                <label htmlFor="usercreate-apellido" className="text-xs font-semibold text-muted-foreground">Apellido *</label>
+                <input id="usercreate-apellido" value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Pérez" className={inputCls} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Cédula *</label>
-              <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} placeholder="112345678" className={inputCls} />
+              <label htmlFor="usercreate-cedula" className="text-xs font-semibold text-muted-foreground">Cédula *</label>
+              <input id="usercreate-cedula" type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} placeholder="112345678" className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Correo electrónico *</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="usuario@muni.cr" className={inputCls} />
+              <label htmlFor="usercreate-correo-electronico" className="text-xs font-semibold text-muted-foreground">Correo electrónico *</label>
+              <input id="usercreate-correo-electronico" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="usuario@muni.cr" className={inputCls} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Teléfono *</label>
-                <input type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="88887777" className={inputCls} />
+                <label htmlFor="usercreate-telefono" className="text-xs font-semibold text-muted-foreground">Teléfono *</label>
+                <input id="usercreate-telefono" type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="88887777" className={inputCls} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Puesto *</label>
-                <input value={form.puesto} onChange={e => set('puesto', e.target.value)} placeholder="Analista" className={inputCls} />
+                <label htmlFor="usercreate-puesto" className="text-xs font-semibold text-muted-foreground">Puesto *</label>
+                <input id="usercreate-puesto" value={form.puesto} onChange={e => set('puesto', e.target.value)} placeholder="Analista" className={inputCls} />
               </div>
             </div>
           </div>
@@ -136,15 +136,15 @@ export default function UserCreatePage() {
             <h2 className="text-sm font-bold text-foreground">Rol y departamento</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Rol *</label>
-                <select value={form.role} onChange={e => set('role', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
+                <label htmlFor="usercreate-rol" className="text-xs font-semibold text-muted-foreground">Rol *</label>
+                <select id="usercreate-rol" value={form.role} onChange={e => set('role', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
                   <option value="">Seleccionar rol...</option>
                   {roles.map(r => <option key={r.role_ID} value={r.role_ID}>{r.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Departamento *</label>
-                <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
+                <label htmlFor="usercreate-departamento" className="text-xs font-semibold text-muted-foreground">Departamento *</label>
+                <select id="usercreate-departamento" value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
                   <option value="">Seleccionar departamento...</option>
                   {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
                 </select>

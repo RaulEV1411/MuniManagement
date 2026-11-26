@@ -167,18 +167,19 @@ export default function ReportsPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar proyecto..."
+              aria-label="Buscar proyecto"
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="relative">
-            <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className={selectCls}>
+            <select aria-label="Filtrar por departamento" value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className={selectCls}>
               <option value="">Todos los departamentos</option>
               {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
             </select>
             <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           </div>
           <div className="relative">
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
+            <select aria-label="Filtrar por estado" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
               <option value="">Todos los estados</option>
               {[...estados.map(e => e.name), 'Vencido'].map(s => (
                 <option key={s} value={s}>{s}</option>

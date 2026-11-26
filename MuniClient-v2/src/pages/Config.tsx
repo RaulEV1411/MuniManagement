@@ -59,18 +59,18 @@ function ItemRow({
     >
       {editing ? (
         <>
-          <input
+          <input aria-label="Nombre"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel() }}
             autoFocus
             className="flex-1 px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <button onClick={handleSave} disabled={saving}
+          <button aria-label="Guardar" onClick={handleSave} disabled={saving}
             className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors flex-shrink-0 disabled:opacity-60">
             <Check size={13} />
           </button>
-          <button onClick={handleCancel}
+          <button aria-label="Cancelar" onClick={handleCancel}
             className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent transition-colors flex-shrink-0">
             <X size={13} />
           </button>
@@ -94,13 +94,13 @@ function ItemRow({
             </span>
           ) : (
             <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
+              <button aria-label={`Editar ${item.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 <Pencil size={13} />
               </button>
-              <button
+              <button aria-label={`Eliminar ${item.name}`}
                 onClick={() => onDelete(item.id, item.name)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
@@ -159,7 +159,7 @@ function CrudSection({
         </div>
       ) : (
         <form onSubmit={handleCreate} className="flex gap-2">
-          <input
+          <input aria-label={textoNuevo}
             value={newName}
             onChange={e => setNewName(e.target.value)}
             placeholder={textoNuevo}

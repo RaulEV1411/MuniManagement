@@ -129,13 +129,14 @@ export default function GlobalSearch() {
                 onChange={e => { setQuery(e.target.value); setCursor(0) }}
                 onKeyDown={handleKeyDown}
                 placeholder="Buscar proyectos, usuarios..."
+                aria-label="Buscar proyectos y usuarios"
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <kbd className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border hidden sm:block">
                   ESC
                 </kbd>
-                <button
+                <button aria-label="Borrar la búsqueda"
                   onClick={() => setOpen(false)}
                   className="p-1 rounded-lg hover:bg-accent text-muted-foreground transition-colors"
                 >

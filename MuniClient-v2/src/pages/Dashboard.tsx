@@ -168,13 +168,13 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
         {/* Prev / Next */}
         {images.length > 1 && (
           <>
-            <button
+            <button aria-label="Foto anterior"
               onClick={prev}
               className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronLeft size={12} />
             </button>
-            <button
+            <button aria-label="Foto siguiente"
               onClick={next}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 transition-opacity hover:bg-black/70"
             >
@@ -657,21 +657,23 @@ export default function DashboardPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar proyectos..."
+            aria-label="Buscar proyectos"
             className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button aria-label="Borrar la búsqueda" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               <X size={12} />
             </button>
           )}
         </div>
 
         {[
-          { value: status,   onChange: setStatus,   opts: ['Todos', ...estados.map(e => e.name), 'Vencido'] },
-          { value: priority, onChange: setPriority, opts: ['Todas', ...prioridades.map(p => p.name)] },
+          { value: status,   onChange: setStatus,   etiqueta: 'Filtrar por estado',    opts: ['Todos', ...estados.map(e => e.name), 'Vencido'] },
+          { value: priority, onChange: setPriority, etiqueta: 'Filtrar por prioridad', opts: ['Todas', ...prioridades.map(p => p.name)] },
         ].map((f, i) => (
           <div key={i} className="relative flex-shrink-0">
             <select
+              aria-label={f.etiqueta}
               value={f.value}
               onChange={e => f.onChange(e.target.value)}
               className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -684,6 +686,7 @@ export default function DashboardPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Ordenar"
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -727,7 +730,7 @@ export default function DashboardPage() {
             { v: 'grid',   icon: <LayoutGrid size={13} /> },
             { v: 'kanban', icon: <Columns3 size={13} /> },
           ] as const).map(({ v, icon }, i) => (
-            <button
+            <button aria-label={v === 'list' ? 'Vista de lista' : v === 'grid' ? 'Vista de cuadrícula' : 'Vista de tablero'} aria-pressed={view === v}
               key={v}
               onClick={() => setView(v)}
               className={cn('px-2.5 py-1.5 transition-colors', i > 0 ? 'border-l border-border' : '',
@@ -738,7 +741,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <button onClick={() => refetch()} className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
+        <button aria-label="Actualizar" onClick={() => refetch()} className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
           <RefreshCw size={13} />
         </button>
 
