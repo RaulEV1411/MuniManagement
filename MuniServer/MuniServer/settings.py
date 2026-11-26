@@ -205,6 +205,10 @@ CACHES = {
 }
 # Detrás de un proxy, la IP real del cliente llega en un header (p. ej. HTTP_X_REAL_IP de nginx).
 RATELIMIT_IP_META_KEY = os.environ.get('RATELIMIT_IP_META_KEY', 'REMOTE_ADDR')
+# Intentos de login: por correo, para frenar a quien prueba claves de una cuenta; por IP, más alto,
+# porque toda una oficina municipal suele salir a internet con la misma IP.
+LOGIN_LIMITE_POR_CORREO = os.environ.get('LOGIN_LIMITE_POR_CORREO', '5/m')
+LOGIN_LIMITE_POR_IP = os.environ.get('LOGIN_LIMITE_POR_IP', '30/m')
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
 CELERY_ACCEPT_CONTENT = ['json']

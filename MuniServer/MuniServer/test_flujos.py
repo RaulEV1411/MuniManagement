@@ -1,0 +1,165 @@
+"""Flujos completos por la API, como los recorre una municipalidad: cada prueba encadena varios
+pasos y revisa lo que deja cada uno (permisos, historial, avisos, portal)."""
+from datetime import timedelta
+from unittest import mock
+
+from django.core import mail
+from django.test import override_settings
+from django.utils import timezone
+from rest_framework.test import APITestCase
+
+from Historial.models import HistorialCambios
+from MuniServer.pruebas import Escenario
+from Notifications.models import Notificacion
+from Projects.models import Estado, Prioridad, Tipos
+from Task import cron
+
+API = '/api/v1'
+
+
+def avisos(usuario, tipo):
+    return Notificacion.objects.filter(usuario=usuario, tipo=tipo).count()
+
+
+class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
+    def test_de_la_creacion_a_la_cancelacion(self):
+        pendiente = Estado.objects.get(name='Pendiente')
+        en_progreso = Estado.objects.get(name='En progreso')
+        completado = Estado.objects.get(name='Completado')
+        cancelado = Estado.objects.get(name='Cancelado')
+        vial = Tipos.objects.create(name='Vial')
+
+        # 1. El jefe crea el proyecto, público y con tipo, a nombre del funcionario.
+        jefe = self.como(self.jefe_a)
+        r = jefe.post(f'{API}/projects/proyectosWrite/', {
+            'name': 'Acera escolar', 'descripcion': 'Acera frente a la escuela', 'tipos_ID': str(vial.pk),
+            'fecha_inicio': '2026-12-01', 'fecha_entrega': '2027-02-28', 'costo': 2_000_000,
+            'estado_ID': str(pendiente.pk), 'prioridad_ID': str(Prioridad.objects.get(name='Alta').pk),
+            'departamento_ID': str(self.depto_a.pk), 'user_ID': str(self.dueno.pk), 'es_publico': True,
+        }, format='json')
+        self.assertEqual(r.status_code, 201, r.data)
+        pid = r.data['proyect_ID']
+        self.assertEqual(avisos(self.dueno, 'asignacion'), 1)
+
+        # 2. El dueño crea una tarea y se la asigna a otra persona.
+        dueno = self.como(self.dueno)
+        r = dueno.post(f'{API}/task/tareas/', {
+            'proyecto_ID': pid, 'name': 'Demarcar', 'asignado_a': str(self.asignado.pk),
+            'estado_ID': str(pendiente.pk), 'prioridad_ID': str(Prioridad.objects.get(name='Media').pk),
+            'fecha_inicio': '2026-12-01', 'fecha_entrega': '2026-12-15',
+        }, format='json')
+        self.assertEqual(r.status_code, 201, r.data)
+        tid = r.data['tareas_ID']
+        self.assertEqual(avisos(self.asignado, 'asignacion'), 1)
+
+        # 3. El asignado ve el proyecto, avanza su tarea y el dueño se entera.
+        asignado = self.como(self.asignado)
+        self.assertEqual(asignado.get(f'{API}/projects/proyectosRead/{pid}/').status_code, 200)
+        self.assertEqual(asignado.patch(f'{API}/task/tareas/{tid}/', {'estado_ID': str(en_progreso.pk)}, format='json').status_code, 200)
+        self.assertEqual(avisos(self.dueno, 'cambio_estado'), 1)
+
+        # 4. Un comentario del jefe le llega al dueño.
+        self.como(self.jefe_a).post(f'{API}/feedback/feedback/', {'proyecto_ID': pid, 'info': 'Revisar el plano'}, format='json')
+        self.assertEqual(avisos(self.dueno, 'comentario'), 1)
+
+        # 5. Un aumento de presupuesto suma al costo total.
+        r = self.como(self.dueno).post(f'{API}/projects/ajustes-presupuesto/', {
+            'proyecto': pid, 'tipo': 'aumento', 'monto': 500_000, 'motivo': 'Más metros de acera',
+        }, format='json')
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertEqual(self.client.get(f'{API}/projects/proyectosRead/{pid}/').data['costo_total'], 2_500_000)
+
+        # 6. El portal lo muestra sin datos de personas; el avance sube al completar la tarea.
+        self.client.force_authenticate(None)
+        publico = self.client.get(f'{API}/public/projects/{pid}/').data
+        self.assertEqual(publico['avance'], 0)
+        self.assertFalse({'user_ID', 'costo', 'asignado_a'} & set(publico))
+        self.como(self.asignado).patch(f'{API}/task/tareas/{tid}/', {'estado_ID': str(completado.pk)}, format='json')
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').data['avance'], 100)
+
+        # 7. Cancelar exige motivo; queda en el historial y el proyecto sale del portal.
+        jefe = self.como(self.jefe_a)
+        self.assertEqual(jefe.patch(f'{API}/projects/proyectosWrite/{pid}/', {'estado_ID': str(cancelado.pk)}, format='json').status_code, 400)
+        r = jefe.patch(f'{API}/projects/proyectosWrite/{pid}/', {'estado_ID': str(cancelado.pk), 'razon': 'Sin terreno'}, format='json')
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertTrue(HistorialCambios.objects.filter(proyecto_ID=pid, tipo='cancelacion', razon='Sin terreno').exists())
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').status_code, 404)
+
+        tipos = set(HistorialCambios.objects.filter(proyecto_ID=pid).values_list('tipo', flat=True))
+        self.assertTrue({'creacion', 'cambio_estado_tarea', 'solicitud_presupuesto', 'cancelacion'} <= tipos, tipos)
+
+
+class DelegacionDePrincipioAFinTests(Escenario, APITestCase):
+    def test_delegar_dar_edicion_y_revocar(self):
+        url_proyecto = f'{API}/projects/proyectosWrite/{self.proyecto.pk}/'
+        manana = (timezone.localdate() + timedelta(days=1)).isoformat()
+
+        r = self.como(self.jefe_a).post(f'{API}/projects/delegaciones/', {
+            'proyecto': str(self.proyecto.pk), 'supervisor': str(self.ajeno.pk), 'expira_en': manana,
+        }, format='json')
+        self.assertEqual(r.status_code, 201, r.data)
+        delegacion = r.data['delegacion_ID']
+        self.assertEqual(avisos(self.ajeno, 'delegacion'), 1)
+
+        # Solo lectura: ve, pero no edita.
+        ajeno = self.como(self.ajeno)
+        self.assertEqual(ajeno.get(url_proyecto).status_code, 200)
+        self.assertEqual(ajeno.patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 403)
+
+        # Con edición.
+        self.como(self.jefe_a).patch(f'{API}/projects/delegaciones/{delegacion}/', {'puede_editar': True}, format='json')
+        self.assertEqual(self.como(self.ajeno).patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 200)
+
+        # Revocada: deja de verlo.
+        self.assertEqual(self.como(self.jefe_a).delete(f'{API}/projects/delegaciones/{delegacion}/').status_code, 204)
+        self.assertEqual(self.como(self.ajeno).get(url_proyecto).status_code, 404)
+
+
+@override_settings(EMAIL_HOST_USER='pruebas')
+class AvisosDiariosTests(Escenario, APITestCase):
+    def test_avisa_a_todos_los_interesados_una_sola_vez_por_dia(self):
+        self.proyecto.fecha_entrega = timezone.localdate() + timedelta(days=2)
+        self.proyecto.save()
+        self.tarea.fecha_entrega = timezone.localdate() + timedelta(days=30)
+        self.tarea.save()
+        cron.send_due_date_warnings()
+        cron.send_due_date_warnings()
+        for persona in (self.dueno, self.jefe_a, self.alcalde):
+            self.assertEqual(avisos(persona, 'vencimiento_proyecto'), 1, persona.email)
+        self.assertEqual(avisos(self.ajeno, 'vencimiento_proyecto'), 0)
+        destinatarios = {d for m in mail.outbox for d in m.to}
+        self.assertTrue({self.dueno.email, self.jefe_a.email, self.alcalde.email} <= destinatarios)
+
+
+class PortalPublicoTests(Escenario, APITestCase):
+    def test_solo_lo_publico_y_sin_datos_personales(self):
+        publico = self.proyecto
+        publico.es_publico = True
+        publico.save()
+        privado = type(publico).objects.create(
+            name='Interno', descripcion='x', departamento_ID=self.depto_a, estado_ID=publico.estado_ID,
+            prioridad_ID=publico.prioridad_ID, user_ID=self.dueno, fecha_inicio=publico.fecha_inicio,
+            fecha_entrega=publico.fecha_entrega, costo=1,
+        )
+        r = self.client.get(f'{API}/public/projects/')
+        self.assertEqual(r.status_code, 200)
+        filas = r.data['results'] if isinstance(r.data, dict) else r.data
+        self.assertEqual([f['name'] for f in filas], ['Proyecto P'])
+        self.assertEqual(self.client.get(f'{API}/public/projects/{privado.pk}/').status_code, 404)
+        texto = str(self.client.get(f'{API}/public/projects/{publico.pk}/').data)
+        for dato in (self.dueno.email, str(self.dueno.cedula), str(self.asignado.cedula)):
+            self.assertNotIn(dato, texto)
+
+    @mock.patch('Projects.views.subir_imagen', return_value={'secure_url': 'https://img.test/obra.jpg', 'public_id': 'obra'})
+    def test_las_fotos_del_proyecto_se_ven_en_el_portal(self, _subir):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.proyecto.es_publico = True
+        self.proyecto.save()
+        foto = SimpleUploadedFile('obra.jpg', b'\xff\xd8\xff\xe0' + b'0' * 64, content_type='image/jpeg')
+        r = self.como(self.dueno).post(f'{API}/projects/project-images/', {'proyecto_ID': str(self.proyecto.pk), 'image': foto}, format='multipart')
+        self.assertEqual(r.status_code, 201)
+        self.client.force_authenticate(None)
+        detalle = self.client.get(f'{API}/public/projects/{self.proyecto.pk}/').data
+        self.assertEqual([i['url'] for i in detalle['images']], ['https://img.test/obra.jpg'])

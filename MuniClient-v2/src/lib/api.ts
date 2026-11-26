@@ -15,7 +15,7 @@ const METODOS_SEGUROS = new Set(['get', 'head', 'options'])
 // Los ids van dentro de la URL: solo se aceptan UUID, y codificados, para que un valor
 // manipulado (por ejemplo con ../) no termine llamando a otro endpoint con la sesión del usuario.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-function seg(valor: string): string {
+export function seg(valor: string): string {
   if (!UUID.test(valor)) throw new Error(`Identificador inválido: ${valor}`)
   return encodeURIComponent(valor)
 }
