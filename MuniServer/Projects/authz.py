@@ -15,11 +15,6 @@ def _role_flag(user, flag):
     return bool(role and getattr(role, flag, False))
 
 
-def es_alcaldia(user):
-    """Alcalde/Vicealcalde: visibilidad global (legacy alias)."""
-    return tiene_vision_global(user)
-
-
 def tiene_vision_global(user):
     """True si el rol tiene flag puede_ver_todo, o pertenece a la lista de alcaldía/admin."""
     if not user or not getattr(user, 'is_authenticated', False):

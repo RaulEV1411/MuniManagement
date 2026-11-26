@@ -11,6 +11,14 @@ export function formatDate(dateStr: string | null | undefined): string {
   return `${d}/${m}/${y}`
 }
 
+/** «15 de noviembre de 2026»: para el portal, que lee la ciudadanía. */
+export function formatearFechaLarga(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  return new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(y, m - 1, d))
+}
+
 export function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr + 'T23:59:59').getTime() - Date.now()) / 86400000)
 }

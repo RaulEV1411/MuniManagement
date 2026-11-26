@@ -9,6 +9,8 @@ import { fileURLToPath } from 'url'
 //   E2E_PUERTO_API=8002 E2E_PUERTO_WEB=5175 PYTHON=../.venv/bin/python npm run e2e
 const API = process.env.E2E_PUERTO_API ?? '8000'
 const WEB = process.env.E2E_PUERTO_WEB ?? '5173'
+// El build servido con `vite preview`, para probar la CSP de producción (e2e/csp.spec.ts).
+const PREVIEW = process.env.E2E_PUERTO_PREVIEW ?? '4173'
 const tmp = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'e2e/.tmp')
 const entorno = {
   ...process.env,
@@ -17,6 +19,7 @@ const entorno = {
   VITE_API_URL: '/api/v1',
   VITE_PROXY_API: `http://localhost:${API}`,
   E2E_PUERTO_API: API,
+  E2E_PUERTO_PREVIEW: PREVIEW,
   FRONTEND_URL: `http://localhost:${WEB}`,
 } as Record<string, string>
 Object.assign(process.env, { E2E_CORREOS: entorno.E2E_CORREOS })
@@ -47,6 +50,13 @@ export default defineConfig({
       url: `http://localhost:${WEB}`,
       reuseExistingServer: false,
       timeout: 60_000,
+      env: entorno,
+    },
+    {
+      command: `npx vite build --logLevel warn && npx vite preview --port ${PREVIEW} --strictPort`,
+      url: `http://localhost:${PREVIEW}`,
+      reuseExistingServer: false,
+      timeout: 120_000,
       env: entorno,
     },
   ],

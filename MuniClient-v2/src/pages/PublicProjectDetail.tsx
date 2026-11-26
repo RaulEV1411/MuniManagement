@@ -5,18 +5,43 @@ import { getPublicProject } from '@/lib/api'
 import type { PublicProjectDetail } from '@/types'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import { textoSobre } from '@/lib/colores'
+import { formatearFechaLarga } from '@/lib/utils'
 
 export default function PublicProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: p, isLoading } = useQuery<PublicProjectDetail>({
+  const { data: p, isLoading, isError, error, refetch } = useQuery<PublicProjectDetail>({
     queryKey: ['public-project', id],
     queryFn: () => getPublicProject(id!),
     enabled: !!id,
   })
   useTituloDePagina(p?.name ?? 'Proyecto')
 
-  if (isLoading) return <div className="p-10 text-center text-slate-500">Cargando…</div>
-  if (!p) return <div className="p-10 text-center text-slate-500">No encontrado.</div>
+  if (isLoading) return <div className="p-10 text-center text-slate-600" role="status">Cargando…</div>
+  // 404: el proyecto no existe o no es público. Cualquier otro error se puede reintentar.
+  const noExiste = isError && (error as { response?: { status?: number } })?.response?.status === 404
+  if (!p) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <header className="bg-ocean-500 text-white">
+          <div className="max-w-4xl mx-auto px-6 py-6">
+            <h1 className="text-2xl font-bold">Portal de proyectos</h1>
+          </div>
+        </header>
+        <main className="max-w-4xl mx-auto px-6 py-10 text-center space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900">{noExiste || !isError ? 'Este proyecto no existe o no es público' : 'No se pudo cargar el proyecto'}</h2>
+          <p className="text-sm text-slate-600">{noExiste || !isError ? 'Puede que el enlace esté mal o que el proyecto ya no se publique.' : 'Revise su conexión e intente de nuevo.'}</p>
+          <div className="flex justify-center gap-3">
+            {isError && !noExiste && (
+              <button type="button" onClick={() => refetch()} className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-300 hover:bg-slate-100">Reintentar</button>
+            )}
+            <Link to="/publico" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-ocean-500 text-white">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Volver al portal
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -46,8 +71,8 @@ export default function PublicProjectDetailPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Info icon={Building2} label="Dirección" value={p.direccion} />
           <Info icon={MapPin} label="Departamento" value={p.departamento} />
-          <Info icon={Calendar} label="Inicio" value={p.fecha_inicio} />
-          <Info icon={Calendar} label="Entrega" value={p.fecha_entrega} />
+          <Info icon={Calendar} label="Inicio" value={formatearFechaLarga(p.fecha_inicio)} />
+          <Info icon={Calendar} label="Entrega" value={formatearFechaLarga(p.fecha_entrega)} />
         </section>
 
         <section className="rounded-2xl bg-white border border-slate-200 p-5">
@@ -84,7 +109,7 @@ export default function PublicProjectDetailPage() {
                 <li key={t.tareas_ID} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2 last:border-0">
                   <div>
                     <p className="text-sm font-medium text-slate-900">{t.name}</p>
-                    <p className="text-xs text-slate-500">Entrega {t.fecha_entrega}</p>
+                    <p className="text-xs text-slate-600">Entrega: {formatearFechaLarga(t.fecha_entrega)}</p>
                   </div>
                   {t.estado && (
                     <span

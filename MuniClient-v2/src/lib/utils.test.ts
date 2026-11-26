@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, isOverdue } from './utils'
+import { formatDate, formatearFechaLarga, isOverdue } from './utils'
 
 describe('formatDate', () => {
   it('pasa de AAAA-MM-DD a DD/MM/AAAA y muestra — si no hay fecha', () => {
@@ -15,5 +15,13 @@ describe('isOverdue', () => {
     expect(isOverdue({ fecha_entrega: '2020-01-01', estado_ID: { name: 'Cancelado' } })).toBe(false)
     expect(isOverdue({ fecha_entrega: '2999-01-01', estado_ID: { name: 'Pendiente' } })).toBe(false)
     expect(isOverdue({})).toBe(false)
+  })
+})
+
+describe('fecha larga', () => {
+  it('se lee completa y no se corre de día por la zona horaria', () => {
+    expect(formatearFechaLarga('2026-11-15')).toBe('15 de noviembre de 2026')
+    expect(formatearFechaLarga('2027-01-01')).toBe('1 de enero de 2027')
+    expect(formatearFechaLarga(null)).toBe('—')
   })
 })

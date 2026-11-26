@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'Configuracion.apps.ConfiguracionConfig',
     'rest_framework',
     'corsheaders',
-    'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',
     'django_celery_beat',
     'anymail',

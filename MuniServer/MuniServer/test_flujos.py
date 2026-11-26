@@ -152,6 +152,27 @@ class PortalPublicoTests(Escenario, APITestCase):
         for dato in (self.dueno.email, str(self.dueno.cedula), str(self.asignado.cedula)):
             self.assertNotIn(dato, texto)
 
+    def test_el_avance_considera_el_estado_y_no_cuenta_lo_cancelado(self):
+        from Task.models import Tareas
+        publico = self.proyecto
+        publico.es_publico = True
+        publico.save()
+        url = f'{API}/public/projects/{publico.pk}/'
+        cancelado = Estado.objects.get(name='Cancelado')
+        completado = Estado.objects.get(name='Completado')
+        # La tarea del escenario sigue abierta: 0 %. Una cancelada no suma al total.
+        Tareas.objects.create(proyecto_ID=publico, name='Descartada', estado_ID=cancelado, prioridad_ID=publico.prioridad_ID,
+                              fecha_inicio=publico.fecha_inicio, fecha_entrega=publico.fecha_entrega)
+        self.assertEqual(self.client.get(url).data['avance'], 0)
+        self.tarea.estado_ID = completado
+        self.tarea.save()
+        self.assertEqual(self.client.get(url).data['avance'], 100)
+        # Completado sin tareas abiertas ni hechas: 100 %, no 0 %.
+        Tareas.objects.filter(proyecto_ID=publico).delete()
+        publico.estado_ID = completado
+        publico.save()
+        self.assertEqual(self.client.get(url).data['avance'], 100)
+
     @mock.patch('Projects.views.subir_imagen', return_value={'secure_url': 'https://img.test/obra.jpg', 'public_id': 'obra'})
     def test_las_fotos_del_proyecto_se_ven_en_el_portal(self, _subir):
         from django.core.files.uploadedfile import SimpleUploadedFile

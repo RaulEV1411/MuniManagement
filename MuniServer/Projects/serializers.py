@@ -70,9 +70,7 @@ class ProyectosReadSerializer(ModelSerializer):
         return [{'tipos_ID': str(pt.tipo_id), 'name': pt.tipo.name} for pt in obj.proyectos_tipos_set.all()]
 
     def get_costo_total(self, obj):
-        ajustes = getattr(obj, '_prefetched_ajustes', None)
-        if ajustes is None:
-            ajustes = list(obj.ajustes_presupuesto.all())
+        ajustes = obj.ajustes_presupuesto.all()
         delta = sum(a.monto if a.tipo == 'aumento' else -a.monto for a in ajustes)
         return (obj.costo or 0) + delta
 

@@ -9,6 +9,7 @@ import { useValorDiferido } from '@/hooks/useValorDiferido'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 import { textoSobre } from '@/lib/colores'
+import { formatearFechaLarga } from '@/lib/utils'
 
 export default function PublicProjectsPage() {
   useTituloDePagina('Portal de proyectos')
@@ -25,9 +26,12 @@ export default function PublicProjectsPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-ocean-500 text-white">
         <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
             <LogoInstitucion tamano={36} claro />
             <h1 className="text-2xl font-bold">Portal de proyectos</h1>
+            <Link to="/login" className="ml-auto text-sm font-semibold text-white underline-offset-2 hover:underline">
+              Ingreso del personal
+            </Link>
           </div>
           <p className="text-white">{marca.nombre}{marca.ubicacion ? ` · ${marca.ubicacion}` : ''}</p>
         </div>
@@ -91,7 +95,7 @@ export default function PublicProjectsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                     <Calendar className="h-3 w-3" />
-                    <span>Entrega {p.fecha_entrega}</span>
+                    <span>Entrega: {formatearFechaLarga(p.fecha_entrega)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
