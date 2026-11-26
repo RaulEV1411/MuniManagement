@@ -30,9 +30,21 @@ class UsersViewSet(ModelViewSet):
         rol = _role_name(user)
         ver_todo = _role_flag(user, 'puede_ver_todo')
         if rol in ROLES_ADMIN or ver_todo or rol in ROLES_JEFES:
-            return Users.objects.all().select_related('role', 'departamento_ID')
+            qs = Users.objects.all().select_related('role', 'departamento_ID')
+            # Los dados de baja no aparecen en las listas, salvo que se pidan.
+            if self.action == 'list' and self.request.query_params.get('incluir_inactivos') not in ('1', 'true'):
+                qs = qs.filter(is_active=True)
+            return qs
         # Funcionarios solo se ven a sí mismos
         return Users.objects.filter(user_ID=user.user_ID).select_related('role', 'departamento_ID')
+
+    def perform_destroy(self, instance):
+        # Dar de baja en lugar de borrar: conserva sus proyectos, ajustes e historial.
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+        for token in OutstandingToken.objects.filter(user=instance):
+            BlacklistedToken.objects.get_or_create(token=token)
 
 
 @method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='post')
@@ -131,7 +143,7 @@ def upload_user_photo(request, user_id):
     except Users.DoesNotExist:
         return Response({'error': 'Usuario no encontrado.'}, status=404)
 
-    if request.user.user_ID != user.user_ID and getattr(request.user.role, 'name', '') not in {'Alcalde', 'Vicealcalde'}:
+    if request.user.user_ID != user.user_ID and not (_role_name(request.user) in ROLES_ADMIN or _role_flag(request.user, 'puede_ver_todo')):
         return Response({'error': 'No tienes permisos para modificar esta foto.'}, status=403)
 
     if user.user_photo:

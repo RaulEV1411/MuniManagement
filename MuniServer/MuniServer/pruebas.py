@@ -56,3 +56,61 @@ def crear_proyecto(dueno, departamento=None, **datos):
         costo=datos.pop('costo', 1000),
         **datos,
     )
+
+
+def crear_tarea(proyecto, asignado_a=None, **datos):
+    from Task.models import Tareas
+    hoy = date.today()
+    return Tareas.objects.create(
+        proyecto_ID=proyecto,
+        asignado_a=asignado_a,
+        estado_ID=datos.pop('estado', None) or Estado.objects.get(name='Pendiente'),
+        prioridad_ID=datos.pop('prioridad', None) or Prioridad.objects.get(name='Media'),
+        name=datos.pop('name', 'Tarea de prueba'),
+        fecha_inicio=datos.pop('fecha_inicio', hoy),
+        fecha_entrega=datos.pop('fecha_entrega', hoy + timedelta(days=7)),
+        **datos,
+    )
+
+
+class Escenario:
+    """Una dirección con dos departamentos (A y B) y un proyecto P en A.
+
+    - admin: Administrador; alcalde: Alcalde.
+    - jefe_a: jefe del departamento A; jefe_b: jefe del departamento B.
+    - dueno: Funcionario de A, dueño de P.
+    - ajeno: Funcionario de B, sin relación con P.
+    - asignado: Funcionario de B con la tarea T de P asignada.
+    """
+
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+        cache.clear()
+        sembrar()
+        self.direccion = Direccion.objects.create(name='Dirección de Obras')
+        self.depto_a = crear_departamento('Departamento A', self.direccion)
+        self.depto_b = crear_departamento('Departamento B', self.direccion)
+        self.admin = crear_usuario('Administrador', self.depto_a)
+        self.alcalde = crear_usuario('Alcalde', self.depto_a)
+        self.jefe_a = crear_usuario('Jefe de Departamento', self.depto_a)
+        self.jefe_b = crear_usuario('Jefe de Departamento', self.depto_b)
+        self.depto_a.jefe = self.jefe_a
+        self.depto_a.save()
+        self.depto_b.jefe = self.jefe_b
+        self.depto_b.save()
+        self.dueno = crear_usuario('Funcionario', self.depto_a)
+        self.ajeno = crear_usuario('Funcionario', self.depto_b)
+        self.asignado = crear_usuario('Funcionario', self.depto_b)
+        self.proyecto = crear_proyecto(self.dueno, name='Proyecto P')
+        self.tarea = crear_tarea(self.proyecto, asignado_a=self.asignado, name='Tarea T')
+
+    def como(self, usuario):
+        self.client.force_authenticate(usuario)
+        return self.client
+
+    @staticmethod
+    def ids(respuesta, campo):
+        datos = respuesta.data
+        filas = datos['results'] if isinstance(datos, dict) and 'results' in datos else datos
+        return {str(f[campo]) for f in filas}

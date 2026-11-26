@@ -88,7 +88,7 @@ class AjustePresupuestoSerializer(ModelSerializer):
             'ajuste_ID', 'proyecto', 'tarea', 'tipo', 'monto', 'motivo',
             'usuario', 'aprobado_por', 'fecha', 'usuario_info',
         ]
-        read_only_fields = ['ajuste_ID', 'fecha', 'usuario']
+        read_only_fields = ['ajuste_ID', 'fecha', 'usuario', 'aprobado_por']
 
     def validate_monto(self, value):
         if value is None or value <= 0:

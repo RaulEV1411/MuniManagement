@@ -34,10 +34,10 @@ class Tipos(models.Model):
 
 class Proyectos(models.Model):
     proyect_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    departamento_ID = models.ForeignKey(Departamentos, on_delete=models.CASCADE)
-    estado_ID = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    prioridad_ID = models.ForeignKey(Prioridad, on_delete=models.CASCADE)
-    user_ID = models.ForeignKey(Users, on_delete=models.CASCADE)
+    departamento_ID = models.ForeignKey(Departamentos, on_delete=models.PROTECT)
+    estado_ID = models.ForeignKey(Estado, on_delete=models.PROTECT)
+    prioridad_ID = models.ForeignKey(Prioridad, on_delete=models.PROTECT)
+    user_ID = models.ForeignKey(Users, on_delete=models.PROTECT)
     name = models.CharField(max_length=50)
     descripcion = models.CharField(max_length=255)
     fecha_inicio = models.DateField()
@@ -64,7 +64,7 @@ class ProjectImage(models.Model):
 
 class Proyectos_tipos(models.Model):
     proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE)
-    tipo = models.ForeignKey(Tipos, on_delete=models.CASCADE)
+    tipo = models.ForeignKey(Tipos, on_delete=models.PROTECT)
 
 
 class DelegacionSupervision(models.Model):
@@ -100,7 +100,7 @@ class AjustePresupuesto(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     monto = models.IntegerField(validators=[MinValueValidator(1)])
     motivo = models.TextField()
-    usuario = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='ajustes_creados')
+    usuario = models.ForeignKey(Users, on_delete=models.PROTECT, related_name='ajustes_creados')
     aprobado_por = models.ForeignKey(
         Users, on_delete=models.SET_NULL, null=True, blank=True, related_name='ajustes_aprobados'
     )

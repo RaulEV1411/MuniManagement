@@ -7,6 +7,7 @@ class FeedbackWriteSerializer(ModelSerializer):
     class Meta:
         model = Feedback
         fields = '__all__'
+        read_only_fields = ['user_ID', 'created_at']
 
 
 class FeedbackReadSerializer(ModelSerializer):

@@ -3,10 +3,19 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Tareas, TaskImage
 from .serializers import TareasReadSerializer, TareasWriteSerializer, TaskImageSerializer
 from Historial.models import HistorialCambios
+from Projects import authz
+
+# Quien tiene la tarea asignada pero no puede editar el proyecto solo puede cambiarle el estado.
+CAMPOS_DEL_ASIGNADO = {'estado_ID'}
+
+
+def _puede_gestionar_imagenes(user, tarea):
+    return tarea.asignado_a_id == user.user_ID or authz.puede_editar(user, tarea.proyecto_ID)
 
 
 class TareasViewSet(ModelViewSet):
@@ -20,14 +29,37 @@ class TareasViewSet(ModelViewSet):
         return TareasReadSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(
+            proyecto_ID__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
         proyecto_ID = self.request.query_params.get('proyecto_ID')
         if proyecto_ID:
             queryset = queryset.filter(proyecto_ID=proyecto_ID)
         return queryset
 
+    def perform_create(self, serializer):
+        if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto_ID']):
+            raise PermissionDenied('No tienes permisos para crear tareas en este proyecto.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not authz.puede_editar(self.request.user, instance.proyecto_ID):
+            raise PermissionDenied('No tienes permisos para borrar tareas de este proyecto.')
+        instance.delete()
+
     def perform_update(self, serializer):
-        prev = self.get_object()
+        prev = serializer.instance
+        user = self.request.user
+        nuevo_proyecto = serializer.validated_data.get('proyecto_ID', prev.proyecto_ID)
+        if nuevo_proyecto.pk != prev.proyecto_ID_id:
+            raise ValidationError({'proyecto_ID': 'Una tarea no se puede mover a otro proyecto.'})
+        if not authz.puede_editar(user, prev.proyecto_ID):
+            cambios = {
+                campo for campo, valor in serializer.validated_data.items()
+                if getattr(prev, campo) != valor
+            }
+            if prev.asignado_a_id != user.user_ID or not cambios <= CAMPOS_DEL_ASIGNADO:
+                raise PermissionDenied('Solo puedes cambiar el estado de las tareas que tienes asignadas.')
         anterior = {
             'estado_ID': str(prev.estado_ID_id),
             'fecha_entrega': str(prev.fecha_entrega),
@@ -70,12 +102,15 @@ class TaskImageViewSet(ModelViewSet):
     queryset = TaskImage.objects.all()
     serializer_class = TaskImageSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(
+            tarea__proyecto_ID__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
         tarea_ID = self.request.query_params.get('tarea_ID')
         if tarea_ID:
-            queryset = queryset.filter(tarea_ID=tarea_ID)
+            queryset = queryset.filter(tarea=tarea_ID)
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -86,10 +121,15 @@ class TaskImageViewSet(ModelViewSet):
             return Response({'error': 'No se proporcionó ninguna imagen.'}, status=status.HTTP_400_BAD_REQUEST)
         if not tarea_id:
             return Response({'error': 'tarea_ID es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+        tarea = Tareas.objects.filter(pk=tarea_id).select_related('proyecto_ID').first()
+        if tarea is None or not authz.puede_ver(request.user, tarea.proyecto_ID):
+            return Response({'error': 'Tarea no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+        if not _puede_gestionar_imagenes(request.user, tarea):
+            raise PermissionDenied('No tienes permisos para subir imágenes a esta tarea.')
 
         result = cloudinary.uploader.upload(file, folder='munimanagement/tareas')
         image = TaskImage.objects.create(
-            tarea_id=tarea_id,
+            tarea=tarea,
             url=result['secure_url'],
             public_id=result['public_id'],
         )
@@ -97,6 +137,8 @@ class TaskImageViewSet(ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        if not _puede_gestionar_imagenes(request.user, instance.tarea):
+            raise PermissionDenied('No tienes permisos para borrar esta imagen.')
         cloudinary.uploader.destroy(instance.public_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
