@@ -21,6 +21,7 @@ import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 
 // ── Cambio rápido de estado ───────────────────────────────────────────────────
 function StatusQuickChange({ project }: { project: Project }) {
@@ -267,7 +268,7 @@ function ProjectListRow({ project }: { project: Project }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">
+            <span className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
               {project.name}
             </span>
             <StatusQuickChange project={project} />
@@ -382,12 +383,12 @@ function ProjectGridCard({ project }: { project: Project }) {
           onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
         >
           {uploadProgress ? (
-            <div className="flex items-center gap-1.5 text-ocean-500">
+            <div className="flex items-center gap-1.5 text-ocean-500 dark:text-ocean-200">
               <RefreshCw size={13} className="animate-spin" />
               <span className="text-[10px] font-medium">{uploadProgress.current}/{uploadProgress.total}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-muted-foreground/40 group-hover/empty:text-ocean-500 transition-colors">
+            <div className="flex items-center gap-1.5 text-muted-foreground/40 group-hover/empty:text-ocean-500 dark:group-hover/empty:text-ocean-200 transition-colors">
               <ImageIcon size={14} />
               <span className="text-[10px] font-medium">Agregar foto</span>
             </div>
@@ -397,7 +398,7 @@ function ProjectGridCard({ project }: { project: Project }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1.5">
-          <h3 className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors line-clamp-2 flex-1">
+          <h3 className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 flex-1">
             {project.name}
           </h3>
           <StatusQuickChange project={project} />
@@ -473,7 +474,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                 </div>
               ) : null}
               <div className="p-3">
-                <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 transition-colors line-clamp-2 mb-1.5">{p.name}</p>
+                <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 mb-1.5">{p.name}</p>
                 <div className="flex items-center justify-between gap-1">
                   {p.prioridad_ID?.name && (
                     <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
@@ -509,6 +510,8 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
 
 // ── Página principal ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  useTituloDePagina('Proyectos')
+  const marca = useMarca()
   const navigate  = useNavigate()
   const { user }  = useAppStore()
   const [params, setParams] = useSearchParams()
@@ -614,7 +617,7 @@ export default function DashboardPage() {
             {greeting()}, {user?.first_name ?? 'Usuario'}
           </h1>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">Municipalidad de Puntarenas</span>
+            <span className="text-xs text-muted-foreground">{marca.nombre}</span>
             {stats.pct > 0 && !isLoading && (
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
                 <TrendingUp size={9} /> {stats.pct}% completado
@@ -624,7 +627,7 @@ export default function DashboardPage() {
         </div>
         {!isLoading && (
           <div className="hidden lg:flex items-center gap-2">
-            <StatCard icon={FolderOpen}   value={stats.total}      label="Total"       color="text-ocean-500" />
+            <StatCard icon={FolderOpen}   value={stats.total}      label="Total"       color="text-ocean-500 dark:text-ocean-200" />
             <StatCard icon={Clock}        value={stats.enProgreso}  label="En progreso" color="text-blue-500" />
             <StatCard icon={CheckCircle2} value={stats.completado}  label="Completados" color="text-emerald-500" />
             {stats.vencidos > 0 && <StatCard icon={AlertTriangle} value={stats.vencidos} label="Vencidos" color="" alert />}
@@ -845,7 +848,7 @@ export default function DashboardPage() {
               {search ? 'Ningún proyecto coincide.' : 'No hay proyectos con ese filtro.'}
             </p>
             {hasFilters
-              ? <button onClick={clearFilters} className="text-xs text-ocean-500 hover:underline">Ver todos</button>
+              ? <button onClick={clearFilters} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Ver todos</button>
               : <button onClick={() => navigate('/projects/new')} className="flex items-center gap-2 px-4 py-2 bg-ocean-500 text-white text-sm font-semibold rounded-xl hover:bg-ocean-600 transition-all"><Plus size={13} /> Crear proyecto</button>
             }
           </div>

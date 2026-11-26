@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, Building2, MapPin, type LucideIcon } from 'lucide-react'
 import { getPublicProject } from '@/lib/api'
 import type { PublicProjectDetail } from '@/types'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 export default function PublicProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -11,6 +12,7 @@ export default function PublicProjectDetailPage() {
     queryFn: () => getPublicProject(id!),
     enabled: !!id,
   })
+  useTituloDePagina(p?.name ?? 'Proyecto')
 
   if (isLoading) return <div className="p-10 text-center text-slate-500">Cargando…</div>
   if (!p) return <div className="p-10 text-center text-slate-500">No encontrado.</div>

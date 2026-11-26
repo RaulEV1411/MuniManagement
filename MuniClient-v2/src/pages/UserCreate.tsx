@@ -9,8 +9,10 @@ import { type Role, type Department } from '@/types'
 import { cn } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 export default function UserCreatePage() {
+  useTituloDePagina('Nuevo usuario')
   const navigate = useNavigate()
   const qc       = useQueryClient()
   const [loading, setLoading] = useState(false)

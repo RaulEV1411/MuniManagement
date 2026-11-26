@@ -19,6 +19,7 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { esNoEncontrado } from '@/lib/errores'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 
 const AVATAR_COLORS = [
@@ -277,6 +278,7 @@ export default function UserProfilePage() {
     queryFn: () => getUserById(id!),
     enabled: !!id,
   })
+  useTituloDePagina(user ? `${user.first_name} ${user.last_name}` : 'Usuario')
 
   const { data: projects = [], isLoading: loadingProjects } = useQuery<Project[]>({
     queryKey: ['user-projects', id],
@@ -329,7 +331,7 @@ export default function UserProfilePage() {
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
         <AlertCircle size={32} />
         <p className="text-sm">Usuario no encontrado</p>
-        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 hover:underline">Volver</button>
+        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Volver</button>
       </div>
     )
   }
@@ -383,7 +385,7 @@ export default function UserProfilePage() {
           {/* Mini stats */}
           <div className="hidden md:flex items-center gap-2">
             {[
-              { icon: FolderOpen,   value: totalProjects, label: 'Total',       color: 'text-ocean-500' },
+              { icon: FolderOpen,   value: totalProjects, label: 'Total',       color: 'text-ocean-500 dark:text-ocean-200' },
               { icon: Clock,        value: inProgress,    label: 'En progreso', color: 'text-blue-500' },
               { icon: CheckCircle2, value: completed,     label: 'Completados', color: 'text-emerald-500' },
             ].map(({ icon: Icon, value, label, color: c }) => (
@@ -435,7 +437,7 @@ export default function UserProfilePage() {
               onClick={() => setTab(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
-                tab === t ? 'border-ocean-500 text-ocean-500' : 'border-transparent text-muted-foreground hover:text-foreground',
+                tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {t}
@@ -499,7 +501,7 @@ export default function UserProfilePage() {
                       >
                         <div className={cn('w-1 h-8 rounded-full flex-shrink-0', claseRelleno)} style={conColor(colorDeEstado(overdue, p.estado_ID))} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">{p.name}</p>
+                          <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">{p.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{p.departamento_ID?.name} · {formatDate(p.fecha_entrega)}</p>
                         </div>
                         {status && (

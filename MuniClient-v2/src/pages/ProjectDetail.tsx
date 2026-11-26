@@ -35,6 +35,7 @@ import { esNoEncontrado } from '@/lib/errores'
 import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
@@ -103,6 +104,7 @@ function EditProjectModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { simbolo } = useMoneda()
   const [loading, setLoading] = useState(false)
   const [pidiendoMotivo, setPidiendoMotivo] = useState(false)
   const [form, setForm] = useState({
@@ -201,7 +203,7 @@ function EditProjectModal({
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Costo estimado (₡)</label>
+            <label className="text-xs font-semibold text-muted-foreground">Costo estimado ({simbolo})</label>
             <input type="number" value={form.costo} onChange={e => set('costo', e.target.value)} placeholder="0" className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -693,7 +695,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 </div>
               )}
               {dragOver && !taskUploadProgress && (
-                <p className="text-center text-xs text-ocean-500 font-medium mt-3">Suelta para subir</p>
+                <p className="text-center text-xs text-ocean-500 dark:text-ocean-200 font-medium mt-3">Suelta para subir</p>
               )}
             </div>
           )}
@@ -793,7 +795,7 @@ function TaskCard({
             className={cn(
               'flex items-center gap-1 p-1 rounded-lg transition-colors',
               imageCount > 0
-                ? 'text-ocean-500 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
+                ? 'text-ocean-500 dark:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
                 : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100',
             )}
           >
@@ -810,7 +812,7 @@ function TaskCard({
           </select>
           <button
             onClick={() => onEdit(task)}
-            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100"
           >
             <Edit2 size={12} />
           </button>
@@ -887,7 +889,7 @@ function TaskGroup({
         <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(estados.find(es => es.name === status)?.color)}>
           {tasks.length}
         </span>
-        {dragOver && <span className="text-[10px] text-ocean-500 font-medium ml-1">Soltar aquí</span>}
+        {dragOver && <span className="text-[10px] text-ocean-500 dark:text-ocean-200 font-medium ml-1">Soltar aquí</span>}
       </button>
       <AnimatePresence>
         {open && (
@@ -945,11 +947,11 @@ function DropZone({ onFiles, disabled, progress }: {
       />
       <div className="flex flex-col items-center gap-2">
         <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
-          <Upload size={20} className={cn('transition-colors', dragOver ? 'text-ocean-500' : 'text-muted-foreground/40')} />
+          <Upload size={20} className={cn('transition-colors', dragOver ? 'text-ocean-500 dark:text-ocean-200' : 'text-muted-foreground/40')} />
         </div>
         {progress ? (
           <>
-            <p className="text-sm font-medium text-ocean-500">
+            <p className="text-sm font-medium text-ocean-500 dark:text-ocean-200">
               Subiendo {progress.current} de {progress.total}...
             </p>
             <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -978,6 +980,7 @@ type Tab = typeof TABS[number]
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProjectDetailPage() {
+  const { formatear } = useMoneda()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const qc = useQueryClient()
@@ -998,6 +1001,7 @@ export default function ProjectDetailPage() {
     queryFn: () => getProjectById(id!),
     enabled: !!id,
   })
+  useTituloDePagina(project?.name ?? 'Proyecto')
 
   const { data: tasks = [], isLoading: loadingTasks } = useQuery<Task[]>({
     queryKey: ['tasks', id],
@@ -1120,7 +1124,7 @@ export default function ProjectDetailPage() {
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
         <AlertCircle size={32} />
         <p className="text-sm">Proyecto no encontrado o sin acceso</p>
-        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 hover:underline">Volver</button>
+        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Volver</button>
       </div>
     )
   }
@@ -1227,7 +1231,7 @@ export default function ProjectDetailPage() {
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t
-                  ? 'border-ocean-500 text-ocean-500'
+                  ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200'
                   : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
@@ -1296,7 +1300,7 @@ export default function ProjectDetailPage() {
                   <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
                     <p className="text-sm font-medium text-foreground">Sin resultados</p>
                     <p className="text-xs text-muted-foreground">Ninguna tarea coincide con "{taskSearch}"</p>
-                    <button onClick={() => setTaskSearch('')} className="text-xs text-ocean-500 hover:underline">Limpiar búsqueda</button>
+                    <button onClick={() => setTaskSearch('')} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Limpiar búsqueda</button>
                   </div>
                 ) : (
                   <>
@@ -1355,7 +1359,7 @@ export default function ProjectDetailPage() {
                       <InfoRow label="Costo base">
                         <span className="flex items-center gap-1.5">
                           <DollarSign size={12} className="text-muted-foreground flex-shrink-0" />
-                          ₡{project.costo.toLocaleString('es-CR')}
+                          {formatear(project.costo)}
                         </span>
                       </InfoRow>
                     )}
@@ -1456,7 +1460,7 @@ export default function ProjectDetailPage() {
                           {author?.user_photo ? (
                             <img src={author.user_photo} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                           ) : (
-                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 dark:text-ocean-200 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                               {initials}
                             </div>
                           )}
@@ -1511,7 +1515,7 @@ export default function ProjectDetailPage() {
                   <div className="bg-card border border-border rounded-xl p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-foreground">Progreso general</p>
-                      <p className="text-xs font-bold text-ocean-500">{progress}%</p>
+                      <p className="text-xs font-bold text-ocean-500 dark:text-ocean-200">{progress}%</p>
                     </div>
                     <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                       <motion.div
@@ -1565,7 +1569,7 @@ export default function ProjectDetailPage() {
                           const n = entry.datos_nuevos
                           if (a.name && n.name && a.name !== n.name) changes.push(`Nombre: "${a.name}" → "${n.name}"`)
                           if (a.fecha_entrega && n.fecha_entrega && a.fecha_entrega !== n.fecha_entrega) changes.push(`Entrega: ${formatDate(a.fecha_entrega)} → ${formatDate(n.fecha_entrega)}`)
-                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ₡${Number(a.costo).toLocaleString('es-CR')} → ₡${Number(n.costo).toLocaleString('es-CR')}`)
+                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ${formatear(Number(a.costo))} → ${formatear(Number(n.costo))}`)
                           const nombreEstado = (id?: string) => estados.find(e => e.estado_ID === id)?.name ?? '—'
                           if (a.estado_ID && n.estado_ID && a.estado_ID !== n.estado_ID) changes.push(`Estado: ${nombreEstado(a.estado_ID)} → ${nombreEstado(n.estado_ID)}`)
                           const nombrePersona = (id?: string) => {
@@ -1576,13 +1580,13 @@ export default function ProjectDetailPage() {
                         }
                         const nuevos = entry.datos_nuevos
                         if (nuevos?.tipo && nuevos?.monto) {
-                          changes.push(`${nuevos.tipo === 'rebajo' ? 'Rebajo' : 'Aumento'} de ₡${Number(nuevos.monto).toLocaleString('es-CR')}`)
+                          changes.push(`${nuevos.tipo === 'rebajo' ? 'Rebajo' : 'Aumento'} de ${formatear(Number(nuevos.monto))}`)
                         }
                         if (entry.tipo === 'creacion' && nuevos?.name) changes.push(`«${nuevos.name}»`)
                         if (entry.tipo === 'eliminacion' && entry.datos_anteriores?.name) changes.push(`«${entry.datos_anteriores.name}»`)
                         return (
                           <div key={entry.historial_ID} className="flex items-start gap-3 bg-card border border-border rounded-xl px-4 py-3">
-                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 flex items-center justify-center flex-shrink-0">
+                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 dark:text-ocean-200 flex items-center justify-center flex-shrink-0">
                               <Activity size={13} />
                             </div>
                             <div className="flex-1 min-w-0">

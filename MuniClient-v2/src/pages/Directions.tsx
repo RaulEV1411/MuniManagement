@@ -7,6 +7,7 @@ import { getDirections, createDirection, updateDirection, deleteDirection, getUs
 import { type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName]     = useState('')
@@ -181,6 +182,7 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
 }
 
 export default function DirectionsPage() {
+  useTituloDePagina('Direcciones')
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 

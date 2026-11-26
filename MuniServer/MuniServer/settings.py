@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'Feedback.apps.FeedbackConfig',
     'Historial.apps.HistorialConfig',
     'Notifications.apps.NotificationsConfig',
+    'Configuracion.apps.ConfiguracionConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
@@ -131,7 +132,8 @@ else:
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@muni.local')
 
 LANGUAGE_CODE = 'es-cr'
-TIME_ZONE = 'America/Costa_Rica'
+# Por instalación; el valor es el nombre IANA (America/Costa_Rica, America/Guatemala…).
+TIME_ZONE = os.environ.get('ZONA_HORARIA', 'America/Costa_Rica')
 USE_I18N = True
 USE_TZ = True
 

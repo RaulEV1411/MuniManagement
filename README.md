@@ -13,6 +13,7 @@ Proyecto en desarrollo, hecho en equipo.
 - Historial de cambios y comentarios.
 - Panel con gráficos y reportes en PDF y Excel.
 - Portal público de proyectos.
+- Nombre, logo, colores, datos de soporte y moneda de cada institución, configurables desde la app.
 
 ## Tecnologías
 
@@ -24,7 +25,7 @@ Proyecto en desarrollo, hecho en equipo.
 
 ## Estructura
 
-- `MuniServer/`: API en Django, bajo `/api/v1/`, con las apps Users, Departments, Projects, Task, Notifications, Feedback e Historial.
+- `MuniServer/`: API en Django, bajo `/api/v1/`, con las apps Users, Departments, Projects, Task, Notifications, Feedback, Historial y Configuracion.
 - `MuniClient-v2/`: cliente web en React.
 - `despliegue/`: guía de instalación en producción y plantilla de variables.
 

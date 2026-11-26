@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Calendar, MapPin, Search, Building2 } from 'lucide-react'
+import { Calendar, MapPin, Search } from 'lucide-react'
 import { getPublicProjects } from '@/lib/api'
 import type { PublicProject } from '@/types'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
+import LogoInstitucion from '@/components/common/LogoInstitucion'
+import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 
 export default function PublicProjectsPage() {
+  useTituloDePagina('Portal de proyectos')
+  const marca = useMarca()
   const [search, setSearch] = useState('')
   // Consulta al dejar de escribir, no por cada tecla: el portal admite 60 consultas por minuto.
   const busqueda = useValorDiferido(search.trim())
@@ -21,10 +25,10 @@ export default function PublicProjectsPage() {
       <header className="bg-ocean-500 text-white">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex items-center gap-3 mb-2">
-            <Building2 className="h-7 w-7" />
-            <h1 className="text-2xl font-bold">Portal de Proyectos Municipales</h1>
+            <LogoInstitucion tamano={36} claro />
+            <h1 className="text-2xl font-bold">Portal de proyectos</h1>
           </div>
-          <p className="text-white/80">Consulta el avance de los proyectos en tu municipalidad.</p>
+          <p className="text-white/80">{marca.nombre}{marca.ubicacion ? ` · ${marca.ubicacion}` : ''}</p>
         </div>
       </header>
 

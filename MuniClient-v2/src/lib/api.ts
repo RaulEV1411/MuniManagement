@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import type {
   AjustePresupuesto, Delegacion, Feedback, HistorialEntry, Notificacion, Project, PublicProject, Task, User,
 } from '@/types'
+import type { Marca } from './marca'
 
 // Mismo dominio que el front: Caddy en producción y el proxy de Vite en desarrollo mandan /api a Django.
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
@@ -220,3 +221,12 @@ export interface ResumenProyectos {
   por_estado: Array<{ estado_ID: string; name: string; color: string; total: number }>
   por_departamento: Array<{ departamento_ID: string; name: string; total: number; completados: number }>
 }
+
+// ── Institución ───────────────────────────────────────────────
+export const getConfiguracion = () => api.get<Marca>('/configuracion/').then(r => r.data)
+export const updateConfiguracion = (datos: Partial<Marca>) => api.patch<Marca>('/configuracion/', datos).then(r => r.data)
+export const subirLogo = (archivo: File) => {
+  const fd = new FormData(); fd.append('image', archivo)
+  return api.post<Marca>('/configuracion/logo/', fd).then(r => r.data)
+}
+export const borrarLogo = () => api.delete<Marca>('/configuracion/logo/').then(r => r.data)

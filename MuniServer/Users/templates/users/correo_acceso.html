@@ -4,7 +4,8 @@
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;">
       <tr>
         <td style="padding:32px;">
-          <h1 style="margin:0 0 16px;font-size:20px;">{% if motivo == 'bienvenida' %}Bienvenida/o a MuniManagement{% else %}Recuperación de contraseña{% endif %}</h1>
+          <h1 style="margin:0 0 16px;font-size:20px;">{% if motivo == 'bienvenida' %}Su cuenta en MuniManagement{% else %}Recuperación de contraseña{% endif %}</h1>
+          <p style="margin:0 0 4px;font-size:13px;color:#475569;">{{ institucion }}</p>
           <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Hola {{ nombre }}:</p>
           <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
             {% if motivo == 'bienvenida' %}Se creó una cuenta para usted. Para entrar, defina su contraseña con el siguiente botón.{% else %}Recibimos una solicitud para cambiar su contraseña. Si no la hizo usted, puede ignorar este correo.{% endif %}

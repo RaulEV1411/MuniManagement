@@ -55,13 +55,16 @@ def enviar_acceso_async(user_id, motivo):
     if not settings.EMAIL_HOST_USER:
         logger.info('EMAIL_HOST_USER vacío; se omite el correo de acceso.')
         return
+    from Configuracion.models import Configuracion
+    institucion = Configuracion.actual().nombre
     html = render_to_string('users/correo_acceso.html', {
         'motivo': motivo,
+        'institucion': institucion,
         'nombre': user.first_name,
         'enlace': enlace_de_acceso(user),
         'dias': settings.PASSWORD_RESET_TIMEOUT // 86400,
     })
-    asunto = 'Bienvenida/o a MuniManagement' if motivo == 'bienvenida' else 'Recuperación de contraseña'
+    asunto = f'Su cuenta en MuniManagement · {institucion}' if motivo == 'bienvenida' else f'Recuperación de contraseña · {institucion}'
     send_mail(
         asunto,
         strip_tags(html),

@@ -37,6 +37,11 @@ Una instalación por municipalidad, en un servidor con Docker. Todo corre en con
    docker compose exec api python manage.py crear_admin --email ana@muni.go.cr --nombre Ana --apellido Mora --cedula 112345678
    ```
    El comando imprime un enlace para definir la contraseña, y también lo manda por correo si el correo está configurado. Para dar el rol de Administrador a alguien que ya tiene cuenta: `python manage.py promover_admin correo@muni.go.cr`.
+6. Entrar como ese administrador y completar **Configuración › Institución**:
+   - nombre, ubicación y logo, que se ven en el login, el menú, los reportes, el portal y la pestaña del navegador;
+   - colores; el principal tiene que leerse con texto blanco encima;
+   - correo y teléfono de soporte, que se muestran en Ayuda;
+   - moneda.
 
 ## Actualizar
 

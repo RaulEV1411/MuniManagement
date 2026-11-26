@@ -11,11 +11,15 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, colorDeEstado, conColor } from '@/lib/colores'
+import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 
 // Costo con los aumentos y rebajos aprobados; si el servidor no lo manda, el costo base.
 const costoTotal = (p: Project) => p.costo_total ?? p.costo ?? 0
 
 export default function ReportsPage() {
+  useTituloDePagina('Reportes')
+  const marca = useMarca()
+  const { formatear, simbolo } = useMoneda()
   const [search, setSearch]           = useState('')
   const [deptFilter, setDeptFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -49,7 +53,7 @@ export default function ReportsPage() {
       doc.setFontSize(18)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(12, 56, 87)
-      doc.text('Municipalidad de Puntarenas', 14, 18)
+      doc.text(marca.nombre, 14, 18)
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
@@ -59,13 +63,13 @@ export default function ReportsPage() {
         14, 26,
       )
       doc.text(
-        `Total proyectos: ${filtered.length}   Costo total: ₡${totalCost.toLocaleString('es-CR')}`,
+        `Total proyectos: ${filtered.length}   Costo total: ${formatear(totalCost)}`,
         14, 32,
       )
 
       autoTable(doc, {
         startY: 38,
-        head: [['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'F. Entrega', 'Costo total (₡)']],
+        head: [['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'F. Entrega', `Costo total (${simbolo})`]],
         body: filtered.map((p, i) => [
           i + 1,
           p.name,
@@ -93,7 +97,7 @@ export default function ReportsPage() {
   const exportExcel = async () => {
     try {
       const { default: writeExcelFile } = await import('write-excel-file/browser')
-      const encabezados = ['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'Responsable', 'Fecha Inicio', 'Fecha Entrega', 'Costo total (₡)']
+      const encabezados = ['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'Responsable', 'Fecha Inicio', 'Fecha Entrega', `Costo total (${simbolo})`]
       const filas = filtered.map((p, i) => [
         i + 1,
         p.name,
@@ -132,7 +136,7 @@ export default function ReportsPage() {
           <h1 className="text-base font-bold text-foreground">Reportes</h1>
           {!isLoading && (
             <p className="text-xs text-muted-foreground">
-              {filtered.length} proyecto{filtered.length !== 1 ? 's' : ''} · ₡{totalCost.toLocaleString('es-CR')}
+              {filtered.length} proyecto{filtered.length !== 1 ? 's' : ''} · {formatear(totalCost)}
             </p>
           )}
         </div>
@@ -247,7 +251,7 @@ export default function ReportsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(p.fecha_entrega)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-right text-foreground">
-                        {`₡${costoTotal(p).toLocaleString('es-CR')}`}
+                        {formatear(costoTotal(p))}
                       </td>
                     </tr>
                   )
@@ -260,7 +264,7 @@ export default function ReportsPage() {
                   </td>
                   <td />
                   <td className="px-4 py-3 text-sm font-bold text-right text-foreground">
-                    ₡{totalCost.toLocaleString('es-CR')}
+                    {formatear(totalCost)}
                   </td>
                 </tr>
               </tfoot>

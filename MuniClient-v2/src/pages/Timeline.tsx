@@ -7,6 +7,7 @@ import { type Project, type Department, type Estado } from '@/types'
 import { cn, isOverdue } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { COLOR_VENCIDO, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 function toDate(s: string | null | undefined): Date | null {
   if (!s) return null
@@ -23,6 +24,7 @@ function diffDays(a: Date, b: Date) {
 }
 
 export default function TimelinePage() {
+  useTituloDePagina('Línea de tiempo')
   const navigate = useNavigate()
   const [deptFilter, setDeptFilter] = useState('')
 
@@ -172,7 +174,7 @@ export default function TimelinePage() {
                   >
                     {/* Nombre */}
                     <div className="w-48 flex-shrink-0 pr-3 flex items-center">
-                      <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 transition-colors truncate">
+                      <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
                         {p.name}
                       </p>
                     </div>

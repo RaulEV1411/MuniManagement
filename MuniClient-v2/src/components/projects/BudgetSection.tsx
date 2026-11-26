@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { getAjustes, createAjuste } from '@/lib/api'
 import type { AjustePresupuesto } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
+import { useMoneda } from '@/hooks/useMarca'
 
 interface Props {
   proyectoId?: string
@@ -14,9 +15,9 @@ interface Props {
   compact?: boolean
 }
 
-const colones = (n: number) => `₡${n.toLocaleString('es-CR')}`
 
 export default function BudgetSection({ proyectoId, tareaId, costoBase, compact }: Props) {
+  const { formatear, simbolo } = useMoneda()
   const qc = useQueryClient()
   const queryKey = ['ajustes', proyectoId ?? '', tareaId ?? '']
   const { data: ajustes = [] } = useQuery<AjustePresupuesto[]>({
@@ -61,7 +62,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
         <div>
           <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-base'}`}>Presupuesto</h3>
           <p className="text-xs text-muted-foreground">
-            Base {colones(costoBase)} · Total actual <strong className="text-foreground">{colones(total)}</strong>
+            Base {formatear(costoBase)} · Total actual <strong className="text-foreground">{formatear(total)}</strong>
           </p>
         </div>
         <button
@@ -88,7 +89,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
                   <TrendingDown className="h-4 w-4 text-red-600" />
                 )}
                 <span className={a.tipo === 'aumento' ? 'text-emerald-700' : 'text-red-700'}>
-                  {a.tipo === 'aumento' ? '+' : '−'}{colones(a.monto)}
+                  {a.tipo === 'aumento' ? '+' : '−'}{formatear(a.monto)}
                 </span>
               </span>
               <span className="flex-1 text-xs text-muted-foreground truncate">{a.motivo}</span>
@@ -138,7 +139,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               </button>
             </div>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Monto (₡)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Monto ({simbolo})</label>
             <input
               type="number"
               min={1}

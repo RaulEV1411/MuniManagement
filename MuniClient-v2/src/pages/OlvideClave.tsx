@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { Loader2 } from 'lucide-react'
 import { olvideClave } from '@/lib/api'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 export default function OlvideClavePage() {
+  useTituloDePagina('Recuperar contraseña')
   const [email, setEmail] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState<string | null>(null)

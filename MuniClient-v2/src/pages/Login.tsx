@@ -5,11 +5,13 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Eye, EyeOff, MapPin, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { login, getResumenLogin } from '@/lib/api'
 import axios from 'axios'
 import { mensajeDeError } from '@/lib/errores'
 import { useAppStore } from '@/store/app'
+import LogoInstitucion from '@/components/common/LogoInstitucion'
+import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 
 const schema = z.object({
   email:    z.string().email('Correo inválido'),
@@ -18,6 +20,8 @@ const schema = z.object({
 type Form = z.infer<typeof schema>
 
 export default function LoginPage() {
+  useTituloDePagina('Iniciar sesión')
+  const marca = useMarca()
   const [showPass, setShowPass] = useState(false)
   const navigate = useNavigate()
   const { iniciarSesion, isDark, toggleTheme } = useAppStore()
@@ -72,12 +76,10 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col h-full p-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <MapPin size={20} className="text-white" />
-            </div>
+            <LogoInstitucion tamano={40} claro />
             <div>
-              <p className="text-white font-bold text-sm leading-tight">Municipalidad</p>
-              <p className="text-white/60 text-xs">Puntarenas, Costa Rica</p>
+              <p className="text-white font-bold text-sm leading-tight">{marca.nombre}</p>
+              {marca.ubicacion && <p className="text-white/60 text-xs">{marca.ubicacion}</p>}
             </div>
           </div>
 
@@ -127,10 +129,8 @@ export default function LoginPage() {
         >
           {/* Logo móvil */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-xl bg-ocean-500 flex items-center justify-center">
-              <MapPin size={16} className="text-white" />
-            </div>
-            <span className="font-bold text-ocean-500">Municipalidad Puntarenas</span>
+            <LogoInstitucion tamano={32} />
+            <span className="font-bold text-ocean-500 dark:text-ocean-200">{marca.nombre}</span>
           </div>
 
           <h2 className="text-2xl font-bold text-foreground mb-1">Bienvenido</h2>

@@ -11,6 +11,7 @@ import { type User, type Department, type Role } from '@/types'
 import { cn, getInitials, fullName } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 const ROLE_STYLE: Record<string, string> = {
   'Administrador': 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
@@ -66,7 +67,7 @@ function UserListRow({ user }: { user: User }) {
     >
       <UserAvatar user={user} size="md" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">
+        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
           {fullName(user)}
         </p>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
@@ -99,7 +100,7 @@ function UserGridCard({ user }: { user: User }) {
     >
       <UserAvatar user={user} size="lg" />
       <div className="min-w-0 w-full">
-        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">
+        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
           {fullName(user)}
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
@@ -120,6 +121,7 @@ function UserGridCard({ user }: { user: User }) {
 }
 
 export default function UsersPage() {
+  useTituloDePagina('Usuarios')
   const navigate = useNavigate()
   const [search, setSearch]   = useState('')
   const [roleFilter, setRole] = useState('')
@@ -298,7 +300,7 @@ export default function UsersPage() {
               {hasFilters ? 'Ningún usuario coincide con los filtros.' : 'No hay usuarios registrados.'}
             </p>
             {hasFilters && (
-              <button onClick={clearFilters} className="text-xs text-ocean-500 hover:underline">Limpiar filtros</button>
+              <button onClick={clearFilters} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Limpiar filtros</button>
             )}
           </div>
         )}
