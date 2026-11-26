@@ -1,5 +1,4 @@
 from datetime import timedelta
-import pytz
 from django.utils import timezone
 from django.utils.html import escape
 from django.conf import settings
@@ -10,13 +9,12 @@ from Users.models import Users
 from Notifications.models import Notificacion
 
 
-CR_TZ = pytz.timezone('America/Costa_Rica')
 DIAS_AVISO = 4
 MAX_NOMBRE = 80
 
 
 def _hoy_cr():
-    return timezone.now().astimezone(CR_TZ).date()
+    return timezone.localdate()
 
 
 def _alcaldia_cache():

@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -37,7 +38,7 @@ class NotificacionViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def resumen(self, request):
-        hoy = date.today()
+        hoy = timezone.localdate()
         limite = hoy + timedelta(days=4)
         user = request.user
         proyectos = list(
