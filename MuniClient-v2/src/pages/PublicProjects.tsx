@@ -3,20 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Calendar, MapPin, Search, Building2 } from 'lucide-react'
 import { getPublicProjects } from '@/lib/api'
-
-interface PublicProject {
-  proyect_ID: string
-  name: string
-  descripcion: string
-  fecha_inicio: string
-  fecha_entrega: string
-  estado: { name: string; color: string } | null
-  prioridad: { name: string; color: string } | null
-  departamento: string
-  direccion: string
-  images: Array<{ imagen_ID: string; url: string }>
-  avance: number
-}
+import type { PublicProject } from '@/types'
 
 export default function PublicProjectsPage() {
   const [search, setSearch] = useState('')

@@ -60,7 +60,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
 
   const candidatos = users.filter(u => {
     // Preferir el flag del backend si viene; si no, fallback por nombre.
-    const flag = (u.role as any)?.puede_recibir_delegacion
+    const flag = u.role?.puede_recibir_delegacion
     if (typeof flag === 'boolean') return flag
     return ROLES_PUEDEN_RECIBIR.includes(u.role?.name)
   })

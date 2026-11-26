@@ -1,6 +1,9 @@
 export interface Role {
   role_ID: string
   name: string
+  puede_delegar?: boolean
+  puede_recibir_delegacion?: boolean
+  puede_ver_todo?: boolean
 }
 
 export interface Direction {
@@ -154,4 +157,30 @@ export interface AjustePresupuesto {
   aprobado_por: string | null
   fecha: string
   usuario_info?: User
+}
+
+export interface PublicProject {
+  proyect_ID: string
+  name: string
+  descripcion: string
+  fecha_inicio: string
+  fecha_entrega: string
+  estado: { name: string; color: string } | null
+  prioridad: { name: string; color: string } | null
+  departamento: string
+  direccion: string
+  images: Array<{ imagen_ID: string; url: string }>
+  avance: number
+}
+
+export interface PublicTask {
+  tareas_ID: string
+  name: string
+  fecha_inicio: string
+  fecha_entrega: string
+  estado: { name: string; color: string } | null
+}
+
+export interface PublicProjectDetail extends PublicProject {
+  tareas: PublicTask[]
 }

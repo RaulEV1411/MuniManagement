@@ -1,19 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Calendar, Building2, MapPin } from 'lucide-react'
+import { ArrowLeft, Calendar, Building2, MapPin, type LucideIcon } from 'lucide-react'
 import { getPublicProject } from '@/lib/api'
-
-interface PublicTask {
-  tareas_ID: string
-  name: string
-  fecha_inicio: string
-  fecha_entrega: string
-  estado: { name: string; color: string } | null
-}
+import type { PublicProjectDetail } from '@/types'
 
 export default function PublicProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: p, isLoading } = useQuery<any>({
+  const { data: p, isLoading } = useQuery<PublicProjectDetail>({
     queryKey: ['public-project', id],
     queryFn: () => getPublicProject(id!),
     enabled: !!id,
@@ -64,11 +57,11 @@ export default function PublicProjectDetailPage() {
           </div>
         </section>
 
-        {p.images?.length > 0 && (
+        {p.images.length > 0 && (
           <section>
             <h2 className="font-semibold text-slate-900 mb-3">Imágenes</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {p.images.map((img: any) => (
+              {p.images.map(img => (
                 <img
                   key={img.imagen_ID}
                   src={img.url}
@@ -80,11 +73,11 @@ export default function PublicProjectDetailPage() {
           </section>
         )}
 
-        {p.tareas?.length > 0 && (
+        {p.tareas.length > 0 && (
           <section className="rounded-2xl bg-white border border-slate-200 p-5">
             <h2 className="font-semibold text-slate-900 mb-3">Tareas del proyecto</h2>
             <ul className="space-y-2">
-              {(p.tareas as PublicTask[]).map(t => (
+              {p.tareas.map(t => (
                 <li key={t.tareas_ID} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2 last:border-0">
                   <div>
                     <p className="text-sm font-medium text-slate-900">{t.name}</p>
@@ -108,7 +101,7 @@ export default function PublicProjectDetailPage() {
   )
 }
 
-function Info({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function Info({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl bg-white border border-slate-200 p-3">
       <Icon className="h-4 w-4 text-slate-500" />
