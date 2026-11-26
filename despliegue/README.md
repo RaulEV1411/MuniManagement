@@ -56,14 +56,13 @@ La API aplica las migraciones al arrancar. **Antes de actualizar, conviene un re
   ```bash
   docker compose restart respaldo respaldo_fotos
   ```
-- **Restaurar** un respaldo (reemplaza los datos actuales):
+- **Restaurar** un respaldo de la base (reemplaza los datos actuales). La carpeta `respaldos/` es de root con permiso 700, por eso el `sudo`:
   ```bash
-  gunzip -c respaldos/muni-AAAA-MM-DD-HHMM.sql.gz | docker compose exec -T mysql sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
+  sudo gunzip -c respaldos/muni-AAAA-MM-DD-HHMM.sql.gz | docker compose exec -T mysql sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
   ```
-- **Restaurar las fotos** (las agrega al volumen):
+- **Restaurar las fotos** (las agrega al volumen, a nombre del usuario de la API):
   ```bash
-  docker compose cp respaldos/fotos-AAAA-MM-DD-HHMM.tar.gz api:/tmp/fotos.tar.gz
-  docker compose exec api tar xzf /tmp/fotos.tar.gz -C /app --strip-components=0
+  sudo cat respaldos/fotos-AAAA-MM-DD-HHMM.tar.gz | docker compose exec -T api tar xzf - -C /app
   ```
 - Pruebe una restauración al menos una vez, en otra máquina, antes de confiar en los respaldos.
 
