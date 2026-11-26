@@ -18,11 +18,12 @@ import ImageLightbox from '@/components/common/ImageLightbox'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import RazonModal from '@/components/common/RazonModal'
-import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { esFinal, pideMotivo, PESTANAS_DE_PROYECTOS, type PestanaProyectos } from '@/lib/estados'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 import { usePermiso } from '@/hooks/usePermiso'
+import { pestanas } from '@/lib/pestanas'
 
 // ── Cambio rápido de estado ───────────────────────────────────────────────────
 function StatusQuickChange({ project }: { project: Project }) {
@@ -46,6 +47,14 @@ function StatusQuickChange({ project }: { project: Project }) {
   }, [open])
 
   const currentStatus = isOverdue(project) ? 'Vencido' : (project.estado_ID?.name ?? '')
+  // Un proyecto cerrado no cambia de estado acá: se reabre desde su detalle.
+  if (esFinal(project.estado_ID)) {
+    return (
+      <span className={cn('inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
+        {project.estado_ID?.name}
+      </span>
+    )
+  }
 
   return (
     <div ref={ref} className="relative z-10 inline-flex" onClick={e => e.stopPropagation()}>
@@ -72,11 +81,11 @@ function StatusQuickChange({ project }: { project: Project }) {
             transition={{ duration: 0.1 }}
             className="absolute top-full mt-1 left-0 z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden min-w-[130px]"
           >
-            {estados.map(e => (
+            {estados.filter(e => !esFinal(e)).map(e => (
               <button
                 key={e.estado_ID}
                 onClick={() => {
-                  if (ESTADOS_CON_MOTIVO.includes(e.name) && e.estado_ID !== project.estado_ID?.estado_ID) {
+                  if (pideMotivo(e) && e.estado_ID !== project.estado_ID?.estado_ID) {
                     setOpen(false)
                     setConMotivo(e)
                   } else {
@@ -521,6 +530,9 @@ export default function DashboardPage() {
   const view     = (params.get('vista') ?? 'list') as 'list' | 'grid' | 'kanban'
   const mineOnly = params.get('mios') === '1'
   const pagina   = Math.max(1, Number(params.get('pagina') ?? '1') || 1)
+  const esAdmin  = user?.role === 'Administrador'
+  const pestanaPedida = (params.get('pestana') ?? 'activo') as PestanaProyectos
+  const pestana: PestanaProyectos = pestanaPedida === 'archivados' && !esAdmin ? 'activo' : pestanaPedida
 
   const setParam = (key: string, val: string, def: string) => {
     setParams(prev => {
@@ -543,6 +555,17 @@ export default function DashboardPage() {
   const setSortBy   = (v: string) => setParam('orden', v, 'reciente')
   const setView     = (v: string) => setParam('vista', v, 'list')
   const setMineOnly = (fn: (prev: boolean) => boolean) => setParam('mios', fn(mineOnly) ? '1' : '', '')
+  // Cambiar de pestaña limpia el filtro de estado (los estados de otra pestaña no aplican).
+  const setPestana = (v: PestanaProyectos) => setParams(prev => {
+    const next = new URLSearchParams(prev)
+    if (v === 'activo') next.delete('pestana')
+    else next.set('pestana', v)
+    next.delete('estado')
+    next.delete('pagina')
+    return next
+  }, { replace: true })
+  const pestanasVisibles = PESTANAS_DE_PROYECTOS.filter(p => p.clave !== 'archivados' || esAdmin)
+  const tabsProyectos = pestanas('proyectos', pestanasVisibles.map(p => p.clave), pestana, setPestana)
 
   // Filtros, orden y paginación los resuelve el servidor (antes se bajaban los primeros 200 y se
   // filtraba en el navegador, así que con más proyectos los resultados quedaban incompletos).
@@ -554,10 +577,11 @@ export default function DashboardPage() {
     ...(mineOnly && { mios: '1' }),
     orden: sortBy,
   }
+  const filtrosDeLista = { ...filtros, ...(pestana === 'archivados' ? { archivados: '1' } : { categoria: pestana }) }
   const porPagina = view === 'kanban' ? 100 : 24
   const { data: paginaActual, isLoading, refetch, isError, error, isPlaceholderData } = useQuery({
-    queryKey: ['projects', 'dashboard', filtros, pagina, porPagina],
-    queryFn: () => getProyectosPagina({ ...filtros, page: pagina, page_size: porPagina }),
+    queryKey: ['projects', 'dashboard', filtrosDeLista, pagina, porPagina],
+    queryFn: () => getProyectosPagina({ ...filtrosDeLista, page: pagina, page_size: porPagina }),
     placeholderData: keepPreviousData,
   })
   const displayed = useMemo(() => paginaActual?.results ?? [], [paginaActual])
@@ -567,7 +591,15 @@ export default function DashboardPage() {
   // Totales de todos los proyectos visibles, sin filtros.
   const { data: resumen } = useQuery({ queryKey: ['projects', 'resumen'], queryFn: () => getResumenProyectos() })
 
-  const { data: estados = [] }     = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  // Contadores de las pestañas: con la búsqueda y los filtros de ahora.
+  const filtrosDeConteo = { ...filtros, orden: undefined }
+  const { data: conteo } = useQuery({
+    queryKey: ['projects', 'resumen', 'pestanas', filtrosDeConteo],
+    queryFn: () => getResumenProyectos(filtrosDeConteo),
+    placeholderData: keepPreviousData,
+  })
+  const { data: todosLosEstados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  const estados = todosLosEstados.filter(e => (pestana === 'archivados' ? 'finalizado' : pestana) === (e.categoria ?? 'activo'))
   const { data: prioridades = [] } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades, staleTime: 300_000 })
 
   const [showChart, setShowChart] = useState(false)
@@ -647,6 +679,26 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* ── Pestañas: Activos, Pausados, Finalizados (y Archivados para el Administrador) ── */}
+      <div {...tabsProyectos.lista} aria-label="Proyectos por estado" className="bg-card border-b border-border px-4 sm:px-6 flex gap-1 overflow-x-auto flex-shrink-0">
+        {pestanasVisibles.map(({ clave, nombre }) => {
+          const n = clave === 'archivados' ? conteo?.archivados : conteo?.por_categoria?.[clave]
+          return (
+            <button
+              key={clave}
+              {...tabsProyectos.pestana(clave)}
+              className={cn(
+                'px-3 py-2 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors',
+                pestana === clave ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {nombre}
+              {n !== undefined && <span className="ml-1.5 text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full tabular-nums">{n}</span>}
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Toolbar ── */}
       <div className="bg-card border-b border-border px-4 sm:px-6 py-2 flex flex-wrap items-center gap-2 flex-shrink-0" style={{ minHeight: 52 }}>
         <div className="relative w-full sm:w-64 sm:flex-shrink-0">
@@ -666,7 +718,7 @@ export default function DashboardPage() {
         </div>
 
         {[
-          { value: status,   onChange: setStatus,   etiqueta: 'Filtrar por estado',    opts: ['Todos', ...estados.map(e => e.name), 'Vencido'] },
+          { value: status,   onChange: setStatus,   etiqueta: 'Filtrar por estado',    opts: ['Todos', ...estados.map(e => e.name), ...(pestana === 'activo' || pestana === 'pausado' ? ['Vencido'] : [])] },
           { value: priority, onChange: setPriority, etiqueta: 'Filtrar por prioridad', opts: ['Todas', ...prioridades.map(p => p.name)] },
         ].map((f, i) => (
           <div key={i} className="relative flex-shrink-0">
@@ -786,7 +838,7 @@ export default function DashboardPage() {
       </AnimatePresence>
 
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+      <div {...tabsProyectos.panel} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 focus:outline-none">
         {isLoading ? (
           <div className={view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3' : 'space-y-2'}>
             {[...Array(8)].map((_, i) => (

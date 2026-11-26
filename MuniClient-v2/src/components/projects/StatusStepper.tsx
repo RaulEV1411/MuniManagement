@@ -4,6 +4,7 @@ import { Check, Loader2, X } from 'lucide-react'
 import type { Estado } from '@/types'
 import { textoSobre } from '@/lib/colores'
 import Dialogo from '@/components/common/Dialogo'
+import { esFinal, pideMotivo } from '@/lib/estados'
 
 const STATE_ICON: Record<string, string> = {
   'Pendiente': '📋',
@@ -18,13 +19,13 @@ interface Props {
   estados: Estado[]
   currentId: string
   onChange: (nuevoId: string, motivo?: string) => Promise<void> | void
+  /** Un estado finalizado no se aplica directo: abre el cierre del proyecto. */
+  onFinal?: (estado: Estado) => void
   size?: 'sm' | 'md'
   disabled?: boolean
 }
 
-const REQUIERE_MOTIVO = ['Cancelado', 'Pausado']
-
-export default function StatusStepper({ estados, currentId, onChange, size = 'md', disabled }: Props) {
+export default function StatusStepper({ estados, currentId, onChange, onFinal, size = 'md', disabled }: Props) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState<Estado | null>(null)
   const [motivo, setMotivo] = useState('')
@@ -44,7 +45,11 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
 
   const handleClick = (estado: Estado) => {
     if (disabled || estado.estado_ID === currentId) return
-    if (REQUIERE_MOTIVO.includes(estado.name)) {
+    if (onFinal && esFinal(estado)) {
+      onFinal(estado)
+      return
+    }
+    if (pideMotivo(estado)) {
       setConfirmando(estado)
       return
     }

@@ -55,12 +55,16 @@ export interface User {
   ultima_conexion?: string | null
 }
 
+export type CategoriaEstado = 'activo' | 'pausado' | 'finalizado'
+
 export interface Estado {
   estado_ID: string
   name: string
   color?: string
   orden?: number
   is_system?: boolean
+  // Activo, pausado o finalizado: a un estado finalizado se llega cerrando el proyecto.
+  categoria?: CategoriaEstado
 }
 
 export interface Prioridad {
@@ -101,6 +105,33 @@ export interface Project {
   tipos?: Array<{ tipos_ID: string; name: string }>
   // Solo en el detalle: lo que puede hacer quien lo mira (proyectos.editar, tareas.gestionar, …).
   mis_permisos?: string[] | null
+  // Cerrado = estado finalizado o archivado: no se edita hasta reabrirlo.
+  cerrado?: boolean
+  archivado?: boolean
+  archivado_en?: string | null
+  // Solo en el detalle de un proyecto cerrado.
+  cierre?: CierreProyecto | null
+}
+
+export interface DocumentoProyecto {
+  documento_ID: string
+  tipo: 'acta' | 'otro'
+  nombre: string
+  url: string
+  creado_en: string
+}
+
+export interface CierreProyecto {
+  cierre_ID: string
+  estado: string
+  estado_nombre: string
+  fecha_fin_real: string
+  costo_real: number
+  motivo: string
+  lecciones: string
+  cerrado_por_nombre: string
+  cerrado_en: string
+  documentos: DocumentoProyecto[]
 }
 
 export interface TaskImage {

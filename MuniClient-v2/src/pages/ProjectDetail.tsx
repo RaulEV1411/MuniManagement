@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Edit2, Trash2, Plus, ChevronDown, ChevronRight,
+  ArrowLeft, Edit2, Trash2, Plus, ChevronDown, ChevronRight, Flag, RotateCcw, Archive, ArchiveRestore,
   Calendar, DollarSign, Building2, User as UserIcon, Clock, CheckCircle2,
   MessageSquare, AlertCircle, X, ImageIcon, Upload, ZoomIn, Activity, Search,
 } from 'lucide-react'
@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 import {
   getProjectById, getTasksByProject, getFeedback,
   createTask, patchTask, deleteTask, patchProject,
-  deleteProject, createFeedback, deleteFeedback,
+  archivarProyecto, desarchivarProyecto, createFeedback, deleteFeedback,
   uploadProjectImage, deleteProjectImage,
   uploadTaskImage, deleteTaskImage,
   getEstados, getPrioridades, getDepartments, getUsers,
@@ -33,7 +33,8 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { esNoEncontrado } from '@/lib/errores'
 import RazonModal from '@/components/common/RazonModal'
-import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { esFinal, pideMotivo } from '@/lib/estados'
+import { CerrarProyectoDialogo, ReabrirProyectoDialogo, TarjetaDeCierre } from '@/components/projects/CierreProyecto'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
@@ -141,8 +142,8 @@ function EditProjectModal({
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
-    const nuevoEstado = estados.find(x => x.estado_ID === form.estado_ID)?.name ?? ''
-    if (form.estado_ID !== (project.estado_ID?.estado_ID ?? '') && ESTADOS_CON_MOTIVO.includes(nuevoEstado)) {
+    const nuevoEstado = estados.find(x => x.estado_ID === form.estado_ID)
+    if (form.estado_ID !== (project.estado_ID?.estado_ID ?? '') && pideMotivo(nuevoEstado)) {
       setPidiendoMotivo(true)
       return
     }
@@ -221,7 +222,8 @@ function EditProjectModal({
               <label htmlFor="projectdetail-estado" className="text-xs font-semibold text-muted-foreground">Estado</label>
               <select id="projectdetail-estado" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin estado</option>
-                {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
+                {/* Terminar o cancelar se hace con «Cerrar proyecto», no editando. */}
+                {estados.filter(e => !esFinal(e)).map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -1053,15 +1055,27 @@ export default function ProjectDetailPage() {
 
   const [taskSearch, setTaskSearch] = useState('')
 
-  const handleDeleteProject = async () => {
+  // Cerrar (con el estado final elegido), reabrir y archivar: los proyectos no se borran.
+  const [cerrando, setCerrando] = useState<string | null>(null)
+  const [reabriendo, setReabriendo] = useState(false)
+  const esAdmin = user?.role === 'Administrador'
+  const refrescar = async () => {
+    await qc.invalidateQueries({ queryKey: ['project', id] })
+    await qc.invalidateQueries({ queryKey: ['projects'] })
+    await qc.invalidateQueries({ queryKey: ['historial', id] })
+  }
+  const archivar = async (archivarlo: boolean) => {
     if (!project) return
-    if (!(await confirmar({ titulo: `¿Eliminar el proyecto «${project.name}»?`, mensaje: 'Esta acción no se puede deshacer.' }))) return
+    const pregunta = archivarlo
+      ? { titulo: `¿Archivar «${project.name}»?`, mensaje: 'Sale de las listas de proyectos y conserva todo su historial. Se puede devolver cuando haga falta.', accion: 'Archivar' }
+      : { titulo: `¿Devolver «${project.name}» a las listas?`, accion: 'Devolver' }
+    if (!(await confirmar(pregunta))) return
     try {
-      await deleteProject(id!)
-      toast.success('Proyecto eliminado')
-      navigate('/dashboard')
+      await (archivarlo ? archivarProyecto(id!) : desarchivarProyecto(id!))
+      toast.success(archivarlo ? 'Proyecto archivado.' : 'El proyecto volvió a las listas.')
+      await refrescar()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'Error al eliminar proyecto'))
+      toast.error(mensajeDeError(err, 'No se pudo cambiar el archivo del proyecto.'))
     }
   }
 
@@ -1203,7 +1217,10 @@ export default function ProjectDetailPage() {
                   {project.prioridad_ID.name}
                 </span>
               )}
-              {days !== null && project.estado_ID?.name !== 'Completado' && project.estado_ID?.name !== 'Cancelado' && (
+              {project.archivado && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1 bg-muted text-muted-foreground">Archivado</span>
+              )}
+              {days !== null && !project.cerrado && (
                 <span className={cn(
                   'text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-1',
                   overdue ? 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400' :
@@ -1239,12 +1256,25 @@ export default function ProjectDetailPage() {
             >
               <Edit2 size={14} />
             </button>}
-            {puede('proyectos.eliminar') && <button
-              onClick={handleDeleteProject}
-              className="p-1.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-[0.98]"
-              title="Eliminar proyecto"
+            {!project.cerrado && puede('proyectos.editar') && <button
+              onClick={() => setCerrando('')}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
             >
-              <Trash2 size={14} />
+              <Flag size={12} aria-hidden="true" /> Cerrar proyecto
+            </button>}
+            {project.cerrado && !project.archivado && puede('proyectos.reabrir') && <button
+              onClick={() => setReabriendo(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+            >
+              <RotateCcw size={12} aria-hidden="true" /> Reabrir
+            </button>}
+            {esAdmin && esFinal(project.estado_ID) && <button
+              onClick={() => archivar(!project.archivado)}
+              className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
+              title={project.archivado ? 'Devolver a las listas' : 'Archivar'}
+              aria-label={project.archivado ? 'Devolver a las listas' : 'Archivar'}
+            >
+              {project.archivado ? <ArchiveRestore size={14} /> : <Archive size={14} />}
             </button>}
           </div>
         </div>
@@ -1354,7 +1384,8 @@ export default function ProjectDetailPage() {
 
             {/* ── Información ── */}
             {tab === 'Información' && (
-              <div className="max-w-2xl">
+              <div className="max-w-2xl space-y-4">
+                {project.cierre && <TarjetaDeCierre cierre={project.cierre} costoPrevisto={project.costo_total ?? project.costo ?? 0} />}
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="text-sm font-bold text-foreground mb-4">Detalles del proyecto</h3>
                   {project.descripcion && (
@@ -1403,6 +1434,7 @@ export default function ProjectDetailPage() {
                       estados={estados}
                       disabled={!puede('proyectos.editar')}
                       currentId={project.estado_ID?.estado_ID ?? ''}
+                      onFinal={e => setCerrando(e.estado_ID)}
                       onChange={async (nuevoId, motivo) => {
                         await patchProject(project.proyect_ID, { estado_ID: nuevoId, razon: motivo ?? '' })
                         await qc.invalidateQueries({ queryKey: ['project', id] })
@@ -1660,6 +1692,24 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* ── Modales ── */}
+      {cerrando !== null && (
+        <CerrarProyectoDialogo
+          project={project}
+          estados={estados}
+          inicial={cerrando || undefined}
+          pendientes={tasks.filter(t => !esFinal(t.estado_ID)).length}
+          onCerrar={() => setCerrando(null)}
+          onListo={async () => { setCerrando(null); await refrescar() }}
+        />
+      )}
+      {reabriendo && (
+        <ReabrirProyectoDialogo
+          project={project}
+          estados={estados}
+          onCerrar={() => setReabriendo(false)}
+          onListo={async () => { setReabriendo(false); await refrescar() }}
+        />
+      )}
       <AnimatePresence>
         {showTaskModal && estados.length > 0 && prioridades.length > 0 && (
           <TaskModal

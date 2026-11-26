@@ -13,7 +13,11 @@ interface FAQ {
 const FAQS: FAQ[] = [
   {
     q: '¿Cómo cambio el estado de un proyecto o tarea?',
-    a: 'Abra el proyecto, vaya a la pestaña Información y haga clic en cualquiera de las «píldoras» de estado (Pendiente, En progreso, etc.). Si elige Cancelado o Pausado, se le pedirá un motivo, que queda en el historial.',
+    a: 'Abra el proyecto, vaya a la pestaña Información y haga clic en cualquiera de las «píldoras» de estado (Pendiente, En progreso, etc.). Si elige Pausado, se le pedirá un motivo, que queda en el historial. Completado y Cancelado abren el cierre del proyecto.',
+  },
+  {
+    q: '¿Cómo cierro un proyecto? ¿Se puede borrar?',
+    a: 'Los proyectos no se borran. Con «Cerrar proyecto» se indica cómo terminó (Completado o Cancelado), la fecha y el costo reales, un resumen o motivo, las lecciones aprendidas y, si hay, el acta en PDF. Un proyecto cerrado pasa a la pestaña Finalizados y no se edita: para cambiarlo, quien tiene permiso lo reabre con un motivo. El Administrador puede archivar los cerrados para sacarlos de las listas sin perder su historial.',
   },
   {
     q: '¿Cómo solicito un aumento o rebajo de presupuesto?',

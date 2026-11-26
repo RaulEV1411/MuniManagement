@@ -110,6 +110,11 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await expect(page.getByRole('dialog', { name: 'Agregar al equipo' })).toBeVisible()
       await sinFallos(page, 'agregar al equipo', '[role=dialog]')
       await page.keyboard.press('Escape')
+
+      await page.getByRole('button', { name: 'Cerrar proyecto' }).click()
+      await expect(page.getByRole('dialog', { name: 'Cerrar el proyecto' })).toBeVisible()
+      await sinFallos(page, 'cerrar el proyecto', '[role=dialog]')
+      await page.keyboard.press('Escape')
       await page.getByRole('tab', { name: /^Tareas/ }).click()
 
       // La confirmación de borrado es un diálogo propio (antes window.confirm); Escape cancela.
