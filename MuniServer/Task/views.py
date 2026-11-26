@@ -38,7 +38,7 @@ class TareasViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto_ID']):
-            raise PermissionDenied('No tienes permisos para crear tareas en este proyecto.')
+            raise PermissionDenied('No tiene permisos para crear tareas en este proyecto.')
         tarea = serializer.save()
         HistorialCambios.objects.create(
             tipo='creacion', proyecto_ID_id=tarea.proyecto_ID_id, tarea_ID=str(tarea.tareas_ID),
@@ -48,7 +48,7 @@ class TareasViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         if not authz.puede_editar(self.request.user, instance.proyecto_ID):
-            raise PermissionDenied('No tienes permisos para borrar tareas de este proyecto.')
+            raise PermissionDenied('No tiene permisos para borrar tareas de este proyecto.')
         datos = {'name': instance.name, 'tareas_ID': str(instance.tareas_ID)}
         proyecto_id = instance.proyecto_ID_id
         instance.delete()
@@ -78,7 +78,7 @@ class TareasViewSet(ModelViewSet):
                 if getattr(prev, campo) != valor
             }
             if prev.asignado_a_id != user.user_ID or not cambios <= CAMPOS_DEL_ASIGNADO:
-                raise PermissionDenied('Solo puedes cambiar el estado de las tareas que tienes asignadas.')
+                raise PermissionDenied('Solo puede cambiar el estado de las tareas que tiene asignadas.')
         anterior = {
             'estado_ID': str(prev.estado_ID_id),
             'fecha_entrega': str(prev.fecha_entrega),
@@ -152,7 +152,7 @@ class TaskImageViewSet(ModelViewSet):
         if tarea is None or not authz.puede_ver(request.user, tarea.proyecto_ID):
             return Response({'error': 'Tarea no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
         if not _puede_gestionar_imagenes(request.user, tarea):
-            raise PermissionDenied('No tienes permisos para subir imágenes a esta tarea.')
+            raise PermissionDenied('No tiene permisos para subir imágenes a esta tarea.')
         error = error_de_imagen(file)
         if error:
             return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
@@ -168,7 +168,7 @@ class TaskImageViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if not _puede_gestionar_imagenes(request.user, instance.tarea):
-            raise PermissionDenied('No tienes permisos para borrar esta imagen.')
+            raise PermissionDenied('No tiene permisos para borrar esta imagen.')
         borrar_imagen(instance.public_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

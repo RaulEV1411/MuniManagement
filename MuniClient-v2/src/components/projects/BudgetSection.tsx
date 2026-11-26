@@ -7,6 +7,7 @@ import { getAjustes, createAjuste } from '@/lib/api'
 import type { AjustePresupuesto } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import { useMoneda } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Props {
   proyectoId?: string
@@ -102,7 +103,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <Dialogo titulo="Nuevo ajuste de presupuesto" onCerrar={() => setOpen(false)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -111,7 +112,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
           >
             <header className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Nuevo ajuste de presupuesto</h3>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button aria-label="Cerrar" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </header>
@@ -139,8 +140,8 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               </button>
             </div>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Monto ({simbolo})</label>
-            <input
+            <label htmlFor="budgetsection-monto" className="block text-sm font-medium text-foreground mb-1">Monto ({simbolo})</label>
+            <input id="budgetsection-monto"
               type="number"
               min={1}
               value={monto}
@@ -148,8 +149,8 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-3"
             />
 
-            <label className="block text-sm font-medium text-foreground mb-1">Motivo</label>
-            <textarea
+            <label htmlFor="budgetsection-motivo" className="block text-sm font-medium text-foreground mb-1">Motivo</label>
+            <textarea id="budgetsection-motivo"
               value={motivo}
               onChange={e => setMotivo(e.target.value)}
               rows={3}
@@ -169,7 +170,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </section>
   )

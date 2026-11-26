@@ -14,7 +14,7 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        aria-label={`Notificaciones${noLeidas ? ` (${noLeidas} sin leer)` : ''}`}
+        aria-label={noLeidas ? `${noLeidas > 99 ? '99+' : noLeidas} ${noLeidas === 1 ? 'notificación sin leer' : 'notificaciones sin leer'}` : 'Notificaciones'}
         className="relative grid h-11 w-11 place-items-center rounded-xl border border-border bg-card hover:bg-accent transition active:scale-95"
       >
         <Bell className="h-5 w-5 text-foreground" />

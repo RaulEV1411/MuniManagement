@@ -53,16 +53,16 @@ const slideVariants = {
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-muted-foreground">
+    <label className="block space-y-1.5">
+      <span className="block text-xs font-semibold text-muted-foreground">
         {label} {required && <span className="text-destructive">*</span>}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   )
 }
 
-const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all'
+const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all'
 
 function SummaryRow({ label, value, badge, color }: {
   label: string; value: string; badge?: boolean; color?: string
@@ -110,8 +110,8 @@ export default function ProjectCreatePage() {
       if (form.costo === '' || Number(form.costo) < 0) return 'El costo estimado es requerido (puede ser 0)'
     }
     if (paso === 2) {
-      if (!form.departamento_ID) return 'Selecciona un departamento'
-      if (!form.user_ID) return 'Selecciona un responsable'
+      if (!form.departamento_ID) return 'Seleccione un departamento'
+      if (!form.user_ID) return 'Seleccione un responsable'
     }
     return null
   }
@@ -237,7 +237,7 @@ export default function ProjectCreatePage() {
                       value={form.descripcion}
                       onChange={e => set('descripcion', e.target.value)}
                       rows={4}
-                      placeholder="Describe el alcance y objetivos del proyecto..."
+                      placeholder="Describa el alcance y los objetivos del proyecto…"
                       className={cn(inputCls, 'resize-none')}
                     />
                   </Field>

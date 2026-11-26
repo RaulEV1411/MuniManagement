@@ -18,6 +18,7 @@ import PublicProjectDetailPage from '@/pages/PublicProjectDetail'
 import AyudaPage from '@/pages/Ayuda'
 import OlvideClavePage from '@/pages/OlvideClave'
 import DefinirClavePage from '@/pages/DefinirClave'
+import AccesibilidadPage from '@/pages/Accesibilidad'
 
 export const router = createBrowserRouter([
   { path: '/',      element: <Navigate to="/login" replace /> },
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
   { path: '/definir-clave/:uid/:token', element: <DefinirClavePage /> },
   { path: '/publico',                  element: <PublicProjectsPage /> },
   { path: '/publico/proyectos/:id',    element: <PublicProjectDetailPage /> },
+  { path: '/accesibilidad',            element: <AccesibilidadPage /> },
   {
     element: <Guard />,
     children: [{

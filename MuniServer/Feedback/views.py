@@ -27,7 +27,7 @@ class FeedbackViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         if not authz.puede_ver(self.request.user, serializer.validated_data['proyecto_ID']):
-            raise PermissionDenied('No tienes acceso a este proyecto.')
+            raise PermissionDenied('No tiene acceso a este proyecto.')
         comentario = serializer.save(user_ID=self.request.user)
         proyecto = comentario.proyecto_ID
         notificar(

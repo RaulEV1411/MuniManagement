@@ -9,6 +9,7 @@ import { contrasteConBlanco, type Marca } from '@/lib/marca'
 import { useMarca } from '@/hooks/useMarca'
 import { useAppStore } from '@/store/app'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
+import { textoSobre } from '@/lib/colores'
 
 const MONEDAS = [
   ['CRC', 'Colón costarricense'], ['USD', 'Dólar estadounidense'], ['GTQ', 'Quetzal'], ['HNL', 'Lempira'],
@@ -91,7 +92,7 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
           <LogoInstitucion tamano={56} />
           {esAdmin && (
             <div className="flex gap-2">
-              <input ref={archivo} id="logo" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={cambiarLogo} />
+              <input ref={archivo} id="logo" type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={cambiarLogo} />
               <button type="button" onClick={() => archivo.current?.click()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border hover:bg-accent">
                 <ImageUp size={13} aria-hidden="true" /> {marca.logo ? 'Cambiar logo' : 'Subir logo'}
               </button>
@@ -137,7 +138,7 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
         )}
         <div className="flex items-center gap-2" aria-hidden="true">
           <span className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white" style={{ background: HEX.test(form.color_primario) ? form.color_primario : undefined }}>Botón de ejemplo</span>
-          <span className="px-3 py-1.5 rounded-xl text-xs font-semibold" style={{ background: HEX.test(form.color_acento) ? form.color_acento : undefined }}>Acento</span>
+          <span className="px-3 py-1.5 rounded-xl text-xs font-semibold" style={{ background: HEX.test(form.color_acento) ? form.color_acento : undefined, color: HEX.test(form.color_acento) ? textoSobre(form.color_acento) : undefined }}>Acento</span>
         </div>
       </section>
 

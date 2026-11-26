@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Loader2, X } from 'lucide-react'
 import type { Estado } from '@/types'
+import { textoSobre } from '@/lib/colores'
+import Dialogo from '@/components/common/Dialogo'
 
 const STATE_ICON: Record<string, string> = {
   'Pendiente': '📋',
@@ -69,10 +71,10 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               whileTap={{ scale: 0.96 }}
               className={`group inline-flex items-center gap-1.5 rounded-full border font-medium transition ${px} ${
                 active
-                  ? 'text-white border-transparent shadow-md'
+                  ? 'border-transparent shadow-md'
                   : 'border-border bg-card text-foreground hover:border-foreground/30 hover:bg-accent'
               } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-              style={active ? { backgroundColor: color } : undefined}
+              style={active ? { backgroundColor: color, color: textoSobre(color) } : undefined}
               title={`Cambiar a ${estado.name}`}
             >
               <span aria-hidden>{STATE_ICON[estado.name] ?? '•'}</span>
@@ -85,7 +87,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
       </div>
 
       {confirmando && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setConfirmando(null)}>
+        <Dialogo titulo={`Cambiar a «${confirmando.name}»`} onCerrar={() => setConfirmando(null)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -96,14 +98,15 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               <h3 className="text-lg font-semibold text-foreground">
                 Cambiar a "{confirmando.name}"
               </h3>
-              <button onClick={() => setConfirmando(null)} className="text-muted-foreground hover:text-foreground">
+              <button aria-label="Cerrar" onClick={() => setConfirmando(null)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Esta acción quedará registrada en el historial. Por favor indica el motivo.
+              Esta acción queda registrada en el historial. Indique el motivo.
             </p>
             <textarea
+              aria-label="Motivo del cambio"
               autoFocus
               value={motivo}
               onChange={e => setMotivo(e.target.value)}
@@ -127,7 +130,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </>
   )

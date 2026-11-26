@@ -8,6 +8,7 @@ import { type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName]     = useState('')
@@ -30,7 +31,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Nueva dirección" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -39,19 +40,19 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Nueva dirección</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre <span className="text-destructive">*</span></label>
-            <input
+            <label htmlFor="directions-nombre" className="text-xs font-semibold text-muted-foreground">Nombre <span className="text-destructive">*</span></label>
+            <input id="directions-nombre"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Ej: Dirección de Obras"
               autoFocus
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -66,7 +67,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -125,7 +126,7 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
     >
       <td className="px-5 py-3.5">
         {editing ? (
-          <input
+          <input aria-label="Nombre de la dirección"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel() }}
@@ -150,26 +151,26 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
         <div className="flex items-center justify-end gap-1.5">
           {editing ? (
             <>
-              <button onClick={handleSave} disabled={saving}
+              <button aria-label="Guardar" onClick={handleSave} disabled={saving}
                 className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors disabled:opacity-60">
                 <Check size={13} />
               </button>
-              <button onClick={handleCancel}
+              <button aria-label="Cancelar" onClick={handleCancel}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent transition-colors">
                 <X size={13} />
               </button>
             </>
           ) : (
             <>
-              <button
+              <button aria-label={`Editar ${direction.name}`}
                 onClick={() => setEditing(true)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
               >
                 <Pencil size={13} />
               </button>
-              <button
+              <button aria-label={`Eliminar ${direction.name}`}
                 onClick={handleDelete}
-                className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
               >
                 <Trash2 size={13} />
               </button>
@@ -231,7 +232,7 @@ export default function DirectionsPage() {
               <GitBranch size={20} className="text-muted-foreground/40" />
             </div>
             <p className="text-sm font-medium text-foreground">Sin direcciones</p>
-            <p className="text-xs text-muted-foreground">Crea la primera dirección para comenzar</p>
+            <p className="text-xs text-muted-foreground">Cree la primera dirección para comenzar</p>
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"

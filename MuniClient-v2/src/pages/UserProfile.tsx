@@ -20,11 +20,13 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { esNoEncontrado } from '@/lib/errores'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
+import { pestanas } from '@/lib/pestanas'
 
 
 const AVATAR_COLORS = [
-  'bg-ocean-500', 'bg-sunset-500', 'bg-purple-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-cyan-500', 'bg-rose-500', 'bg-indigo-500',
+  'bg-ocean-500', 'bg-purple-700', 'bg-emerald-700', 'bg-amber-700',
+  'bg-cyan-700', 'bg-rose-700', 'bg-indigo-600', 'bg-teal-700',
 ]
 
 function avatarColor(name: string): string {
@@ -102,10 +104,10 @@ function EditModal({
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Editar usuario" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -114,50 +116,50 @@ function EditModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">Editar usuario</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Nombre</label>
-              <input value={form.first_name} onChange={e => set('first_name', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-nombre" className="text-xs font-semibold text-muted-foreground">Nombre</label>
+              <input id="userprofile-nombre" value={form.first_name} onChange={e => set('first_name', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Apellido</label>
-              <input value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-apellido" className="text-xs font-semibold text-muted-foreground">Apellido</label>
+              <input id="userprofile-apellido" value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Cédula</label>
-            <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            <label htmlFor="userprofile-cedula" className="text-xs font-semibold text-muted-foreground">Cédula</label>
+            <input id="userprofile-cedula" type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Email</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            <label htmlFor="userprofile-correo-electronico" className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
+            <input id="userprofile-correo-electronico" type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Teléfono</label>
-              <input type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-telefono" className="text-xs font-semibold text-muted-foreground">Teléfono</label>
+              <input id="userprofile-telefono" type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Puesto</label>
-              <input value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-puesto" className="text-xs font-semibold text-muted-foreground">Puesto</label>
+              <input id="userprofile-puesto" value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Rol</label>
-              <select value={form.role} onChange={e => set('role', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
+              <label htmlFor="userprofile-rol" className="text-xs font-semibold text-muted-foreground">Rol</label>
+              <select id="userprofile-rol" value={form.role} onChange={e => set('role', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin rol</option>
                 {roles.map(r => <option key={r.role_ID} value={r.role_ID}>{r.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
-              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
+              <label htmlFor="userprofile-departamento" className="text-xs font-semibold text-muted-foreground">Departamento</label>
+              <select id="userprofile-departamento" value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin departamento</option>
                 {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
               </select>
@@ -175,7 +177,7 @@ function EditModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -194,16 +196,16 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
       toast.success('Contraseña actualizada')
       onClose()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'Error al cambiar contraseña — verifica la contraseña actual'))
+      toast.error(mensajeDeError(err, 'No se pudo cambiar la contraseña. Revise la contraseña actual.'))
     } finally {
       setLoading(false)
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Cambiar contraseña" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -212,22 +214,22 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Cambiar contraseña</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Contraseña actual</label>
-            <input type="password" value={form.current} onChange={e => set('current', e.target.value)} className={inputCls} autoFocus />
+            <label htmlFor="userprofile-contrasena-actual" className="text-xs font-semibold text-muted-foreground">Contraseña actual</label>
+            <input id="userprofile-contrasena-actual" type="password" value={form.current} onChange={e => set('current', e.target.value)} className={inputCls} autoFocus />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nueva contraseña</label>
-            <input type="password" value={form.next} onChange={e => set('next', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-nueva-contrasena" className="text-xs font-semibold text-muted-foreground">Nueva contraseña</label>
+            <input id="userprofile-nueva-contrasena" type="password" value={form.next} onChange={e => set('next', e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Confirmar nueva contraseña</label>
-            <input type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-confirmar-nueva-contrasena" className="text-xs font-semibold text-muted-foreground">Confirmar nueva contraseña</label>
+            <input id="userprofile-confirmar-nueva-contrasena" type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} className={inputCls} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
@@ -241,7 +243,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -255,6 +257,7 @@ export default function UserProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [tab, setTab]         = useState<Tab>('Información')
+  const tabs = pestanas('perfil', TABS, tab, setTab)
   const [showEdit, setShowEdit]     = useState(false)
   const [showPassword, setPassword] = useState(false)
   const [uploading, setUploading]   = useState(false)
@@ -347,7 +350,7 @@ export default function UserProfilePage() {
       {/* ── Header ── */}
       <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-center gap-3 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex-shrink-0 active:scale-[0.98]"
           >
@@ -370,7 +373,7 @@ export default function UserProfilePage() {
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
                 aria-label="Cambiar la foto"
-                className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex items-center justify-center transition-opacity"
               >
                 <Camera size={12} className="text-white" />
               </button>
@@ -430,11 +433,11 @@ export default function UserProfilePage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del perfil">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
@@ -454,6 +457,7 @@ export default function UserProfilePage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -471,7 +475,7 @@ export default function UserProfilePage() {
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Contacto</h3>
-                  <InfoRow icon={Mail}       label="Email"    value={user.email} />
+                  <InfoRow icon={Mail}       label="Correo electrónico" value={user.email} />
                   {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />}
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>

@@ -8,6 +8,7 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
+import { textoSobre } from '@/lib/colores'
 
 export default function PublicProjectsPage() {
   useTituloDePagina('Portal de proyectos')
@@ -28,7 +29,7 @@ export default function PublicProjectsPage() {
             <LogoInstitucion tamano={36} claro />
             <h1 className="text-2xl font-bold">Portal de proyectos</h1>
           </div>
-          <p className="text-white/80">{marca.nombre}{marca.ubicacion ? ` · ${marca.ubicacion}` : ''}</p>
+          <p className="text-white">{marca.nombre}{marca.ubicacion ? ` · ${marca.ubicacion}` : ''}</p>
         </div>
       </header>
 
@@ -39,6 +40,7 @@ export default function PublicProjectsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre, descripción o departamento…"
+            aria-label="Buscar proyectos"
             className="w-full pl-10 pr-3 py-3 rounded-xl border border-slate-200 bg-white text-base focus:outline-none focus:ring-2 focus:ring-ocean-500"
           />
         </div>
@@ -75,8 +77,8 @@ export default function PublicProjectsPage() {
                     <h3 className="font-semibold text-slate-900 leading-tight">{p.name}</h3>
                     {p.estado && (
                       <span
-                        className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold shrink-0"
-                        style={{ backgroundColor: p.estado.color }}
+                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
+                        style={{ backgroundColor: p.estado.color, color: textoSobre(p.estado.color) }}
                       >
                         {p.estado.name}
                       </span>
@@ -107,8 +109,10 @@ export default function PublicProjectsPage() {
         )}
       </main>
 
-      <footer className="text-center text-xs text-slate-500 py-6">
-        Información pública municipal · Actualizada periódicamente
+      {/* El portal es siempre claro (fondos slate fijos): el texto usa colores fijos, no los del tema. */}
+      <footer className="text-center text-xs text-slate-600 py-6">
+        Información pública municipal · Actualizada periódicamente ·{' '}
+        <Link to="/accesibilidad" className="underline text-slate-700 hover:text-slate-900">Accesibilidad</Link>
       </footer>
     </div>
   )

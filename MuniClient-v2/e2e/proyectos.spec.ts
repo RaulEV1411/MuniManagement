@@ -26,8 +26,9 @@ test('pasar a Cancelado desde el dashboard pide el motivo', async ({ page }) => 
   await expect(page.getByText('Bacheo norte').first()).toBeVisible()
   await page.getByTitle('Cambiar estado').first().click()
   await page.getByRole('button', { name: 'Cancelado' }).first().click()
-  await expect(page.getByText('Pasar a Cancelado')).toBeVisible()
-  await page.locator('textarea').fill('Se reprogramó para el próximo año')
+  const dialogo = page.getByRole('dialog', { name: 'Pasar a Cancelado' })
+  await expect(dialogo).toBeVisible()
+  await dialogo.locator('textarea').fill('Se reprogramó para el próximo año')
   const guardado = page.waitForResponse(r => r.url().includes('/proyectosWrite/') && r.request().method() === 'PATCH')
   await page.getByRole('button', { name: 'Confirmar' }).click()
   expect((await guardado).status()).toBe(200)
@@ -54,7 +55,7 @@ test('los jefes se ven y se editan en Departamentos', async ({ page }) => {
 })
 
 test('la notificación se puede marcar como leída', async ({ page }) => {
-  await page.getByRole('button', { name: /notificaciones/i }).first().click()
+  await page.getByRole('button', { name: /notificaci(ón|ones)/i }).first().click()
   const marcar = page.getByRole('button', { name: 'Marcar como leída' }).first()
   await expect(marcar).toBeVisible()
   const patch = page.waitForResponse(r => r.url().includes('/notificaciones/') && r.request().method() === 'PATCH')

@@ -15,7 +15,7 @@ import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 
 const schema = z.object({
   email:    z.string().email('Correo inválido'),
-  password: z.string().min(1, 'Ingresa tu contraseña'),
+  password: z.string().min(1, 'Ingrese su contraseña'),
 })
 type Form = z.infer<typeof schema>
 
@@ -41,11 +41,11 @@ export default function LoginPage() {
             (resumen?.tareas_por_vencer?.length ?? 0)
           if (total > 0) {
             toast.warning(
-              `Tienes ${total} pendiente(s) próximos a vencer en los siguientes 4 días.`,
+              total === 1 ? 'Tiene 1 pendiente por vencer en los próximos 4 días.' : `Tiene ${total} pendientes por vencer en los próximos 4 días.`,
               { duration: 6000 },
             )
           } else if (resumen?.no_leidas > 0) {
-            toast.info(`Tienes ${resumen.no_leidas} notificación(es) sin leer.`)
+            toast.info(resumen.no_leidas === 1 ? 'Tiene 1 aviso sin leer.' : `Tiene ${resumen.no_leidas} avisos sin leer.`)
           }
         })
         .catch(() => {})
@@ -65,7 +65,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, x: -40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="hidden lg:flex flex-col w-[420px] flex-shrink-0 bg-ocean-500 relative overflow-hidden"
+        className="hidden lg:flex flex-col w-[420px] flex-shrink-0 bg-ocean-700 relative overflow-hidden"
       >
         {/* Fondo decorativo */}
         <div className="absolute inset-0">
@@ -79,7 +79,7 @@ export default function LoginPage() {
             <LogoInstitucion tamano={40} claro />
             <div>
               <p className="text-white font-bold text-sm leading-tight">{marca.nombre}</p>
-              {marca.ubicacion && <p className="text-white/60 text-xs">{marca.ubicacion}</p>}
+              {marca.ubicacion && <p className="text-white/85 text-xs">{marca.ubicacion}</p>}
             </div>
           </div>
 
@@ -87,8 +87,8 @@ export default function LoginPage() {
             <h1 className="text-4xl font-bold text-white leading-tight mb-4">
               Sistema de<br />Gestión Municipal
             </h1>
-            <p className="text-white/70 text-sm leading-relaxed">
-              Administra proyectos, equipos y recursos de forma eficiente desde un solo lugar.
+            <p className="text-white/85 text-sm leading-relaxed">
+              Proyectos, equipos y presupuestos de la municipalidad en un solo lugar.
             </p>
           </div>
 
@@ -100,7 +100,7 @@ export default function LoginPage() {
             ].map(s => (
               <div key={s.label} className="bg-white/10 rounded-xl p-3">
                 <p className="text-white font-bold text-sm">{s.value}</p>
-                <p className="text-white/60 text-[10px] mt-0.5">{s.label}</p>
+                <p className="text-white text-[10px] mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
@@ -113,6 +113,7 @@ export default function LoginPage() {
         {/* Toggle tema */}
         <button
           onClick={toggleTheme}
+          aria-label={isDark ? 'Usar el modo claro' : 'Usar el modo oscuro'}
           className="absolute top-6 right-6 p-2 rounded-xl bg-muted hover:bg-accent transition-colors text-muted-foreground"
         >
           {isDark
@@ -133,40 +134,42 @@ export default function LoginPage() {
             <span className="font-bold text-ocean-500 dark:text-ocean-200">{marca.nombre}</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-1">Bienvenido</h2>
-          <p className="text-sm text-muted-foreground mb-8">Ingresa tus credenciales para continuar</p>
+          <h2 className="text-2xl font-bold text-foreground mb-1">Le damos la bienvenida</h2>
+          <p className="text-sm text-muted-foreground mb-8">Ingrese su correo y su contraseña para continuar.</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+              <label htmlFor="login-correo-electronico" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
                 Correo electrónico
               </label>
-              <input
+              <input id="login-correo-electronico"
                 {...register('email')}
                 type="email"
                 autoComplete="email"
                 placeholder="usuario@municipalidad.go.cr"
-                className="w-full px-3.5 py-2.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                className="w-full px-3.5 py-2.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
               />
               {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+              <label htmlFor="login-contrasena" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
                 Contraseña
               </label>
               <div className="relative">
-                <input
+                <input id="login-contrasena"
                   {...register('password')}
                   type={showPass ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 pr-10 text-sm bg-background border border-input rounded-xl text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                  className="w-full px-3.5 py-2.5 pr-10 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPass ? 'Ocultar la contraseña' : 'Mostrar la contraseña'}
+                  aria-pressed={showPass}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -186,6 +189,9 @@ export default function LoginPage() {
               {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
           </form>
+          <p className="mt-8 text-center text-xs text-muted-foreground">
+            <Link to="/accesibilidad" className="underline-offset-2 hover:underline hover:text-foreground">Accesibilidad</Link>
+          </p>
         </motion.div>
       </div>
     </div>

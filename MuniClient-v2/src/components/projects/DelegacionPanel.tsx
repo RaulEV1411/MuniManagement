@@ -7,6 +7,7 @@ import { getDelegaciones, createDelegacion, deleteDelegacion, getUsers } from '@
 import type { Delegacion, User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import { formatDate } from '@/lib/utils'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Props {
   proyectoId: string
@@ -120,7 +121,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <Dialogo titulo="Delegar supervisión" onCerrar={() => setOpen(false)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -129,18 +130,18 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
           >
             <header className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Delegar supervisión</h3>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button aria-label="Cerrar" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </header>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Supervisor</label>
-            <select
+            <label htmlFor="delegacionpanel-supervisor" className="block text-sm font-medium text-foreground mb-1">Supervisor</label>
+            <select id="delegacionpanel-supervisor"
               value={supervisor}
               onChange={e => setSupervisor(e.target.value)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="">Selecciona un usuario…</option>
+              <option value="">Seleccione una persona…</option>
               {candidatos.map(u => (
                 <option key={u.user_ID} value={u.user_ID}>
                   {u.first_name} {u.last_name} · {u.role.name}
@@ -158,8 +159,8 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
               Puede editar (no solo ver)
             </label>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Expira (opcional)</label>
-            <input
+            <label htmlFor="delegacionpanel-expira-opcional" className="block text-sm font-medium text-foreground mb-1">Expira (opcional)</label>
+            <input id="delegacionpanel-expira-opcional"
               type="date"
               value={expira}
               onChange={e => setExpira(e.target.value)}
@@ -179,7 +180,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </section>
   )

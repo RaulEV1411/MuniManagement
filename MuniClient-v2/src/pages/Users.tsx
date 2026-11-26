@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -22,8 +22,8 @@ const ROLE_STYLE: Record<string, string> = {
 }
 
 const AVATAR_COLORS = [
-  'bg-ocean-500', 'bg-sunset-500', 'bg-purple-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-cyan-500', 'bg-rose-500', 'bg-indigo-500',
+  'bg-ocean-500', 'bg-purple-700', 'bg-emerald-700', 'bg-amber-700',
+  'bg-cyan-700', 'bg-rose-700', 'bg-indigo-600', 'bg-teal-700',
 ]
 
 function avatarColor(name: string): string {
@@ -55,20 +55,18 @@ function UserAvatar({ user, size = 'md' }: { user: User; size?: 'md' | 'lg' }) {
 }
 
 function UserListRow({ user }: { user: User }) {
-  const navigate = useNavigate()
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      onClick={() => navigate(`/users/${user.user_ID}`)}
-      className="flex items-center gap-4 px-5 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer border-b border-border last:border-0 group"
+      className="relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring flex items-center gap-4 px-5 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer border-b border-border last:border-0 group"
     >
       <UserAvatar user={user} size="md" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
-          {fullName(user)}
+          <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
       </div>
@@ -88,24 +86,22 @@ function UserListRow({ user }: { user: User }) {
 }
 
 function UserGridCard({ user }: { user: User }) {
-  const navigate = useNavigate()
   return (
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={() => navigate(`/users/${user.user_ID}`)}
-      className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
+      className="relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
     >
       <UserAvatar user={user} size="lg" />
       <div className="min-w-0 w-full">
         <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
-          {fullName(user)}
+          <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
         {user.departamento_ID?.name && (
-          <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{user.departamento_ID.name}</p>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user.departamento_ID.name}</p>
         )}
       </div>
       {user.role?.name && (
@@ -187,10 +183,11 @@ export default function UsersPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPagina(1) }}
             placeholder="Buscar usuarios..."
-            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+            aria-label="Buscar usuarios"
+            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button aria-label="Borrar la búsqueda" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               <X size={12} />
             </button>
           )}
@@ -198,6 +195,7 @@ export default function UsersPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por rol"
             value={roleFilter}
             onChange={e => { setRole(e.target.value); setPagina(1) }}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -210,6 +208,7 @@ export default function UsersPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por departamento"
             value={deptFilter}
             onChange={e => { setDept(e.target.value); setPagina(1) }}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -236,6 +235,8 @@ export default function UsersPage() {
           {(['list', 'grid'] as const).map(v => (
             <button
               key={v}
+              aria-label={v === 'list' ? 'Vista de lista' : 'Vista de cuadrícula'}
+              aria-pressed={view === v}
               onClick={() => setView(v)}
               className={cn('px-2.5 py-1.5 transition-colors', v === 'grid' ? 'border-l border-border' : '',
                 view === v ? 'bg-ocean-500 text-white' : 'text-muted-foreground hover:bg-accent')}
@@ -245,7 +246,7 @@ export default function UsersPage() {
           ))}
         </div>
 
-        <button onClick={() => refetch()}
+        <button aria-label="Actualizar" onClick={() => refetch()}
           className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
           <RefreshCw size={13} />
         </button>

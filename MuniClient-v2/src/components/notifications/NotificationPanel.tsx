@@ -73,7 +73,7 @@ export default function NotificationPanel({ onClose }: Props) {
                       {n.titulo}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.mensaje}</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
                     </p>
                   </div>

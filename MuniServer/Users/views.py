@@ -216,7 +216,7 @@ def upload_user_photo(request, user_id):
         return Response({'error': 'Usuario no encontrado.'}, status=404)
 
     if request.user.user_ID != user.user_ID and not (_role_name(request.user) in ROLES_ADMIN or _role_flag(request.user, 'puede_ver_todo')):
-        return Response({'error': 'No tienes permisos para modificar esta foto.'}, status=403)
+        return Response({'error': 'No tiene permisos para modificar esta foto.'}, status=403)
 
     error = error_de_imagen(file)
     if error:

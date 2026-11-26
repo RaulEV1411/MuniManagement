@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import Dialogo from '@/components/common/Dialogo'
 
 export default function RazonModal({
   title, description, onConfirm, onClose,
@@ -12,7 +13,7 @@ export default function RazonModal({
 }) {
   const [razon, setRazon] = useState('')
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <Dialogo titulo={title} onCerrar={onClose} capa="z-[60]" fondo="bg-black/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -21,20 +22,20 @@ export default function RazonModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <div className="p-6 space-y-4">
           {description && <p className="text-sm text-muted-foreground">{description}</p>}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Motivo *</label>
-            <textarea
+            <label htmlFor="razonmodal-motivo" className="text-xs font-semibold text-muted-foreground">Motivo *</label>
+            <textarea id="razonmodal-motivo"
               value={razon}
               onChange={e => setRazon(e.target.value)}
               rows={3}
-              placeholder="Describe el motivo de este cambio..."
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              placeholder="Describa el motivo de este cambio…"
+              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
               autoFocus
             />
           </div>
@@ -54,6 +55,6 @@ export default function RazonModal({
           </div>
         </div>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }

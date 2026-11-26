@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { getProyectosPagina, getUsuariosPagina } from '@/lib/api'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
+import Dialogo from '@/components/common/Dialogo'
 
 type ResultItem =
   | { kind: 'project'; id: string; label: string; sub: string }
@@ -106,10 +107,7 @@ export default function GlobalSearch() {
   return (
     <AnimatePresence>
       {open && (
-        <div
-          className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm px-4"
-          onClick={() => setOpen(false)}
-        >
+        <Dialogo titulo="Buscar proyectos y usuarios" onCerrar={() => setOpen(false)} capa="z-[200]" className="items-start pt-[15vh] px-4" cerrarAlTocarFondo>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -129,13 +127,14 @@ export default function GlobalSearch() {
                 onChange={e => { setQuery(e.target.value); setCursor(0) }}
                 onKeyDown={handleKeyDown}
                 placeholder="Buscar proyectos, usuarios..."
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                aria-label="Buscar proyectos y usuarios"
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <kbd className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border hidden sm:block">
                   ESC
                 </kbd>
-                <button
+                <button aria-label="Borrar la búsqueda"
                   onClick={() => setOpen(false)}
                   className="p-1 rounded-lg hover:bg-accent text-muted-foreground transition-colors"
                 >
@@ -185,7 +184,7 @@ export default function GlobalSearch() {
               )
             ) : (
               <div className="px-4 py-8 text-center space-y-3">
-                <p className="text-xs text-muted-foreground">Escribe para buscar proyectos y usuarios</p>
+                <p className="text-xs text-muted-foreground">Escriba para buscar proyectos y usuarios</p>
                 <div className="flex items-center justify-center gap-4">
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <kbd className="bg-muted border border-border rounded px-1.5 py-0.5">↑↓</kbd> navegar
@@ -200,7 +199,7 @@ export default function GlobalSearch() {
               </div>
             )}
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </AnimatePresence>
   )

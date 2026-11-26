@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Dialogo from '@/components/common/Dialogo'
 
 export interface LightboxImage {
   imagen_ID: string
@@ -30,17 +31,14 @@ export default function ImageLightbox({
   }, [onClose, images.length])
 
   return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/92 flex items-center justify-center"
-      onClick={onClose}
-    >
+    <Dialogo titulo="Fotos" onCerrar={onClose} capa="z-[100]" fondo="bg-black/92" className="p-0" cerrarAlTocarFondo>
       {/* Contador */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-xs font-medium bg-black/40 px-3 py-1 rounded-full pointer-events-none">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/85 text-xs font-medium bg-black/60 px-3 py-1 rounded-full pointer-events-none">
         {idx + 1} / {images.length}
       </div>
 
       {/* Cerrar */}
-      <button
+      <button aria-label="Cerrar"
         onClick={onClose}
         className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
       >
@@ -49,7 +47,7 @@ export default function ImageLightbox({
 
       {/* Prev */}
       {idx > 0 && (
-        <button
+        <button aria-label="Foto anterior"
           onClick={e => { e.stopPropagation(); setIdx(i => i - 1) }}
           className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
         >
@@ -75,7 +73,7 @@ export default function ImageLightbox({
 
       {/* Next */}
       {idx < images.length - 1 && (
-        <button
+        <button aria-label="Foto siguiente"
           onClick={e => { e.stopPropagation(); setIdx(i => i + 1) }}
           className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
         >
@@ -90,7 +88,7 @@ export default function ImageLightbox({
           onClick={e => e.stopPropagation()}
         >
           {images.map((img, i) => (
-            <button
+            <button aria-label={`Ver la foto ${i + 1}`}
               key={img.imagen_ID}
               onClick={() => setIdx(i)}
               className={cn(
@@ -103,6 +101,6 @@ export default function ImageLightbox({
           ))}
         </div>
       )}
-    </div>
+    </Dialogo>
   )
 }

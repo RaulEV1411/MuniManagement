@@ -30,7 +30,7 @@ class UsersPermission(BasePermission):
     - destroy: solo admin/alcaldía; NUNCA permitir borrarse a sí mismo.
     """
 
-    message = 'No tienes permisos para esta operación sobre usuarios.'
+    message = 'No tiene permisos para esta operación sobre usuarios.'
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
@@ -59,7 +59,7 @@ class UsersPermission(BasePermission):
 
         if view.action == 'destroy':
             if es_self:
-                self.message = 'No puedes eliminar tu propia cuenta.'
+                self.message = 'No puede eliminar su propia cuenta.'
                 return False
             return es_admin
 
@@ -79,8 +79,8 @@ class UsersPermission(BasePermission):
             }
             if invalidos:
                 self.message = (
-                    f"No puedes modificar tus propios campos: {', '.join(sorted(invalidos))}. "
-                    'Solicítalo a un Administrador.'
+                    f"No puede modificar sus propios campos: {', '.join(sorted(invalidos))}. "
+                    'Solicítelo a un Administrador.'
                 )
                 return False
             return True

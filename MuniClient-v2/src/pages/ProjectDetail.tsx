@@ -36,6 +36,8 @@ import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
+import { pestanas } from '@/lib/pestanas'
 
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
@@ -65,14 +67,14 @@ function ImageGrid({
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center gap-2">
               <button
                 onClick={e => { e.stopPropagation(); setLightboxIdx(i) }}
-                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
+                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
                 title="Ver imagen"
               >
                 <ZoomIn size={12} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onDelete(img.imagen_ID) }}
-                className="p-2 rounded-xl bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 active:scale-95"
+                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
                 title="Eliminar imagen"
               >
                 <Trash2 size={12} />
@@ -166,10 +168,10 @@ function EditProjectModal({
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Editar proyecto" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -178,45 +180,45 @@ function EditProjectModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">Editar proyecto</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} />
+            <label htmlFor="projectdetail-nombre" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+            <input id="projectdetail-nombre" value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Descripción</label>
-            <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
+            <label htmlFor="projectdetail-descripcion" className="text-xs font-semibold text-muted-foreground">Descripción</label>
+            <textarea id="projectdetail-descripcion" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
               className={cn(inputCls, 'resize-none')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
-              <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls} />
+              <label htmlFor="projectdetail-fecha-inicio" className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
+              <input id="projectdetail-fecha-inicio" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
-              <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
+              <label htmlFor="projectdetail-fecha-entrega" className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
+              <input id="projectdetail-fecha-entrega" type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Costo estimado ({simbolo})</label>
-            <input type="number" value={form.costo} onChange={e => set('costo', e.target.value)} placeholder="0" className={inputCls} />
+            <label htmlFor="projectdetail-costo-estimado" className="text-xs font-semibold text-muted-foreground">Costo estimado ({simbolo})</label>
+            <input id="projectdetail-costo-estimado" type="number" value={form.costo} onChange={e => set('costo', e.target.value)} placeholder="0" className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Estado</label>
-              <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-estado" className="text-xs font-semibold text-muted-foreground">Estado</label>
+              <select id="projectdetail-estado" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin estado</option>
                 {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Prioridad</label>
-              <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-prioridad" className="text-xs font-semibold text-muted-foreground">Prioridad</label>
+              <select id="projectdetail-prioridad" value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin prioridad</option>
                 {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
               </select>
@@ -224,15 +226,15 @@ function EditProjectModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
-              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-departamento" className="text-xs font-semibold text-muted-foreground">Departamento</label>
+              <select id="projectdetail-departamento" value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin departamento</option>
                 {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Responsable</label>
-              <select value={form.user_ID} onChange={e => set('user_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-responsable" className="text-xs font-semibold text-muted-foreground">Responsable</label>
+              <select id="projectdetail-responsable" value={form.user_ID} onChange={e => set('user_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin responsable</option>
                 {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
               </select>
@@ -267,7 +269,7 @@ function EditProjectModal({
           onClose={() => setPidiendoMotivo(false)}
         />
       )}
-    </div>
+    </Dialogo>
   )
 }
 
@@ -309,7 +311,7 @@ function EditTaskModal({
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   const doSave = async (razon = '') => {
     setLoading(true)
@@ -352,7 +354,7 @@ function EditTaskModal({
     if (esCancelacion || esAmpliacion) {
       const title = esCancelacion ? 'Motivo de cancelación' : 'Motivo de ampliación de plazo'
       const description = esCancelacion
-        ? 'Esta tarea se marcará como cancelada. Indica el motivo.'
+        ? 'Esta tarea se marcará como cancelada. Indique el motivo.'
         : `La fecha de entrega se extiende de ${formatDate(task.fecha_entrega)} a ${formatDate(form.fecha_entrega)}.`
       setRazonConfig({ title, description })
     } else {
@@ -362,7 +364,7 @@ function EditTaskModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <Dialogo titulo="Editar tarea" onCerrar={onClose}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -371,47 +373,47 @@ function EditTaskModal({
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
             <h2 className="text-base font-bold text-foreground">Editar tarea</h2>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+            <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
               <X size={15} />
             </button>
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)} className={cls} />
+              <label htmlFor="projectdetail-nombre-2" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+              <input id="projectdetail-nombre-2" value={form.name} onChange={e => set('name', e.target.value)} className={cls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Descripción</label>
-              <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
+              <label htmlFor="projectdetail-descripcion-2" className="text-xs font-semibold text-muted-foreground">Descripción</label>
+              <textarea id="projectdetail-descripcion-2" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
                 className={cn(cls, 'resize-none')} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
-                <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
+                <label htmlFor="projectdetail-fecha-inicio-2" className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
+                <input id="projectdetail-fecha-inicio-2" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
-                <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
+                <label htmlFor="projectdetail-fecha-entrega-2" className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
+                <input id="projectdetail-fecha-entrega-2" type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Estado</label>
-                <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
+                <label htmlFor="projectdetail-estado-2" className="text-xs font-semibold text-muted-foreground">Estado</label>
+                <select id="projectdetail-estado-2" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
                   {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Prioridad</label>
-                <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
+                <label htmlFor="projectdetail-prioridad-2" className="text-xs font-semibold text-muted-foreground">Prioridad</label>
+                <select id="projectdetail-prioridad-2" value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
                   {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
                 </select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Asignado a</label>
-              <select value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
+              <label htmlFor="projectdetail-asignado-a" className="text-xs font-semibold text-muted-foreground">Asignado a</label>
+              <select id="projectdetail-asignado-a" value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
                 <option value="">Sin asignar</option>
                 {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
               </select>
@@ -428,7 +430,7 @@ function EditTaskModal({
             </div>
           </form>
         </motion.div>
-      </div>
+      </Dialogo>
       <AnimatePresence>
         {razonConfig && (
           <RazonModal
@@ -490,10 +492,10 @@ function TaskModal({
     }
   }
 
-  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Nueva tarea" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -502,46 +504,46 @@ function TaskModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Nueva tarea</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre de la tarea" className={cls} />
+            <label htmlFor="projectdetail-nombre-3" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+            <input id="projectdetail-nombre-3" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre de la tarea" className={cls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Descripción</label>
-            <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3} placeholder="Descripción..." className={cn(cls, 'resize-none')} />
+            <label htmlFor="projectdetail-descripcion-3" className="text-xs font-semibold text-muted-foreground">Descripción</label>
+            <textarea id="projectdetail-descripcion-3" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3} placeholder="Descripción..." className={cn(cls, 'resize-none')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
-              <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
+              <label htmlFor="projectdetail-fecha-inicio-3" className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
+              <input id="projectdetail-fecha-inicio-3" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
-              <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
+              <label htmlFor="projectdetail-fecha-entrega-3" className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
+              <input id="projectdetail-fecha-entrega-3" type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Prioridad</label>
-              <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
+              <label htmlFor="projectdetail-prioridad-3" className="text-xs font-semibold text-muted-foreground">Prioridad</label>
+              <select id="projectdetail-prioridad-3" value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
                 {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Estado</label>
-              <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
+              <label htmlFor="projectdetail-estado-3" className="text-xs font-semibold text-muted-foreground">Estado</label>
+              <select id="projectdetail-estado-3" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
                 {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
               </select>
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Asignado a</label>
-            <select value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
+            <label htmlFor="projectdetail-asignado-a-2" className="text-xs font-semibold text-muted-foreground">Asignado a</label>
+            <select id="projectdetail-asignado-a-2" value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
               <option value="">Sin asignar</option>
               {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
             </select>
@@ -558,7 +560,7 @@ function TaskModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -623,7 +625,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
   const images: TaskImage[] = task.images ?? []
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Fotos de la tarea" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -646,7 +648,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 ? `${taskUploadProgress.current}/${taskUploadProgress.total}...`
                 : 'Subir fotos'}
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+            <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
               <X size={15} />
             </button>
           </div>
@@ -668,7 +670,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 <ImageIcon size={20} className="text-muted-foreground/40" />
               </div>
               <p className="text-sm font-medium text-foreground">Sin imágenes</p>
-              <p className="text-xs text-muted-foreground">Arrastra fotos aquí o usa el botón</p>
+              <p className="text-xs text-muted-foreground">Arrastre fotos aquí o use el botón</p>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!!taskUploadProgress}
@@ -695,13 +697,13 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 </div>
               )}
               {dragOver && !taskUploadProgress && (
-                <p className="text-center text-xs text-ocean-500 dark:text-ocean-200 font-medium mt-3">Suelta para subir</p>
+                <p className="text-center text-xs text-ocean-500 dark:text-ocean-200 font-medium mt-3">Suelte para subir</p>
               )}
             </div>
           )}
         </div>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -779,7 +781,7 @@ function TaskCard({
                 {task.asignado_a.user_photo ? (
                   <img src={task.asignado_a.user_photo} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[8px] font-bold text-white">
+                  <div className="w-3.5 h-3.5 rounded-full bg-amber-700 flex items-center justify-center text-[8px] font-bold text-white">
                     {task.asignado_a.first_name?.[0]}
                   </div>
                 )}
@@ -796,13 +798,14 @@ function TaskCard({
               'flex items-center gap-1 p-1 rounded-lg transition-colors',
               imageCount > 0
                 ? 'text-ocean-500 dark:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
-                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100',
+                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100',
             )}
           >
             <ImageIcon size={12} />
             {imageCount > 0 && <span className="text-[10px] font-bold">{imageCount}</span>}
           </button>
           <select
+            aria-label={`Estado de la tarea ${task.name}`}
             value={task.estado_ID?.estado_ID ?? ''}
             onChange={e => handleStatusChange(e.target.value)}
             disabled={updating}
@@ -810,15 +813,15 @@ function TaskCard({
           >
             {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
           </select>
-          <button
+          <button aria-label={`Editar la tarea ${task.name}`}
             onClick={() => onEdit(task)}
-            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
           >
             <Edit2 size={12} />
           </button>
-          <button
+          <button aria-label={`Eliminar la tarea ${task.name}`}
             onClick={handleDelete}
-            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
           >
             <Trash2 size={12} />
           </button>
@@ -964,9 +967,9 @@ function DropZone({ onFiles, disabled, progress }: {
         ) : (
           <>
             <p className="text-sm font-medium text-foreground">
-              {dragOver ? 'Suelta las imágenes' : 'Arrastra fotos aquí'}
+              {dragOver ? 'Suelte las imágenes' : 'Arrastre fotos aquí'}
             </p>
-            <p className="text-xs text-muted-foreground">o haz clic · puedes seleccionar varias a la vez</p>
+            <p className="text-xs text-muted-foreground">o haga clic · puede seleccionar varias a la vez</p>
           </>
         )}
       </div>
@@ -989,6 +992,7 @@ export default function ProjectDetailPage() {
   const canDelegate = !!(user?.role_flags?.puede_ver_todo || user?.role_flags?.puede_delegar)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
+  const tabs = pestanas('proyecto', TABS, tab, setTab)
   const [showTaskModal, setShowTaskModal]       = useState(false)
   const [showEditModal, setShowEditModal]       = useState(false)
   const [editingTask, setEditingTask]           = useState<Task | null>(null)
@@ -1156,7 +1160,7 @@ export default function ProjectDetailPage() {
       {/* ── Header ── */}
       <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-start gap-3 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex-shrink-0 mt-0.5 active:scale-[0.98]"
           >
@@ -1223,11 +1227,11 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del proyecto">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t
@@ -1255,6 +1259,7 @@ export default function ProjectDetailPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -1271,10 +1276,11 @@ export default function ProjectDetailPage() {
                       value={taskSearch}
                       onChange={e => setTaskSearch(e.target.value)}
                       placeholder="Buscar tareas..."
-                      className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                      aria-label="Buscar tareas"
+                      className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                     />
                     {taskSearch && (
-                      <button onClick={() => setTaskSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <button aria-label="Borrar la búsqueda" onClick={() => setTaskSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         <X size={12} />
                       </button>
                     )}
@@ -1288,7 +1294,7 @@ export default function ProjectDetailPage() {
                       <CheckCircle2 size={20} className="text-muted-foreground/40" />
                     </div>
                     <p className="text-sm font-medium text-foreground">Sin tareas</p>
-                    <p className="text-xs text-muted-foreground">Crea la primera tarea para este proyecto</p>
+                    <p className="text-xs text-muted-foreground">Cree la primera tarea de este proyecto</p>
                     <button
                       onClick={() => setShowTaskModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
@@ -1305,7 +1311,7 @@ export default function ProjectDetailPage() {
                 ) : (
                   <>
                     <p className="text-[10px] text-muted-foreground">
-                      {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastra las tarjetas entre grupos para cambiar el estado'}
+                      {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastre las tarjetas entre grupos para cambiar el estado'}
                     </p>
                     {ordenGrupos.map(status => (
                       <TaskGroup
@@ -1401,13 +1407,13 @@ export default function ProjectDetailPage() {
                   <p className="text-xs text-muted-foreground">
                     {projectImages.length === 0
                       ? 'Sin imágenes aún'
-                      : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haz clic para ampliar`}
+                      : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haga clic para ampliar`}
                   </p>
                   {projectImages.length > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                       {uploadProgress
                         ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}...`
-                        : 'Arrastra o selecciona varias fotos en la zona de abajo'}
+                        : 'Arrastre o seleccione varias fotos en la zona de abajo'}
                     </span>
                   )}
                 </div>
@@ -1424,11 +1430,11 @@ export default function ProjectDetailPage() {
             {tab === 'Comentarios' && (
               <div className="max-w-2xl space-y-4">
                 <form onSubmit={handleAddComment} className="flex gap-2">
-                  <input
+                  <input aria-label="Comentario"
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder="Agregar comentario..."
-                    className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <button
                     type="submit"
@@ -1477,9 +1483,9 @@ export default function ProjectDetailPage() {
                             </div>
                             <p className="text-sm text-foreground leading-snug">{f.info}</p>
                           </div>
-                          <button
+                          <button aria-label="Eliminar el comentario"
                             onClick={() => handleDeleteComment(f.feed_ID)}
-                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex-shrink-0"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1547,7 +1553,7 @@ export default function ProjectDetailPage() {
                     <div className="flex flex-col items-center justify-center py-12 gap-3 text-center bg-card border border-border rounded-xl">
                       <Activity size={28} className="text-muted-foreground/30" />
                       <p className="text-sm text-muted-foreground">Sin cambios registrados aún</p>
-                      <p className="text-[11px] text-muted-foreground/60">Los cambios a tareas y al proyecto aparecerán aquí</p>
+                      <p className="text-[11px] text-muted-foreground">Los cambios a tareas y al proyecto aparecerán aquí</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
