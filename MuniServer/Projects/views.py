@@ -1,6 +1,6 @@
-import cloudinary.uploader
-from MuniServer.subidas import error_de_imagen, subir_imagen
+from MuniServer.subidas import borrar_imagen, error_de_imagen, subir_imagen
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -17,7 +17,7 @@ from .serializers import (
     ProjectImageSerializer, DelegacionSupervisionSerializer, AjustePresupuestoSerializer,
 )
 from .permissions import SystemRecordReadOnly, CatalogoSoloAdministrador
-from . import authz
+from . import authz, consultas
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
@@ -37,6 +37,7 @@ def _proyectos_visibles_qs(user):
 class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Estado.objects.all()
     serializer_class = EstadoSerializer
+    pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
     mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con este estado.'
 
@@ -44,6 +45,7 @@ class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
 class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Prioridad.objects.all()
     serializer_class = PrioridadSerializer
+    pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
     mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con esta prioridad.'
 
@@ -51,6 +53,7 @@ class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
 class TiposViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Tipos.objects.all()
     serializer_class = TiposSerializer
+    pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
     mensaje_protegido = 'No se puede borrar: hay proyectos de este tipo.'
 
@@ -61,11 +64,15 @@ class ProyectosReadViewSet(ModelViewSet):
     http_method_names = ['get', 'head', 'options']
 
     def get_queryset(self):
-        qs = _proyectos_visibles_qs(self.request.user)
-        user_ID = self.request.query_params.get('user_ID')
-        if user_ID:
-            qs = qs.filter(user_ID=user_ID)
-        return qs
+        p = self.request.query_params
+        qs = consultas.filtrar(_proyectos_visibles_qs(self.request.user), p, self.request.user)
+        return consultas.ordenar(qs, p)
+
+    @action(detail=False, methods=['get'])
+    def resumen(self, request):
+        """Totales para el dashboard, el menú y los reportes, con los mismos filtros que la lista."""
+        qs = consultas.filtrar(authz.proyectos_visibles(request.user), request.query_params, request.user)
+        return Response(consultas.resumen(qs))
 
 
 class ProyectosWriteViewSet(ModelViewSet):
@@ -224,7 +231,7 @@ class ProjectImageViewSet(ModelViewSet):
         instance = self.get_object()
         if not authz.puede_editar(request.user, instance.proyecto):
             raise PermissionDenied('No tienes permisos para borrar esta imagen.')
-        cloudinary.uploader.destroy(instance.public_id)
+        borrar_imagen(instance.public_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -261,6 +268,8 @@ class DelegacionSupervisionViewSet(ModelViewSet):
         self._check_can_manage(proyecto)
         if supervisor.user_ID == self.request.user.user_ID:
             raise ValidationError({'supervisor': 'No puedes delegarte la supervisión a ti mismo.'})
+        if not authz.usuarios_visibles(self.request.user).filter(pk=supervisor.pk).exists():
+            raise ValidationError({'supervisor': 'Solo puedes delegar en personas de tu dirección o departamento.'})
         rol = getattr(getattr(supervisor, 'role', None), 'name', '')
         flag_ok = getattr(getattr(supervisor, 'role', None), 'puede_recibir_delegacion', False)
         if not flag_ok and rol not in {'Coordinador', 'Funcionario', 'Jefe de Departamento', 'Jefe de Dirección'}:

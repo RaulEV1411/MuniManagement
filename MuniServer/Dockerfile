@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --require-hashes -r requirements.txt
 # Sin root: el proceso corre como un usuario sin privilegios.
-RUN useradd --create-home --uid 1000 muni && mkdir -p /app/staticfiles && chown muni:muni /app/staticfiles
+RUN useradd --create-home --uid 1000 muni && mkdir -p /app/staticfiles /app/media && chown muni:muni /app/staticfiles /app/media
 COPY --chown=muni:muni . .
 USER muni
 EXPOSE 8000

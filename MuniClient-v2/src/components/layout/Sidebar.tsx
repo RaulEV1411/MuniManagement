@@ -8,9 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getProjects } from '@/lib/api'
-import { isOverdue } from '@/lib/utils'
-import { type Project } from '@/types'
+import { getResumenProyectos } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 
@@ -59,12 +57,14 @@ export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  // El contador sale del resumen del servidor: con más de una página de proyectos, contar en el
+  // navegador daba un número incompleto.
+  const { data: resumen } = useQuery({
+    queryKey: ['projects', 'resumen'],
+    queryFn: () => getResumenProyectos(),
     staleTime: 60_000,
   })
-  const overdueCount = projects.filter(isOverdue).length
+  const overdueCount = resumen?.vencidos ?? 0
 
   const W = expanded ? 240 : 64
 

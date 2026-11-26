@@ -147,8 +147,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 200,
+    'DEFAULT_PAGINATION_CLASS': 'MuniServer.paginacion.Paginacion',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
@@ -226,6 +225,13 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=8, minute=0),  # 8 AM Costa Rica
     },
 }
+
+# ── Fotos ───────────────────────────────────────────────────
+# 'local' (por defecto): disco del servidor, servido por Caddy en MEDIA_URL y dentro de los respaldos.
+# 'cloudinary': el servicio externo (requiere CLOUDINARY_* y un contrato de encargado de datos).
+ALMACENAMIENTO_FOTOS = os.environ.get('ALMACENAMIENTO_FOTOS', 'local').strip().lower()
+MEDIA_URL = '/api/v1/media/'
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 
 import cloudinary
 cloudinary.config(

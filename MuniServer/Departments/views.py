@@ -19,9 +19,11 @@ class DireccionViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Direccion.objects.all()
     serializer_class = DireccionSerializer
     permission_classes = [IsAuthenticated, EscrituraSoloAlcaldia]
+    pagination_class = None
 
 
 class DepartamentosViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Departamentos.objects.all()
     serializer_class = DepartamentosSerializer
     permission_classes = [IsAuthenticated, EscrituraSoloAlcaldia]
+    pagination_class = None

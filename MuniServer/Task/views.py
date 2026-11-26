@@ -1,5 +1,4 @@
-import cloudinary.uploader
-from MuniServer.subidas import error_de_imagen, subir_imagen
+from MuniServer.subidas import borrar_imagen, error_de_imagen, subir_imagen
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -170,6 +169,6 @@ class TaskImageViewSet(ModelViewSet):
         instance = self.get_object()
         if not _puede_gestionar_imagenes(request.user, instance.tarea):
             raise PermissionDenied('No tienes permisos para borrar esta imagen.')
-        cloudinary.uploader.destroy(instance.public_id)
+        borrar_imagen(instance.public_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

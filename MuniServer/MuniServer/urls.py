@@ -4,6 +4,8 @@ El admin de Django no se publica: el modelo de usuario no tiene is_staff, así q
 daba error 500 con cualquier credencial válida, y además no tiene límite de intentos.
 Todo se gestiona desde la aplicación.
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import include, path
 
 from .salud import salud
@@ -23,3 +25,7 @@ api_v1 = [
 urlpatterns = [
     path('api/v1/', include(api_v1)),
 ]
+
+# En desarrollo Django sirve las fotos; en producción las sirve Caddy desde el volumen.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

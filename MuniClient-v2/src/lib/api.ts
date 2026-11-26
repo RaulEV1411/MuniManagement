@@ -1,4 +1,7 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
+import type {
+  AjustePresupuesto, Delegacion, Feedback, HistorialEntry, Notificacion, Project, PublicProject, Task, User,
+} from '@/types'
 
 // Mismo dominio que el front: Caddy en producción y el proxy de Vite en desarrollo mandan /api a Django.
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
@@ -37,13 +40,7 @@ api.interceptors.request.use(config => {
 })
 
 api.interceptors.response.use(
-  res => {
-    const d = res.data
-    if (d && typeof d === 'object' && Array.isArray(d.results) && 'count' in d && 'next' in d) {
-      res.data = d.results
-    }
-    return res
-  },
+  res => res,
   async err => {
     const original = err.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
     if (err.response?.status !== 401 || !original || original._retry) return Promise.reject(err)
@@ -59,6 +56,29 @@ api.interceptors.response.use(
   },
 )
 
+// ── Listas paginadas ──────────────────────────────────────────
+// El servidor pagina (50 por defecto, hasta 100). Las pantallas con lista larga piden una página y
+// muestran el total; las que necesitan todo (selectores, exportar) recorren todas las páginas.
+export interface Pagina<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+export type Filtros = Record<string, string | number | undefined>
+
+async function todasDe<T>(cliente: AxiosInstance, url: string, params: Filtros = {}): Promise<T[]> {
+  const filas: T[] = []
+  for (let page = 1; ; page++) {
+    const { data } = await cliente.get<Pagina<T> | T[]>(url, { params: { ...params, page, page_size: 100 } })
+    if (Array.isArray(data)) return data
+    filas.push(...data.results)
+    if (!data.next) return filas
+  }
+}
+
+const paginaDe = <T>(url: string, params: Filtros) => api.get<Pagina<T>>(url, { params }).then(r => r.data)
+
 // ── Auth ──────────────────────────────────────────────────────
 export const login = (email: string, password: string) =>
   api.post('/users/login/', { email, password }).then(r => r.data)
@@ -73,7 +93,8 @@ export const olvideClave = (email: string) =>
   axios.post(`${BASE_URL}/users/olvide-clave/`, { email }).then(r => r.data)
 
 // ── Users ─────────────────────────────────────────────────────
-export const getUsers        = ()           => api.get('/users/users/').then(r => r.data)
+export const getUsers        = ()           => todasDe<User>(api, '/users/users/')
+export const getUsuariosPagina = (params: Filtros) => paginaDe<User>('/users/users/', params)
 export const getUserById     = (id: string) => api.get(`/users/users/${seg(id)}/`).then(r => r.data)
 export const createUser      = (data: FormData | object) => api.post('/users/users/', data).then(r => r.data)
 export const updateUser      = (id: string, data: object) => api.patch(`/users/users/${seg(id)}/`, data).then(r => r.data)
@@ -87,9 +108,11 @@ export const getRoles        = ()           => api.get('/users/roles/').then(r =
 export const createRole      = (data: object) => api.post('/users/roles/', data).then(r => r.data)
 
 // ── Projects ──────────────────────────────────────────────────
-export const getProjects     = ()           => api.get('/projects/proyectosRead/').then(r => r.data)
+export const getProjects     = (params: Filtros = {}) => todasDe<Project>(api, '/projects/proyectosRead/', params)
+export const getProyectosPagina = (params: Filtros) => paginaDe<Project>('/projects/proyectosRead/', params)
+export const getResumenProyectos = (params: Filtros = {}) => api.get<ResumenProyectos>('/projects/proyectosRead/resumen/', { params }).then(r => r.data)
 export const getProjectById  = (id: string) => api.get(`/projects/proyectosRead/${seg(id)}/`).then(r => r.data)
-export const getProjectsByUser = (userId: string) => api.get('/projects/proyectosRead/', { params: { user_ID: userId } }).then(r => r.data)
+export const getProjectsByUser = (userId: string) => todasDe<Project>(api, '/projects/proyectosRead/', { user_ID: userId })
 export const createProject   = (data: object) => api.post('/projects/proyectosWrite/', data).then(r => r.data)
 export const updateProject   = (id: string, data: object) => api.put(`/projects/proyectosWrite/${seg(id)}/`, data).then(r => r.data)
 export const patchProject    = (id: string, data: object) => api.patch(`/projects/proyectosWrite/${seg(id)}/`, data).then(r => r.data)
@@ -101,7 +124,7 @@ export const uploadProjectImage = (projectId: string, file: File) => {
 export const deleteProjectImage = (imageId: string) => api.delete(`/projects/project-images/${seg(imageId)}/`).then(r => r.data)
 
 // ── Tasks ─────────────────────────────────────────────────────
-export const getTasksByProject = (projectId: string) => api.get('/task/tareas/', { params: { proyecto_ID: projectId } }).then(r => r.data)
+export const getTasksByProject = (projectId: string) => todasDe<Task>(api, '/task/tareas/', { proyecto_ID: projectId })
 export const createTask   = (data: object) => api.post('/task/tareas/', data).then(r => r.data)
 export const updateTask   = (id: string, data: object) => api.put(`/task/tareas/${seg(id)}/`, data).then(r => r.data)
 export const patchTask    = (id: string, data: object) => api.patch(`/task/tareas/${seg(id)}/`, data).then(r => r.data)
@@ -113,12 +136,12 @@ export const uploadTaskImage = (taskId: string, file: File) => {
 export const deleteTaskImage = (imageId: string) => api.delete(`/task/task-images/${seg(imageId)}/`).then(r => r.data)
 
 // ── Feedback ──────────────────────────────────────────────────
-export const getFeedback   = (projectId: string) => api.get('/feedback/feedback/', { params: { proyecto_ID: projectId } }).then(r => r.data)
+export const getFeedback   = (projectId: string) => todasDe<Feedback>(api, '/feedback/feedback/', { proyecto_ID: projectId })
 export const createFeedback = (data: object) => api.post('/feedback/feedback/', data).then(r => r.data)
 export const deleteFeedback = (id: string) => api.delete(`/feedback/feedback/${seg(id)}/`).then(r => r.data)
 
 // ── Historial ─────────────────────────────────────────────────
-export const getHistorial = (proyectoId: string) => api.get('/historial/cambios/', { params: { proyecto_ID: proyectoId } }).then(r => r.data)
+export const getHistorial = (proyectoId: string) => todasDe<HistorialEntry>(api, '/historial/cambios/', { proyecto_ID: proyectoId })
 
 // ── Departments ───────────────────────────────────────────────
 export const getDepartments   = ()             => api.get('/departments/departamentos/').then(r => r.data)
@@ -132,7 +155,7 @@ export const deleteDirection  = (id: string)   => api.delete(`/departments/direc
 
 // ── Delegaciones ──────────────────────────────────────────────
 export const getDelegaciones = (projectId: string) =>
-  api.get('/projects/delegaciones/', { params: { proyecto_ID: projectId } }).then(r => r.data)
+  todasDe<Delegacion>(api, '/projects/delegaciones/', { proyecto_ID: projectId })
 export const createDelegacion = (data: object) =>
   api.post('/projects/delegaciones/', data).then(r => r.data)
 export const deleteDelegacion = (id: string) =>
@@ -140,7 +163,7 @@ export const deleteDelegacion = (id: string) =>
 
 // ── Ajustes de presupuesto ────────────────────────────────────
 export const getAjustes = (params: { proyecto_ID?: string; tarea_ID?: string }) =>
-  api.get('/projects/ajustes-presupuesto/', { params }).then(r => r.data)
+  todasDe<AjustePresupuesto>(api, '/projects/ajustes-presupuesto/', params)
 export const createAjuste = (data: object) =>
   api.post('/projects/ajustes-presupuesto/', data).then(r => r.data)
 export const deleteAjuste = (id: string) =>
@@ -152,7 +175,7 @@ export const getNotificaciones = (soloNoLeidas = false) =>
     .get('/notifications/notificaciones/', {
       params: { page_size: 30, ...(soloNoLeidas ? { no_leidas: 1 } : {}) },
     })
-    .then(r => r.data)
+    .then(r => (r.data as Pagina<Notificacion>).results)
 export const marcarLeida = (id: string) =>
   api.patch(`/notifications/notificaciones/${seg(id)}/`, { leida: true }).then(r => r.data)
 export const marcarTodasLeidas = () =>
@@ -168,15 +191,8 @@ export const getMe = () => api.get('/users/me/').then(r => r.data)
 
 // ── Vista pública ─────────────────────────────────────────────
 const publicApi = axios.create({ baseURL: BASE_URL, timeout: 10_000 })
-publicApi.interceptors.response.use(res => {
-  const d = res.data
-  if (d && typeof d === 'object' && Array.isArray(d.results) && 'count' in d && 'next' in d) {
-    res.data = d.results
-  }
-  return res
-})
 export const getPublicProjects = (search = '') =>
-  publicApi.get('/public/projects/', { params: search ? { search } : {} }).then(r => r.data)
+  todasDe<PublicProject>(publicApi, '/public/projects/', search ? { search } : {})
 export const getPublicProject = (id: string) =>
   publicApi.get(`/public/projects/${seg(id)}/`).then(r => r.data)
 
@@ -193,3 +209,14 @@ export const getTipos        = ()             => api.get('/projects/tipos/').the
 export const createTipo      = (data: object) => api.post('/projects/tipos/', data).then(r => r.data)
 export const updateTipo      = (id: string, d: object) => api.put(`/projects/tipos/${seg(id)}/`, d).then(r => r.data)
 export const deleteTipo      = (id: string)   => api.delete(`/projects/tipos/${seg(id)}/`).then(r => r.data)
+
+export interface ResumenProyectos {
+  total: number
+  completados: number
+  en_progreso: number
+  vencidos: number
+  porcentaje_completado: number
+  costo_total: number
+  por_estado: Array<{ estado_ID: string; name: string; color: string; total: number }>
+  por_departamento: Array<{ departamento_ID: string; name: string; total: number; completados: number }>
+}

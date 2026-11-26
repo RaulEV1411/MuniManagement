@@ -20,9 +20,8 @@ CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'cedula', 'email', 'is
 class UsersPermission(BasePermission):
     """
     Reglas para UsersViewSet:
-    - list/retrieve:
-        * Admin/alcaldía/jefes → todos
-        * Resto → solo self
+    - list/retrieve: lo que permite la jerarquía (authz.usuarios_visibles, en get_queryset);
+      los datos personales los filtra el serializer
     - create: solo admin/alcaldía
     - update / partial_update:
         * Admin/alcaldía → cualquier user, cualquier campo
@@ -52,12 +51,11 @@ class UsersPermission(BasePermission):
         rol = _role_name(user)
         ver_todo = _role_flag(user, 'puede_ver_todo')
         es_admin = rol in ROLES_ADMIN or ver_todo
-        es_jefe = rol in ROLES_JEFES
         es_self = obj.user_ID == user.user_ID
 
         if request.method in SAFE_METHODS:
-            # retrieve: admin/jefes ven a todos; resto solo self
-            return es_admin or es_jefe or es_self
+            # La jerarquía ya la aplicó get_queryset; los datos personales solo los ve la alcaldía o la persona.
+            return True
 
         if view.action == 'destroy':
             if es_self:

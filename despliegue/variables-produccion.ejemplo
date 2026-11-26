@@ -26,7 +26,11 @@ EMAIL_HOST_PASSWORD=
 DEFAULT_FROM_EMAIL=proyectos@muni.go.cr
 # Alternativas en lugar del SMTP: RESEND_API_KEY o SENDGRID_API_KEY.
 
-# ── Fotos (Cloudinary) ──────────────────────────────────────
+# ── Fotos ───────────────────────────────────────────────────
+# local (recomendado): se guardan en el servidor, en el volumen «medios», y entran en los respaldos.
+# cloudinary: en ese servicio externo (EE. UU.); requiere las tres claves de abajo y un contrato
+# de encargado de datos, porque hay fotos de funcionarios (Ley 8968).
+ALMACENAMIENTO_FOTOS=local
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=

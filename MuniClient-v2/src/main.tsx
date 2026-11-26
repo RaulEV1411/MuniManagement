@@ -1,3 +1,5 @@
+// Primero: configura zod antes de que cualquier módulo cree sus esquemas.
+import './lib/zod'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'

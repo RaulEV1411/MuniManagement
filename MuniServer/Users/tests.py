@@ -218,3 +218,63 @@ class CrearAdminTests(APITestCase):
         self.assertEqual(u.departamento_ID.direccion.name, 'Alcaldía')
         self.assertFalse(u.has_usable_password())
         self.assertIn('https://muni.test/definir-clave/', salida.getvalue())
+
+
+class JerarquiaDeUsuariosTests(Escenario, APITestCase):
+    """Cada quien ve a los usuarios que su lugar en la jerarquía le permite, sin datos personales."""
+    PERSONALES = {'cedula', 'phone_number', 'birthday'}
+
+    def visibles(self, usuario):
+        r = self.como(usuario).get('/api/v1/users/users/', {'page_size': 100})
+        self.assertEqual(r.status_code, 200)
+        return {f['user_ID'] for f in r.data['results']}
+
+    def ids(self, *usuarios):
+        return {str(u.user_ID) for u in usuarios}
+
+    def test_un_funcionario_ve_a_su_departamento_y_a_su_equipo_sin_datos_personales(self):
+        # asignado es de otro departamento, pero tiene una tarea en el proyecto de dueno.
+        self.assertEqual(self.visibles(self.dueno), self.ids(self.admin, self.alcalde, self.jefe_a, self.dueno, self.companero, self.asignado))
+        ficha = self.client.get(f'/api/v1/users/users/{self.companero.user_ID}/')
+        self.assertFalse(self.PERSONALES & set(ficha.data))
+        self.assertEqual(self.client.get(f'/api/v1/users/users/{self.ajeno.user_ID}/').status_code, 404)
+
+    def test_el_jefe_de_departamento_ve_su_departamento(self):
+        self.assertEqual(self.visibles(self.jefe_b), self.ids(self.jefe_b, self.ajeno, self.asignado))
+
+    def test_el_equipo_de_un_proyecto_se_ve_sin_importar_la_jerarquia(self):
+        # asignado (depto B) ve al dueño y a los compañeros del proyecto, no a todo el depto A.
+        vistos = self.visibles(self.asignado)
+        self.assertIn(str(self.dueno.user_ID), vistos)
+        self.assertNotIn(str(self.companero.user_ID), vistos)
+        # Y alguien de B que no está en el proyecto no ve al dueño.
+        self.assertNotIn(str(self.dueno.user_ID), self.visibles(self.ajeno))
+
+    def test_la_delegacion_vigente_suma_al_equipo_y_la_vencida_no(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from Projects.models import DelegacionSupervision
+        d = DelegacionSupervision.objects.create(proyecto=self.proyecto, supervisor=self.jefe_b, otorgado_por=self.alcalde)
+        self.assertIn(str(self.dueno.user_ID), self.visibles(self.jefe_b))
+        self.assertIn(str(self.jefe_b.user_ID), self.visibles(self.dueno))
+        d.expira_en = timezone.localdate() - timedelta(days=1)
+        d.save()
+        self.assertNotIn(str(self.dueno.user_ID), self.visibles(self.jefe_b))
+
+    def test_el_jefe_de_direccion_ve_todos_sus_departamentos(self):
+        self.direccion.jefe = self.jefe_b
+        self.direccion.save()
+        self.assertIn(str(self.dueno.user_ID), self.visibles(self.jefe_b))
+
+    def test_la_alcaldia_ve_a_todos(self):
+        self.assertTrue(self.ids(self.dueno, self.ajeno, self.asignado, self.jefe_b) <= self.visibles(self.alcalde))
+
+    def test_no_ve_a_los_dados_de_baja_ni_aunque_los_pida(self):
+        self.companero.is_active = False
+        self.companero.save()
+        r = self.como(self.dueno).get('/api/v1/users/users/', {'incluir_inactivos': '1'})
+        self.assertNotIn(str(self.companero.user_ID), {f['user_ID'] for f in r.data['results']})
+
+    def test_sigue_sin_poder_editar_a_otros(self):
+        r = self.como(self.dueno).patch(f'/api/v1/users/users/{self.companero.user_ID}/', {'puesto': 'x'}, format='json')
+        self.assertEqual(r.status_code, 403)

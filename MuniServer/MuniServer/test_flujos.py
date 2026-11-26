@@ -97,24 +97,24 @@ class DelegacionDePrincipioAFinTests(Escenario, APITestCase):
         manana = (timezone.localdate() + timedelta(days=1)).isoformat()
 
         r = self.como(self.jefe_a).post(f'{API}/projects/delegaciones/', {
-            'proyecto': str(self.proyecto.pk), 'supervisor': str(self.ajeno.pk), 'expira_en': manana,
+            'proyecto': str(self.proyecto.pk), 'supervisor': str(self.companero.pk), 'expira_en': manana,
         }, format='json')
         self.assertEqual(r.status_code, 201, r.data)
         delegacion = r.data['delegacion_ID']
-        self.assertEqual(avisos(self.ajeno, 'delegacion'), 1)
+        self.assertEqual(avisos(self.companero, 'delegacion'), 1)
 
         # Solo lectura: ve, pero no edita.
-        ajeno = self.como(self.ajeno)
-        self.assertEqual(ajeno.get(url_proyecto).status_code, 200)
-        self.assertEqual(ajeno.patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 403)
+        companero = self.como(self.companero)
+        self.assertEqual(companero.get(url_proyecto).status_code, 200)
+        self.assertEqual(companero.patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 403)
 
         # Con edición.
         self.como(self.jefe_a).patch(f'{API}/projects/delegaciones/{delegacion}/', {'puede_editar': True}, format='json')
-        self.assertEqual(self.como(self.ajeno).patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 200)
+        self.assertEqual(self.como(self.companero).patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 200)
 
         # Revocada: deja de verlo.
         self.assertEqual(self.como(self.jefe_a).delete(f'{API}/projects/delegaciones/{delegacion}/').status_code, 204)
-        self.assertEqual(self.como(self.ajeno).get(url_proyecto).status_code, 404)
+        self.assertEqual(self.como(self.companero).get(url_proyecto).status_code, 404)
 
 
 @override_settings(EMAIL_HOST_USER='pruebas')

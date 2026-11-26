@@ -31,3 +31,9 @@ CELERY_BROKER_URL = "memory://"
 CELERY_RESULT_BACKEND = "cache+memory://"
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+import tempfile  # noqa: E402
+
+# Las fotos de las pruebas van a una carpeta temporal, nunca al repo.
+MEDIA_ROOT = tempfile.mkdtemp(prefix="muni-media-")
+ALMACENAMIENTO_FOTOS = "local"

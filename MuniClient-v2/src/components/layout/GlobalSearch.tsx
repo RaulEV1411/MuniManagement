@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, FolderOpen, Users } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
-import { type Project, type User } from '@/types'
+import { getProyectosPagina, getUsuariosPagina } from '@/lib/api'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
 
 type ResultItem =
   | { kind: 'project'; id: string; label: string; sub: string }
@@ -31,7 +32,21 @@ export default function GlobalSearch() {
   const [cursor, setCursor] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-  const qc = useQueryClient()
+
+  // Busca en el servidor (antes buscaba solo en los proyectos ya cargados en el navegador).
+  const termino = useValorDiferido(query.trim(), 250)
+  const buscar = open && termino.length >= 2
+  const { data: proyectos } = useQuery({
+    queryKey: ['projects', 'busqueda', termino],
+    queryFn: () => getProyectosPagina({ search: termino, page_size: 5 }),
+    enabled: buscar,
+  })
+  const { data: personas } = useQuery({
+    queryKey: ['users', 'busqueda', termino],
+    queryFn: () => getUsuariosPagina({ search: termino, page_size: 3 }),
+    enabled: buscar,
+    retry: false,
+  })
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -51,15 +66,9 @@ export default function GlobalSearch() {
   }, [open])
 
   const results: ResultItem[] = (() => {
-    if (!query.trim()) return []
-    const q = query.toLowerCase()
+    if (!buscar) return []
 
-    const projects = (qc.getQueryData<Project[]>(['projects']) ?? [])
-      .filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.departamento_ID?.name ?? '').toLowerCase().includes(q),
-      )
-      .slice(0, 5)
+    const projects = (proyectos?.results ?? [])
       .map<ResultItem>(p => ({
         kind: 'project',
         id: p.proyect_ID,
@@ -67,12 +76,7 @@ export default function GlobalSearch() {
         sub: p.departamento_ID?.name ?? 'Sin departamento',
       }))
 
-    const users = (qc.getQueryData<User[]>(['users']) ?? [])
-      .filter(u =>
-        `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q),
-      )
-      .slice(0, 3)
+    const users = (personas?.results ?? [])
       .map<ResultItem>(u => ({
         kind: 'user',
         id: u.user_ID,
@@ -119,6 +123,8 @@ export default function GlobalSearch() {
               <Search size={15} className="text-muted-foreground flex-shrink-0" />
               <input
                 ref={inputRef}
+                // Foco apenas se abre: con el setTimeout de antes se perdían las primeras letras.
+                autoFocus
                 value={query}
                 onChange={e => { setQuery(e.target.value); setCursor(0) }}
                 onKeyDown={handleKeyDown}
