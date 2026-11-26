@@ -22,7 +22,6 @@ class NotificacionViewSet(ModelViewSet):
     serializer_class = NotificacionSerializer
     permission_classes = [IsAuthenticated, EsDestinatario]
     http_method_names = ['get', 'patch', 'delete', 'head', 'options']
-    pagination_class = None  # usa default global, expuesto explícitamente
 
     def get_queryset(self):
         qs = Notificacion.objects.filter(usuario=self.request.user)

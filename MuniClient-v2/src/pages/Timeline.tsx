@@ -27,8 +27,8 @@ export default function TimelinePage() {
   const [deptFilter, setDeptFilter] = useState('')
 
   const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+    queryKey: ['projects', 'timeline', deptFilter],
+    queryFn: () => getProjects({ ...(deptFilter && { departamento: deptFilter }), orden: 'entrega' }),
   })
   const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: departments = [] } = useQuery<Department[]>({
@@ -36,10 +36,7 @@ export default function TimelinePage() {
     queryFn: getDepartments,
   })
 
-  const filtered = useMemo(() => {
-    if (!deptFilter) return projects
-    return projects.filter(p => p.departamento_ID?.departamentos_ID === deptFilter)
-  }, [projects, deptFilter])
+  const filtered = projects
 
   const { start, end, days } = useMemo(() => {
     const dates: Date[] = []

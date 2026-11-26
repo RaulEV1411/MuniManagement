@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
+from django.db.models import Q
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -48,6 +49,7 @@ class RolesViewSet(ModelViewSet):
     queryset = Roles.objects.all()
     serializer_class = RolesSerializer
     permission_classes = [IsAuthenticated, RolesPermission, SystemRecordReadOnly]
+    pagination_class = None
 
 
 class UsersViewSet(ModelViewSet):
@@ -70,8 +72,21 @@ class UsersViewSet(ModelViewSet):
         if rol in ROLES_ADMIN or ver_todo or rol in ROLES_JEFES:
             qs = Users.objects.all().select_related('role', 'departamento_ID')
             # Los dados de baja no aparecen en las listas, salvo que se pidan.
-            if self.action == 'list' and self.request.query_params.get('incluir_inactivos') not in ('1', 'true'):
-                qs = qs.filter(is_active=True)
+            if self.action == 'list':
+                p = self.request.query_params
+                if p.get('incluir_inactivos') not in ('1', 'true'):
+                    qs = qs.filter(is_active=True)
+                if p.get('search', '').strip():
+                    q = p['search'].strip()
+                    qs = qs.filter(
+                        Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
+                        | Q(puesto__icontains=q) | Q(departamento_ID__name__icontains=q)
+                    )
+                if p.get('rol'):
+                    qs = qs.filter(role__name=p['rol'])
+                if p.get('departamento'):
+                    qs = qs.filter(departamento_ID=p['departamento'])
+                qs = qs.order_by('first_name', 'last_name')
             return qs
         # Funcionarios solo se ven a sí mismos
         return Users.objects.filter(user_ID=user.user_ID).select_related('role', 'departamento_ID')

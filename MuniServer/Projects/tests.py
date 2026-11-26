@@ -72,3 +72,52 @@ class AjustesTests(Escenario, APITestCase):
     def test_quien_no_ve_el_proyecto_no_ve_sus_ajustes(self):
         AjustePresupuesto.objects.create(proyecto=self.proyecto, tipo='aumento', monto=1, motivo='x', usuario=self.dueno)
         self.assertEqual(self.ids(self.como(self.ajeno).get('/api/v1/projects/ajustes-presupuesto/'), 'ajuste_ID'), set())
+
+
+class ListadoEnElServidorTests(Escenario, APITestCase):
+    URL = '/api/v1/projects/proyectosRead/'
+
+    def setUp(self):
+        super().setUp()
+        from datetime import timedelta
+        from django.utils import timezone
+        from Projects.models import AjustePresupuesto, Prioridad
+        hoy = timezone.localdate()
+        self.vencido = crear_proyecto(self.dueno, name='Bacheo vencido', fecha_inicio=hoy - timedelta(days=30), fecha_entrega=hoy - timedelta(days=2))
+        self.urgente = crear_proyecto(self.dueno, name='Puente urgente', prioridad=Prioridad.objects.get(name='Urgente'))
+        self.completado = crear_proyecto(self.dueno, name='Parque listo', estado=Estado.objects.get(name='Completado'))
+        AjustePresupuesto.objects.create(proyecto=self.urgente, tipo='aumento', monto=500, motivo='x', usuario=self.dueno)
+        AjustePresupuesto.objects.create(proyecto=self.urgente, tipo='rebajo', monto=200, motivo='x', usuario=self.dueno)
+
+    def nombres(self, **params):
+        r = self.como(self.dueno).get(self.URL, params)
+        self.assertEqual(r.status_code, 200)
+        return [f['name'] for f in r.data['results']]
+
+    def test_pagina_de_50_con_el_total(self):
+        r = self.como(self.dueno).get(self.URL, {'page_size': 2})
+        self.assertEqual(r.data['count'], 4)
+        self.assertEqual(len(r.data['results']), 2)
+        self.assertIsNotNone(r.data['next'])
+
+    def test_filtros_y_orden(self):
+        self.assertEqual(self.nombres(estado='Vencido'), ['Bacheo vencido'])
+        self.assertNotIn('Bacheo vencido', self.nombres(estado='Pendiente'))
+        self.assertEqual(self.nombres(prioridad='Urgente'), ['Puente urgente'])
+        self.assertEqual(self.nombres(search='parque'), ['Parque listo'])
+        self.assertEqual(self.nombres(orden='prioridad')[0], 'Puente urgente')
+        self.assertEqual(self.nombres(orden='reciente')[0], 'Parque listo')
+
+    def test_el_resumen_cuenta_todo_y_respeta_la_visibilidad(self):
+        r = self.como(self.dueno).get(f'{self.URL}resumen/').data
+        self.assertEqual((r['total'], r['vencidos'], r['completados']), (4, 1, 1))
+        self.assertEqual(r['costo_total'], 4 * 1000 + 500 - 200)
+        self.assertEqual(sum(e['total'] for e in r['por_estado']), 4)
+        self.assertEqual(self.como(self.ajeno).get(f'{self.URL}resumen/').data['total'], 0)
+        # El asignado ve solo el proyecto donde tiene tarea, aunque la regla de visibilidad use joins.
+        self.assertEqual(self.como(self.asignado).get(f'{self.URL}resumen/').data['total'], 1)
+
+    def test_los_catalogos_no_se_paginan(self):
+        r = self.como(self.dueno).get('/api/v1/projects/estados/')
+        self.assertIsInstance(r.data, list)
+        self.assertIsInstance(self.client.get('/api/v1/departments/departamentos/').data, list)

@@ -1,6 +1,7 @@
 import cloudinary.uploader
 from MuniServer.subidas import error_de_imagen, subir_imagen
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -17,7 +18,7 @@ from .serializers import (
     ProjectImageSerializer, DelegacionSupervisionSerializer, AjustePresupuestoSerializer,
 )
 from .permissions import SystemRecordReadOnly, CatalogoSoloAdministrador
-from . import authz
+from . import authz, consultas
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
@@ -37,6 +38,7 @@ def _proyectos_visibles_qs(user):
 class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Estado.objects.all()
     serializer_class = EstadoSerializer
+    pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
     mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con este estado.'
 
@@ -44,6 +46,7 @@ class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
 class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Prioridad.objects.all()
     serializer_class = PrioridadSerializer
+    pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
     mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con esta prioridad.'
 
@@ -51,6 +54,7 @@ class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
 class TiposViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Tipos.objects.all()
     serializer_class = TiposSerializer
+    pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
     mensaje_protegido = 'No se puede borrar: hay proyectos de este tipo.'
 
@@ -61,11 +65,15 @@ class ProyectosReadViewSet(ModelViewSet):
     http_method_names = ['get', 'head', 'options']
 
     def get_queryset(self):
-        qs = _proyectos_visibles_qs(self.request.user)
-        user_ID = self.request.query_params.get('user_ID')
-        if user_ID:
-            qs = qs.filter(user_ID=user_ID)
-        return qs
+        p = self.request.query_params
+        qs = consultas.filtrar(_proyectos_visibles_qs(self.request.user), p, self.request.user)
+        return consultas.ordenar(qs, p)
+
+    @action(detail=False, methods=['get'])
+    def resumen(self, request):
+        """Totales para el dashboard, el menú y los reportes, con los mismos filtros que la lista."""
+        qs = consultas.filtrar(authz.proyectos_visibles(request.user), request.query_params, request.user)
+        return Response(consultas.resumen(qs))
 
 
 class ProyectosWriteViewSet(ModelViewSet):

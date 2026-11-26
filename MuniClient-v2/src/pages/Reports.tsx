@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileDown, FileSpreadsheet, Search, ChevronDown } from 'lucide-react'
 import { getProjects, getDepartments, getEstados } from '@/lib/api'
@@ -9,6 +9,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, colorDeEstado, conColor } from '@/lib/colores'
 
 // Costo con los aumentos y rebajos aprobados; si el servidor no lo manda, el costo base.
@@ -19,9 +20,17 @@ export default function ReportsPage() {
   const [deptFilter, setDeptFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
+  // Filtra el servidor; el reporte trae todas las páginas del resultado para exportarlo completo.
+  const busqueda = useValorDiferido(search.trim())
+  const filtrosServidor = {
+    ...(deptFilter && { departamento: deptFilter }),
+    ...(statusFilter && { estado: statusFilter }),
+    ...(busqueda && { search: busqueda }),
+    orden: 'entrega',
+  }
   const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+    queryKey: ['projects', 'reportes', filtrosServidor],
+    queryFn: () => getProjects(filtrosServidor),
   })
   const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: departments = [] } = useQuery<Department[]>({
@@ -29,22 +38,7 @@ export default function ReportsPage() {
     queryFn: getDepartments,
   })
 
-  const filtered = useMemo(() => {
-    let r = projects
-    if (deptFilter) r = r.filter(p => p.departamento_ID?.departamentos_ID === deptFilter)
-    if (statusFilter) {
-      if (statusFilter === 'Vencido') r = r.filter(p => isOverdue(p))
-      else r = r.filter(p => p.estado_ID?.name === statusFilter && !isOverdue(p))
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      r = r.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.departamento_ID?.name ?? '').toLowerCase().includes(q),
-      )
-    }
-    return r
-  }, [projects, deptFilter, statusFilter, search])
+  const filtered = projects
 
   const totalCost = filtered.reduce((sum, p) => sum + costoTotal(p), 0)
 

@@ -17,6 +17,8 @@ test('el Kanban tiene una columna por estado de Configuración', async ({ page }
 test('pasar a Cancelado desde el dashboard pide el motivo', async ({ page }) => {
   await page.goto('/dashboard')
   await page.getByPlaceholder('Buscar proyectos...').fill('Bacheo')
+  // La búsqueda la resuelve el servidor al dejar de escribir: hay que esperar la lista filtrada.
+  await expect(page.getByText('Acera central')).toHaveCount(0)
   await expect(page.getByText('Bacheo norte').first()).toBeVisible()
   await page.getByTitle('Cambiar estado').first().click()
   await page.getByRole('button', { name: 'Cancelado' }).first().click()

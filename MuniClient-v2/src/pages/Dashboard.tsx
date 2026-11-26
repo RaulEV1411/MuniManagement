@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FolderOpen, Clock, CheckCircle2, AlertTriangle,
@@ -8,7 +8,7 @@ import {
   TrendingUp, RefreshCw, Columns3, User,
   ChevronLeft, ChevronRight, ImageIcon, Upload, Zap,
 } from 'lucide-react'
-import { getProjects, uploadProjectImage, patchProject, getEstados, getPrioridades } from '@/lib/api'
+import { getProyectosPagina, getResumenProyectos, uploadProjectImage, patchProject, getEstados, getPrioridades } from '@/lib/api'
 import { type Project, type Estado, type Prioridad } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { cn, isOverdue, daysUntil, formatDate } from '@/lib/utils'
@@ -19,6 +19,7 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 
 // ── Cambio rápido de estado ───────────────────────────────────────────────────
@@ -518,15 +519,19 @@ export default function DashboardPage() {
   const sortBy   = params.get('orden') ?? 'reciente'
   const view     = (params.get('vista') ?? 'list') as 'list' | 'grid' | 'kanban'
   const mineOnly = params.get('mios') === '1'
+  const pagina   = Math.max(1, Number(params.get('pagina') ?? '1') || 1)
 
   const setParam = (key: string, val: string, def: string) => {
     setParams(prev => {
       const next = new URLSearchParams(prev)
       if (val === def) next.delete(key)
       else next.set(key, val)
+      // Cambiar un filtro, el orden o la vista vuelve a la primera página.
+      if (key !== 'pagina') next.delete('pagina')
       return next
     }, { replace: true })
   }
+  const setPagina = (n: number) => setParam('pagina', String(n), '1')
   const setSearch   = (v: string) => setParam('q', v, '')
   const setStatus   = (v: string) => setParam('estado', v, 'Todos')
   const setPriority = (v: string) => setParam('prioridad', v, 'Todas')
@@ -534,64 +539,45 @@ export default function DashboardPage() {
   const setView     = (v: string) => setParam('vista', v, 'list')
   const setMineOnly = (fn: (prev: boolean) => boolean) => setParam('mios', fn(mineOnly) ? '1' : '', '')
 
-  const { data: projects = [], isLoading, refetch, isError, error } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  // Filtros, orden y paginación los resuelve el servidor (antes se bajaban los primeros 200 y se
+  // filtraba en el navegador, así que con más proyectos los resultados quedaban incompletos).
+  const busqueda = useValorDiferido(search.trim())
+  const filtros = {
+    ...(busqueda && { search: busqueda }),
+    ...(status !== 'Todos' && { estado: status }),
+    ...(priority !== 'Todas' && { prioridad: priority }),
+    ...(mineOnly && { mios: '1' }),
+    orden: sortBy,
+  }
+  const porPagina = view === 'kanban' ? 100 : 24
+  const { data: paginaActual, isLoading, refetch, isError, error, isPlaceholderData } = useQuery({
+    queryKey: ['projects', 'dashboard', filtros, pagina, porPagina],
+    queryFn: () => getProyectosPagina({ ...filtros, page: pagina, page_size: porPagina }),
+    placeholderData: keepPreviousData,
   })
+  const displayed = useMemo(() => paginaActual?.results ?? [], [paginaActual])
+  const totalFiltrado = paginaActual?.count ?? 0
+  const totalPaginas = Math.max(1, Math.ceil(totalFiltrado / porPagina))
+
+  // Totales de todos los proyectos visibles, sin filtros.
+  const { data: resumen } = useQuery({ queryKey: ['projects', 'resumen'], queryFn: () => getResumenProyectos() })
 
   const { data: estados = [] }     = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: prioridades = [] } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades, staleTime: 300_000 })
 
   const [showChart, setShowChart] = useState(false)
 
-  const stats = useMemo(() => {
-    const total      = projects.length
-    const completado = projects.filter(p => p.estado_ID?.name === 'Completado').length
-    return {
-      total,
-      enProgreso: projects.filter(p => p.estado_ID?.name === 'En progreso').length,
-      completado,
-      vencidos:   projects.filter(isOverdue).length,
-      pct: total ? Math.round((completado / total) * 100) : 0,
-    }
-  }, [projects])
+  const stats = {
+    total:      resumen?.total ?? 0,
+    enProgreso: resumen?.en_progreso ?? 0,
+    completado: resumen?.completados ?? 0,
+    vencidos:   resumen?.vencidos ?? 0,
+    pct:        resumen?.porcentaje_completado ?? 0,
+  }
 
-  const deptChartData = useMemo(() => {
-    const map: Record<string, { total: number; completado: number }> = {}
-    projects.forEach(p => {
-      const dept = p.departamento_ID?.name ?? 'Sin depto.'
-      if (!map[dept]) map[dept] = { total: 0, completado: 0 }
-      map[dept].total++
-      if (p.estado_ID?.name === 'Completado') map[dept].completado++
-    })
-    return Object.entries(map)
-      .map(([name, v]) => ({ name: name.length > 14 ? name.slice(0, 13) + '…' : name, total: v.total, completado: v.completado }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8)
-  }, [projects])
-
-  const displayed = useMemo(() => {
-    let r = [...projects]
-    if (mineOnly) r = r.filter(p => p.user_ID?.user_ID === user?.user_ID)
-    if (status === 'Vencido')    r = r.filter(isOverdue)
-    else if (status !== 'Todos') r = r.filter(p => p.estado_ID?.name === status && !isOverdue(p))
-    if (priority !== 'Todas')    r = r.filter(p => p.prioridad_ID?.name === priority)
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      r = r.filter(p =>
-        p.name?.toLowerCase().includes(q) ||
-        p.descripcion?.toLowerCase().includes(q) ||
-        p.departamento_ID?.name?.toLowerCase().includes(q) ||
-        `${p.user_ID?.first_name} ${p.user_ID?.last_name}`.toLowerCase().includes(q),
-      )
-    }
-    if (sortBy === 'nombre')      r.sort((a, b) => a.name.localeCompare(b.name))
-    else if (sortBy === 'entrega')  r.sort((a, b) => { if (!a.fecha_entrega) return 1; if (!b.fecha_entrega) return -1; return new Date(a.fecha_entrega).getTime() - new Date(b.fecha_entrega).getTime() })
-    // Más urgente primero, según el orden de prioridades de Configuración.
-    else if (sortBy === 'prioridad') r.sort((a, b) => (b.prioridad_ID?.orden ?? -1) - (a.prioridad_ID?.orden ?? -1))
-    else r.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
-    return r
-  }, [projects, status, priority, search, sortBy, mineOnly, user?.user_ID])
+  const deptChartData = (resumen?.por_departamento ?? []).map(d => ({
+    name: d.name.length > 14 ? d.name.slice(0, 13) + '…' : d.name, total: d.total, completado: d.completados,
+  }))
 
   const hasFilters = search || status !== 'Todos' || priority !== 'Todas' || mineOnly
   const clearFilters = () => { setSearch(''); setStatus('Todos'); setPriority('Todas'); setMineOnly(() => false) }
@@ -712,7 +698,7 @@ export default function DashboardPage() {
         <div className="flex-1" />
 
         {hasFilters && (
-          <span className="text-xs text-muted-foreground flex-shrink-0">{displayed.length} resultado{displayed.length !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-muted-foreground flex-shrink-0">{totalFiltrado} resultado{totalFiltrado !== 1 ? 's' : ''}</span>
         )}
 
         <button
@@ -818,11 +804,32 @@ export default function DashboardPage() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {view !== 'kanban' && (
-              <p className="text-xs text-muted-foreground text-center pt-4">
-                {displayed.length}{projects.length !== displayed.length ? ` de ${projects.length}` : ''} proyecto{displayed.length !== 1 ? 's' : ''}
-              </p>
-            )}
+            <nav className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground" aria-label="Páginas de proyectos">
+              <span>
+                {view === 'kanban' && totalFiltrado > displayed.length
+                  ? `Se muestran los ${displayed.length} más ${sortBy === 'reciente' ? 'recientes' : 'arriba en el orden elegido'} de ${totalFiltrado}. Use los filtros para acotar.`
+                  : `${(pagina - 1) * porPagina + 1}–${(pagina - 1) * porPagina + displayed.length} de ${totalFiltrado} proyecto${totalFiltrado !== 1 ? 's' : ''}`}
+              </span>
+              {view !== 'kanban' && totalPaginas > 1 && (
+                <span className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setPagina(pagina - 1)}
+                    disabled={pagina <= 1 || isPlaceholderData}
+                    className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40"
+                  >
+                    Anterior
+                  </button>
+                  <span aria-current="page">Página {pagina} de {totalPaginas}</span>
+                  <button
+                    onClick={() => setPagina(pagina + 1)}
+                    disabled={pagina >= totalPaginas || isPlaceholderData}
+                    className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40"
+                  >
+                    Siguiente
+                  </button>
+                </span>
+              )}
+            </nav>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
