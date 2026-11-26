@@ -5,6 +5,7 @@ import { Trash2, UserPlus, X, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { getDelegaciones, createDelegacion, deleteDelegacion, getUsers } from '@/lib/api'
 import type { Delegacion, User } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
 
 interface Props {
   proyectoId: string
@@ -47,7 +48,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
       setPuedeEditar(false)
       setExpira('')
     },
-    onError: () => toast.error('No se pudo delegar la supervisión'),
+    onError: err => toast.error(mensajeDeError(err, 'No se pudo delegar la supervisión')),
   })
 
   const revocar = useMutation({

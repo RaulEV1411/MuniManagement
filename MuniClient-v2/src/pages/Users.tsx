@@ -9,6 +9,7 @@ import {
 import { getUsers, getDepartments } from '@/lib/api'
 import { type User, type Department } from '@/types'
 import { cn, getInitials, fullName } from '@/lib/utils'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 const ROLE_STYLE: Record<string, string> = {
   'Administrador': 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
@@ -124,7 +125,7 @@ export default function UsersPage() {
   const [deptFilter, setDept] = useState('')
   const [view, setView]       = useState<'list' | 'grid'>('list')
 
-  const { data: users = [], isLoading, refetch } = useQuery<User[]>({
+  const { data: users = [], isLoading, refetch, isError, error } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: getUsers,
   })
@@ -157,6 +158,8 @@ export default function UsersPage() {
 
   const hasFilters = !!search || !!roleFilter || !!deptFilter
   const clearFilters = () => { setSearch(''); setRole(''); setDept('') }
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los usuarios" />
 
   return (
     <div className="flex flex-col h-full">

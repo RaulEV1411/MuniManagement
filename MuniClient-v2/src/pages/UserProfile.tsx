@@ -15,6 +15,9 @@ import {
 import { useAppStore } from '@/store/app'
 import { type User, type Project, type Role, type Department } from '@/types'
 import { cn, formatDate, getInitials, fullName, isOverdue } from '@/lib/utils'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { esNoEncontrado } from '@/lib/errores'
 
 const STATUS_STYLE: Record<string, string> = {
   'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
@@ -52,11 +55,13 @@ function EditModal({
   user,
   roles,
   departments,
+  puedeEditarTodo,
   onClose,
   onSaved,
 }: {
   user: User
   roles: Role[]
+  puedeEditarTodo: boolean
   departments: Department[]
   onClose: () => void
   onSaved: () => void
@@ -81,18 +86,21 @@ function EditModal({
       await updateUser(user.user_ID, {
         first_name:   form.first_name,
         last_name:    form.last_name,
-        cedula:       form.cedula ? parseInt(form.cedula) : undefined,
-        email:        form.email,
         phone_number: form.phone_number ? parseInt(form.phone_number) : undefined,
         puesto:       form.puesto,
-        role:         form.role || undefined,
-        departamento_ID: form.departamento_ID || undefined,
+        // Cédula, correo, rol y departamento solo los cambia la alcaldía.
+        ...(puedeEditarTodo && {
+          cedula:          form.cedula ? parseInt(form.cedula) : undefined,
+          email:           form.email,
+          role:            form.role || undefined,
+          departamento_ID: form.departamento_ID || undefined,
+        }),
       })
       toast.success('Usuario actualizado')
       onSaved()
       onClose()
-    } catch {
-      toast.error('Error al actualizar usuario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar usuario'))
     } finally {
       setLoading(false)
     }
@@ -127,11 +135,11 @@ function EditModal({
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Cédula</label>
-            <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} className={inputCls} />
+            <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Email</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} />
+            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -146,14 +154,14 @@ function EditModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Rol</label>
-              <select value={form.role} onChange={e => set('role', e.target.value)} className={inputCls}>
+              <select value={form.role} onChange={e => set('role', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin rol</option>
                 {roles.map(r => <option key={r.role_ID} value={r.role_ID}>{r.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
-              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={inputCls}>
+              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin departamento</option>
                 {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
               </select>
@@ -183,14 +191,14 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (form.next !== form.confirm) { toast.error('Las contraseñas no coinciden'); return }
-    if (form.next.length < 6) { toast.error('La contraseña debe tener al menos 6 caracteres'); return }
+    if (form.next.length < 8) { toast.error('La contraseña debe tener al menos 8 caracteres'); return }
     setLoading(true)
     try {
       await changePassword(form.current, form.next)
       toast.success('Contraseña actualizada')
       onClose()
-    } catch {
-      toast.error('Error al cambiar contraseña — verifica la contraseña actual')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al cambiar contraseña — verifica la contraseña actual'))
     } finally {
       setLoading(false)
     }
@@ -262,12 +270,12 @@ export default function UserProfilePage() {
     try {
       await enviarAcceso(id!)
       toast.success('Le enviamos un correo con el enlace para definir su contraseña.')
-    } catch {
-      toast.error('No se pudo reenviar el acceso.')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'No se pudo reenviar el acceso.'))
     }
   }
 
-  const { data: user, isLoading: loadingUser } = useQuery<User>({
+  const { data: user, isLoading: loadingUser, isError: errorUser, error: errUser, refetch: refetchUser } = useQuery<User>({
     queryKey: ['user', id],
     queryFn: () => getUserById(id!),
     enabled: !!id,
@@ -297,8 +305,8 @@ export default function UserProfilePage() {
       await uploadUserPhoto(id, file)
       await qc.invalidateQueries({ queryKey: ['user', id] })
       toast.success('Foto actualizada')
-    } catch {
-      toast.error('Error al subir foto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al subir foto'))
     } finally {
       setUploading(false)
     }
@@ -313,6 +321,10 @@ export default function UserProfilePage() {
         </div>
       </div>
     )
+  }
+
+  if (errorUser && !esNoEncontrado(errUser)) {
+    return <ErrorDeCarga error={errUser} onReintentar={refetchUser} que="el usuario" />
   }
 
   if (!user) {
@@ -515,6 +527,7 @@ export default function UserProfilePage() {
             user={user}
             roles={roles}
             departments={departments}
+            puedeEditarTodo={esAlcaldia}
             onClose={() => setShowEdit(false)}
             onSaved={() => qc.invalidateQueries({ queryKey: ['user', id] })}
           />

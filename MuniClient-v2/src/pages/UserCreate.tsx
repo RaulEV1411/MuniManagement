@@ -7,6 +7,8 @@ import { toast } from 'sonner'
 import { createUser, getRoles, getDepartments } from '@/lib/api'
 import { type Role, type Department } from '@/types'
 import { cn } from '@/lib/utils'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 export default function UserCreatePage() {
   const navigate = useNavigate()
@@ -24,8 +26,8 @@ export default function UserCreatePage() {
     departamento_ID: '',
   })
 
-  const { data: roles = [] }       = useQuery<Role[]>({ queryKey: ['roles'], queryFn: getRoles })
-  const { data: departments = [] } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
+  const { data: roles = [], error: errRoles }       = useQuery<Role[]>({ queryKey: ['roles'], queryFn: getRoles })
+  const { data: departments = [], error: errDepartments } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
@@ -34,6 +36,11 @@ export default function UserCreatePage() {
     if (!form.first_name.trim()) { toast.error('El nombre es requerido'); return }
     if (!form.last_name.trim())  { toast.error('El apellido es requerido'); return }
     if (!form.email.trim())      { toast.error('El email es requerido'); return }
+    if (!form.cedula.trim())     { toast.error('La cédula es requerida'); return }
+    if (!form.phone_number.trim()) { toast.error('El teléfono es requerido'); return }
+    if (!form.puesto.trim())     { toast.error('El puesto es requerido'); return }
+    if (!form.role)              { toast.error('Selecciona un rol'); return }
+    if (!form.departamento_ID)   { toast.error('Selecciona un departamento'); return }
 
     setLoading(true)
     try {
@@ -51,14 +58,17 @@ export default function UserCreatePage() {
       toast.success('Usuario creado exitosamente')
       const uid = newUser?.user_ID ?? newUser?.id
       navigate(uid ? `/users/${uid}` : '/users')
-    } catch {
-      toast.error('Error al crear usuario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear usuario'))
     } finally {
       setLoading(false)
     }
   }
 
   const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+
+  const errorDatos = errRoles ?? errDepartments
+  if (errorDatos) return <ErrorDeCarga error={errorDatos} que="los datos del formulario" />
 
   return (
     <div className="flex flex-col h-full">
@@ -101,8 +111,8 @@ export default function UserCreatePage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Cédula</label>
-              <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} placeholder="1-1234-5678" className={inputCls} />
+              <label className="text-xs font-semibold text-muted-foreground">Cédula *</label>
+              <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} placeholder="112345678" className={inputCls} />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Email *</label>
@@ -110,11 +120,11 @@ export default function UserCreatePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Teléfono</label>
+                <label className="text-xs font-semibold text-muted-foreground">Teléfono *</label>
                 <input type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="88887777" className={inputCls} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Puesto</label>
+                <label className="text-xs font-semibold text-muted-foreground">Puesto *</label>
                 <input value={form.puesto} onChange={e => set('puesto', e.target.value)} placeholder="Analista" className={inputCls} />
               </div>
             </div>
@@ -124,16 +134,16 @@ export default function UserCreatePage() {
             <h2 className="text-sm font-bold text-foreground">Rol y departamento</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Rol</label>
+                <label className="text-xs font-semibold text-muted-foreground">Rol *</label>
                 <select value={form.role} onChange={e => set('role', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
-                  <option value="">Sin rol</option>
+                  <option value="">Seleccionar rol...</option>
                   {roles.map(r => <option key={r.role_ID} value={r.role_ID}>{r.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
+                <label className="text-xs font-semibold text-muted-foreground">Departamento *</label>
                 <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
-                  <option value="">Sin departamento</option>
+                  <option value="">Seleccionar departamento...</option>
                   {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
                 </select>
               </div>

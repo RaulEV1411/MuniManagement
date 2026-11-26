@@ -10,6 +10,7 @@ import {
 } from '@/lib/api'
 import { type Estado, type Prioridad, type Tipo } from '@/types'
 import { cn } from '@/lib/utils'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 const TABS = ['Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
@@ -198,9 +199,9 @@ export default function ConfigPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('Estados')
 
-  const { data: estados = [],     isLoading: loadingEstados }     = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
-  const { data: prioridades = [], isLoading: loadingPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
-  const { data: tipos = [],       isLoading: loadingTipos }       = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
+  const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
+  const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
+  const { data: tipos = [],       isLoading: loadingTipos, error: errTipos, refetch: refetchTipos } = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
 
   // ── Estados ──
   const estadoItems: GenericItem[] = estados.map(e => ({
@@ -267,6 +268,11 @@ export default function ConfigPage() {
     await createTipo({ name })
     qc.invalidateQueries({ queryKey: ['tipos'] })
     toast.success('Tipo creado')
+  }
+
+  const errorCatalogos = errEstados ?? errPrioridades ?? errTipos
+  if (errorCatalogos) {
+    return <ErrorDeCarga error={errorCatalogos} onReintentar={() => { refetchEstados(); refetchPrioridades(); refetchTipos() }} que="los catálogos" />
   }
 
   return (

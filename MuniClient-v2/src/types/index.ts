@@ -71,6 +71,10 @@ export interface Project {
   departamento_ID: Department
   user_ID: User
   images: ProjectImage[]
+  es_publico?: boolean
+  costo_total?: number
+  created_at?: string
+  tipos?: Array<{ tipos_ID: string; name: string }>
 }
 
 export interface TaskImage {

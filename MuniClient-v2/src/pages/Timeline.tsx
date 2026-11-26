@@ -5,6 +5,7 @@ import { GanttChartSquare, ChevronDown } from 'lucide-react'
 import { getProjects, getDepartments } from '@/lib/api'
 import { type Project, type Department } from '@/types'
 import { cn, isOverdue } from '@/lib/utils'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 const STATUS_COLOR: Record<string, string> = {
   'Completado':  'bg-emerald-500',
@@ -38,7 +39,7 @@ export default function TimelinePage() {
   const navigate = useNavigate()
   const [deptFilter, setDeptFilter] = useState('')
 
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   })
@@ -91,6 +92,8 @@ export default function TimelinePage() {
     }
     return result
   }, [start, end, days])
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
 
   return (
     <div className="flex flex-col h-full">

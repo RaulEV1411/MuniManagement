@@ -7,6 +7,8 @@ import {
   getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections,
 } from '@/lib/api'
 import { type Department, type Direction } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 function CreateModal({
   directions,
@@ -24,14 +26,15 @@ function CreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
     setLoading(true)
     try {
       await createDepartment({ name: name.trim(), direccion: dirId || undefined })
       toast.success('Departamento creado')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear departamento')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear departamento'))
     } finally {
       setLoading(false)
     }
@@ -65,9 +68,9 @@ function CreateModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Dirección</label>
+            <label className="text-xs font-semibold text-muted-foreground">Dirección *</label>
             <select value={dirId} onChange={e => setDirId(e.target.value)} className={inputCls}>
-              <option value="">Sin dirección</option>
+              <option value="">Seleccionar dirección...</option>
               {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
             </select>
           </div>
@@ -109,14 +112,15 @@ function DepartmentRow({
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
+    if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
     setSaving(true)
     try {
       await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined })
       toast.success('Departamento actualizado')
       onSaved()
       setEditing(false)
-    } catch {
-      toast.error('Error al actualizar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar'))
     } finally {
       setSaving(false)
     }
@@ -134,8 +138,8 @@ function DepartmentRow({
       await deleteDepartment(dept.departamentos_ID)
       toast.success('Departamento eliminado')
       onDeleted()
-    } catch {
-      toast.error('Error al eliminar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar'))
     }
   }
 
@@ -165,7 +169,7 @@ function DepartmentRow({
       <td className="px-5 py-3.5 min-w-0">
         {editing ? (
           <select value={dirId} onChange={e => setDirId(e.target.value)} className={cellInput}>
-            <option value="">Sin dirección</option>
+            <option value="">Seleccionar dirección...</option>
             {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
           </select>
         ) : (
@@ -211,7 +215,7 @@ export default function DepartmentsPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 
-  const { data: departments = [], isLoading } = useQuery<Department[]>({
+  const { data: departments = [], isLoading, isError, error, refetch } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
@@ -222,6 +226,8 @@ export default function DepartmentsPage() {
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['departments'] })
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los departamentos" />
 
   return (
     <div className="flex flex-col h-full">

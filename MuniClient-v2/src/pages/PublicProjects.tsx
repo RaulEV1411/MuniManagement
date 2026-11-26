@@ -4,12 +4,16 @@ import { Link } from 'react-router-dom'
 import { Calendar, MapPin, Search, Building2 } from 'lucide-react'
 import { getPublicProjects } from '@/lib/api'
 import type { PublicProject } from '@/types'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
 
 export default function PublicProjectsPage() {
   const [search, setSearch] = useState('')
-  const { data: proyectos = [], isLoading } = useQuery<PublicProject[]>({
-    queryKey: ['public-projects', search],
-    queryFn: () => getPublicProjects(search),
+  // Consulta al dejar de escribir, no por cada tecla: el portal admite 60 consultas por minuto.
+  const busqueda = useValorDiferido(search.trim())
+  const { data: proyectos = [], isLoading, isError, error, refetch } = useQuery<PublicProject[]>({
+    queryKey: ['public-projects', busqueda],
+    queryFn: () => getPublicProjects(busqueda),
   })
 
   return (
@@ -41,6 +45,8 @@ export default function PublicProjectsPage() {
               <div key={i} className="h-56 rounded-2xl bg-white animate-pulse" />
             ))}
           </div>
+        ) : isError ? (
+          <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
         ) : proyectos.length === 0 ? (
           <p className="text-center text-slate-500 py-16">No hay proyectos para mostrar.</p>
         ) : (

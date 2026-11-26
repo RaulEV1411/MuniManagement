@@ -5,6 +5,8 @@ import { GitBranch, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { getDirections, createDirection, updateDirection, deleteDirection } from '@/lib/api'
 import { type Direction } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName]     = useState('')
@@ -19,8 +21,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       toast.success('Dirección creada')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear dirección')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear dirección'))
     } finally {
       setLoading(false)
     }
@@ -84,8 +86,8 @@ function DirectionRow({ direction, onSaved, onDeleted }: {
       toast.success('Dirección actualizada')
       onSaved()
       setEditing(false)
-    } catch {
-      toast.error('Error al actualizar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar'))
     } finally {
       setSaving(false)
     }
@@ -97,8 +99,8 @@ function DirectionRow({ direction, onSaved, onDeleted }: {
       await deleteDirection(direction.direccion_ID)
       toast.success('Dirección eliminada')
       onDeleted()
-    } catch {
-      toast.error('Error al eliminar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar'))
     }
   }
 
@@ -167,12 +169,14 @@ export default function DirectionsPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 
-  const { data: directions = [], isLoading } = useQuery<Direction[]>({
+  const { data: directions = [], isLoading, isError, error, refetch } = useQuery<Direction[]>({
     queryKey: ['directions'],
     queryFn: getDirections,
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['directions'] })
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="las direcciones" />
 
   return (
     <div className="flex flex-col h-full">

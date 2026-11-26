@@ -5,6 +5,7 @@ import { Plus, TrendingDown, TrendingUp, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { getAjustes, createAjuste } from '@/lib/api'
 import type { AjustePresupuesto } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
 
 interface Props {
   proyectoId?: string
@@ -45,7 +46,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
       setMonto('')
       setMotivo('')
     },
-    onError: () => toast.error('No se pudo registrar el ajuste'),
+    onError: err => toast.error(mensajeDeError(err, 'No se pudo registrar el ajuste')),
   })
 
   const delta = ajustes.reduce(

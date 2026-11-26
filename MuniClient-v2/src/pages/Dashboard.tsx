@@ -15,6 +15,10 @@ import { cn, isOverdue, daysUntil, formatDate } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 import { toast } from 'sonner'
 import ImageLightbox from '@/components/common/ImageLightbox'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import RazonModal from '@/components/common/RazonModal'
+import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
 
 const PRIORITY_ORDER = { Alta: 0, Media: 1, Baja: 2 } as Record<string, number>
 
@@ -38,10 +42,12 @@ function StatusQuickChange({ project }: { project: Project }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  const [conMotivo, setConMotivo] = useState<Estado | null>(null)
   const { mutate, isPending } = useMutation({
-    mutationFn: (estadoId: string) => patchProject(project.proyect_ID, { estado_ID: estadoId }),
+    mutationFn: ({ estadoId, razon }: { estadoId: string; razon?: string }) =>
+      patchProject(project.proyect_ID, { estado_ID: estadoId, ...(razon && { razon }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); toast.success('Estado actualizado'); setOpen(false) },
-    onError: () => toast.error('Error al actualizar estado'),
+    onError: err => toast.error(mensajeDeError(err, 'Error al actualizar estado')),
   })
 
   useEffect(() => {
@@ -80,7 +86,14 @@ function StatusQuickChange({ project }: { project: Project }) {
             {estados.map(e => (
               <button
                 key={e.estado_ID}
-                onClick={() => mutate(e.estado_ID)}
+                onClick={() => {
+                  if (ESTADOS_CON_MOTIVO.includes(e.name) && e.estado_ID !== project.estado_ID?.estado_ID) {
+                    setOpen(false)
+                    setConMotivo(e)
+                  } else {
+                    mutate({ estadoId: e.estado_ID })
+                  }
+                }}
                 className={cn(
                   'flex items-center gap-2 w-full px-3 py-2 text-[11px] font-medium text-left hover:bg-accent transition-colors',
                   e.estado_ID === project.estado_ID?.estado_ID && 'bg-accent',
@@ -98,6 +111,14 @@ function StatusQuickChange({ project }: { project: Project }) {
           </motion.div>
         )}
       </AnimatePresence>
+      {conMotivo && (
+        <RazonModal
+          title={`Pasar a ${conMotivo.name}`}
+          description="Indique el motivo; queda en el historial del proyecto."
+          onConfirm={razon => { mutate({ estadoId: conMotivo.estado_ID, razon }); setConMotivo(null) }}
+          onClose={() => setConMotivo(null)}
+        />
+      )}
     </div>
   )
 }
@@ -328,6 +349,7 @@ function ProjectGridCard({ project }: { project: Project }) {
     if (!files.length) return
     if (fileInputRef.current) fileInputRef.current.value = ''
     let done = 0, failed = 0
+    let ultimoError: unknown = null
     setUploadProgress({ current: 0, total: files.length })
     for (const file of files) {
       try {
@@ -335,12 +357,12 @@ function ProjectGridCard({ project }: { project: Project }) {
         done++
         setUploadProgress({ current: done, total: files.length })
         qc.invalidateQueries({ queryKey: ['projects'] })
-      } catch { failed++ }
+      } catch (err) { failed++; ultimoError = err }
     }
     setUploadProgress(null)
     if (done > 0 && failed === 0) toast.success(done > 1 ? `${done} fotos subidas` : 'Foto subida')
-    else if (done > 0) toast.success(`${done} subidas, ${failed} fallaron`)
-    else toast.error('Error al subir fotos')
+    else if (done > 0) toast.warning(`${done} subidas, ${failed} fallaron`, { description: mensajeDeError(ultimoError, '') })
+    else toast.error(mensajeDeError(ultimoError, 'Error al subir fotos'))
   }
 
   return (
@@ -543,7 +565,7 @@ export default function DashboardPage() {
   const setView     = (v: string) => setParam('vista', v, 'list')
   const setMineOnly = (fn: (prev: boolean) => boolean) => setParam('mios', fn(mineOnly) ? '1' : '', '')
 
-  const { data: projects = [], isLoading, refetch } = useQuery<Project[]>({
+  const { data: projects = [], isLoading, refetch, isError, error } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   })
@@ -619,6 +641,8 @@ export default function DashboardPage() {
     const h = new Date().getHours()
     return h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches'
   }
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
 
   return (
     <div className="flex flex-col h-full">

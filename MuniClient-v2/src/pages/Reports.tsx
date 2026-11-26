@@ -7,6 +7,8 @@ import { cn, formatDate, isOverdue } from '@/lib/utils'
 import { toast } from 'sonner'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 const STATUS_BADGE: Record<string, string> = {
   'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
@@ -27,7 +29,7 @@ export default function ReportsPage() {
   const [deptFilter, setDeptFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: getProjects,
   })
@@ -98,8 +100,8 @@ export default function ReportsPage() {
 
       doc.save(`proyectos_${new Date().toISOString().slice(0, 10)}.pdf`)
       toast.success('PDF exportado correctamente')
-    } catch {
-      toast.error('Error al exportar PDF')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al exportar PDF'))
     }
   }
 
@@ -124,12 +126,14 @@ export default function ReportsPage() {
         columns: [4, 35, 22, 14, 10, 25, 14, 14, 16].map(width => ({ width })),
       }).toFile(`proyectos_${new Date().toISOString().slice(0, 10)}.xlsx`)
       toast.success('Excel exportado correctamente')
-    } catch {
-      toast.error('Error al exportar Excel')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al exportar Excel'))
     }
   }
 
   const selectCls = 'pl-2.5 pr-7 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring'
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
 
   return (
     <div className="flex flex-col h-full">
