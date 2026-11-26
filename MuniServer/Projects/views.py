@@ -1,4 +1,5 @@
 import cloudinary.uploader
+from MuniServer.subidas import error_de_imagen, subir_imagen
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -187,8 +188,11 @@ class ProjectImageViewSet(ModelViewSet):
             return Response({'error': 'Proyecto no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         if not authz.puede_editar(request.user, proyecto):
             raise PermissionDenied('No tienes permisos para subir imágenes a este proyecto.')
+        error = error_de_imagen(file)
+        if error:
+            return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
 
-        result = cloudinary.uploader.upload(file, folder='munimanagement/proyectos')
+        result = subir_imagen(file, 'munimanagement/proyectos')
         image = ProjectImage.objects.create(
             proyecto_id=proyecto_id,
             url=result['secure_url'],

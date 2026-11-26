@@ -3,16 +3,34 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from .models import Roles, Users
-from .serializers import RolesSerializer, UsersSerializer
+from .serializers import RolesSerializer, UsersSerializer, UsuarioDirectorioSerializer
 from .permissions import UsersPermission, RolesPermission, _role_name, _role_flag, ROLES_ADMIN, ROLES_JEFES
 from Projects.permissions import SystemRecordReadOnly
+from MuniServer.subidas import error_de_imagen, subir_imagen
+from .acceso import encolar_correo_de_acceso, revocar_sesiones, usuario_del_enlace
+
+DEMASIADOS_INTENTOS = {'error': 'Demasiados intentos. Espere un minuto e inténtelo de nuevo.'}
+
+
+def _clave_email(group, request):
+    return str(request.data.get('email', '')).strip().lower()
+
+
+def _errores_de_clave(password, user):
+    try:
+        validate_password(password, user)
+    except DjangoValidationError as e:
+        return ' '.join(e.messages)
+    return None
 
 
 class RolesViewSet(ModelViewSet):
@@ -24,6 +42,15 @@ class RolesViewSet(ModelViewSet):
 class UsersViewSet(ModelViewSet):
     serializer_class = UsersSerializer
     permission_classes = [IsAuthenticated, UsersPermission]
+
+    def get_serializer_class(self):
+        # La alcaldía y la propia persona ven la ficha completa; los jefes, solo el directorio.
+        user = self.request.user
+        if _role_name(user) in ROLES_ADMIN or _role_flag(user, 'puede_ver_todo'):
+            return UsersSerializer
+        if self.action == 'list' or (self.action == 'retrieve' and str(self.kwargs.get('pk')) != str(user.user_ID)):
+            return UsuarioDirectorioSerializer
+        return UsersSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -42,17 +69,31 @@ class UsersViewSet(ModelViewSet):
         # Dar de baja en lugar de borrar: conserva sus proyectos, ajustes e historial.
         instance.is_active = False
         instance.save(update_fields=['is_active'])
-        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
-        for token in OutstandingToken.objects.filter(user=instance):
-            BlacklistedToken.objects.get_or_create(token=token)
+        revocar_sesiones(instance)
+
+    @action(detail=True, methods=['post'], url_path='enviar-acceso')
+    def enviar_acceso(self, request, pk=None):
+        """La alcaldía reenvía el enlace para definir contraseña (cuenta nueva o clave olvidada)."""
+        user = self.get_object()
+        if not (_role_name(request.user) in ROLES_ADMIN or _role_flag(request.user, 'puede_ver_todo')):
+            return Response({'error': 'Solo la alcaldía o un administrador pueden reenviar el acceso.'}, status=403)
+        if not user.is_active:
+            return Response({'error': 'El usuario está dado de baja.'}, status=400)
+        encolar_correo_de_acceso(user, 'recuperacion')
+        return Response({'ok': True})
 
 
-@method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='post')
+# Por correo, para frenar a quien prueba claves de una cuenta; por IP, más alto, porque
+# toda una oficina municipal suele salir a internet con la misma IP.
+@method_decorator(ratelimit(key='ip', rate='30/m', method='POST', block=False), name='post')
+@method_decorator(ratelimit(key=_clave_email, rate='5/m', method='POST', block=False), name='post')
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
     def post(self, request):
+        if getattr(request, 'limited', False):
+            return Response(DEMASIADOS_INTENTOS, status=429)
         email = request.data.get('email')
         password = request.data.get('password')
         user = authenticate(username=email, password=password)
@@ -83,6 +124,45 @@ class LoginView(APIView):
                 'onboarding_completado': bool(user.onboarding_completado),
             })
         return Response({'error': 'Credenciales incorrectas'}, status=400)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
+class DefinirClaveView(APIView):
+    """Define la contraseña con el enlace del correo, tanto en una cuenta nueva como al recuperarla."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        if getattr(request, 'limited', False):
+            return Response(DEMASIADOS_INTENTOS, status=429)
+        user = usuario_del_enlace(str(request.data.get('uid', '')), str(request.data.get('token', '')))
+        if user is None:
+            return Response({'error': 'El enlace no es válido o ya venció. Pida uno nuevo.'}, status=400)
+        password = str(request.data.get('password', ''))
+        error = _errores_de_clave(password, user)
+        if error:
+            return Response({'error': error}, status=400)
+        user.set_password(password)
+        user.save(update_fields=['password'])
+        revocar_sesiones(user)
+        return Response({'ok': True})
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
+@method_decorator(ratelimit(key=_clave_email, rate='3/h', method='POST', block=False), name='post')
+class OlvideClaveView(APIView):
+    """Manda el enlace de recuperación. Responde lo mismo exista o no el correo."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        if getattr(request, 'limited', False):
+            return Response(DEMASIADOS_INTENTOS, status=429)
+        email = _clave_email(None, request)
+        user = Users.objects.filter(email__iexact=email, is_active=True).first() if email else None
+        if user is not None:
+            encolar_correo_de_acceso(user, 'recuperacion')
+        return Response({'ok': True, 'mensaje': 'Si el correo está registrado, le enviamos un enlace para definir una contraseña nueva.'})
 
 
 class LogoutView(APIView):
@@ -146,6 +226,10 @@ def upload_user_photo(request, user_id):
     if request.user.user_ID != user.user_ID and not (_role_name(request.user) in ROLES_ADMIN or _role_flag(request.user, 'puede_ver_todo')):
         return Response({'error': 'No tienes permisos para modificar esta foto.'}, status=403)
 
+    error = error_de_imagen(file)
+    if error:
+        return Response({'error': error}, status=400)
+
     if user.user_photo:
         old_public_id = user.user_photo.split('/')[-1].split('.')[0]
         try:
@@ -153,7 +237,7 @@ def upload_user_photo(request, user_id):
         except Exception:
             pass
 
-    result = cloudinary.uploader.upload(file, folder='munimanagement/usuarios')
+    result = subir_imagen(file, 'munimanagement/usuarios')
     user.user_photo = result['secure_url']
     user.save()
     return Response({'user_photo': result['secure_url']})
@@ -169,9 +253,10 @@ def change_password(request):
     if not check_password(current_password, user.password):
         return Response({'error': 'Contraseña actual incorrecta'}, status=400)
 
-    if len(new_password) < 8:
-        return Response({'error': 'La nueva contraseña debe tener al menos 8 caracteres'}, status=400)
+    error = _errores_de_clave(new_password, user)
+    if error:
+        return Response({'error': error}, status=400)
 
-    user.password = make_password(new_password)
-    user.save()
+    user.set_password(new_password)
+    user.save(update_fields=['password'])
     return Response({'message': 'Contraseña actualizada correctamente'})

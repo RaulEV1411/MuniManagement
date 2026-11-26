@@ -5,7 +5,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Apagado por defecto: el modo de desarrollo se activa a propósito con DEBUG=True.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Secret key: en DEBUG permite fallback; en producción exige env.
 _SECRET = os.environ.get('SECRET_KEY')
@@ -136,9 +137,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'Users/static'),
-]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -172,11 +170,18 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': False,
 }
 
-# Cookies seguras solo en producción
+CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+
+# URL pública del frontend, para los enlaces de los correos (activar cuenta, recuperar contraseña).
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
+
+# En producción: solo HTTPS, detrás de un proxy (nginx) que fija X-Forwarded-Proto.
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
@@ -184,6 +189,16 @@ AUTH_USER_MODEL = 'Users.Users'
 
 # ── Celery + Redis ──────────────────────────────────────────
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+
+# Caché compartida entre procesos: el límite de intentos de login vive aquí.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.environ.get('CACHE_URL', REDIS_URL),
+    }
+}
+# Detrás de un proxy, la IP real del cliente llega en un header (p. ej. HTTP_X_REAL_IP de nginx).
+RATELIMIT_IP_META_KEY = os.environ.get('RATELIMIT_IP_META_KEY', 'REMOTE_ADDR')
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
 CELERY_ACCEPT_CONTENT = ['json']
