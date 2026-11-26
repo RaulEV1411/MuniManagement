@@ -13,6 +13,7 @@ export default function Dialogo({
   fondo = 'bg-black/40 backdrop-blur-sm',
   capa = 'z-50',
   cerrarAlTocarFondo = false,
+  centrado = true,
 }: {
   titulo: string
   onCerrar: () => void
@@ -22,6 +23,8 @@ export default function Dialogo({
   fondo?: string
   capa?: string
   cerrarAlTocarFondo?: boolean
+  /** Centra el panel con márgenes automáticos: si no entra (celular), se desplaza sin cortarse arriba. */
+  centrado?: boolean
 }) {
   // Radix devuelve el foco a su Dialog.Trigger; acá cada pantalla abre el diálogo con su propio
   // estado, así que se guarda quién tenía el foco al abrir (primer render) para devolvérselo.
@@ -47,7 +50,7 @@ export default function Dialogo({
             if (anterior?.isConnected) anterior.focus()
           }}
           onClick={e => { if (cerrarAlTocarFondo && e.target === e.currentTarget) onCerrar() }}
-          className={cn('fixed inset-0 flex items-center justify-center p-4 focus:outline-none', capa, className)}
+          className={cn('fixed inset-0 flex items-center justify-center p-4 overflow-y-auto focus:outline-none', centrado && '[&>*]:my-auto', capa, className)}
         >
           {/* Nombre del diálogo (aria-labelledby). Oculto: cada pantalla ya muestra su propio título, y
               con sr-only el lector lo leería dos veces al recorrer el diálogo. */}

@@ -77,7 +77,7 @@ export default function PublicProjectsPage() {
                     <h3 className="font-semibold text-slate-900 leading-tight">{p.name}</h3>
                     {p.estado && (
                       <span
-                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
+                        className="text-xs px-2 py-0.5 rounded-full font-semibold shrink-0"
                         style={{ backgroundColor: p.estado.color, color: textoSobre(p.estado.color) }}
                       >
                         {p.estado.name}
@@ -85,11 +85,11 @@ export default function PublicProjectsPage() {
                     )}
                   </div>
                   <p className="text-xs text-slate-500 line-clamp-2 mb-3">{p.descripcion}</p>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 mb-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                     <MapPin className="h-3 w-3" />
                     <span>{p.direccion} · {p.departamento}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 mb-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                     <Calendar className="h-3 w-3" />
                     <span>Entrega {p.fecha_entrega}</span>
                   </div>

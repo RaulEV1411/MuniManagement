@@ -107,7 +107,7 @@ export default function GlobalSearch() {
   return (
     <AnimatePresence>
       {open && (
-        <Dialogo titulo="Buscar proyectos y usuarios" onCerrar={() => setOpen(false)} capa="z-[200]" className="items-start pt-[15vh] px-4" cerrarAlTocarFondo>
+        <Dialogo titulo="Buscar proyectos y usuarios" onCerrar={() => setOpen(false)} capa="z-[200]" className="items-start pt-[15vh] px-4" centrado={false} cerrarAlTocarFondo>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -131,7 +131,7 @@ export default function GlobalSearch() {
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <kbd className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border hidden sm:block">
+                <kbd className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border hidden sm:block">
                   ESC
                 </kbd>
                 <button aria-label="Borrar la búsqueda"
@@ -173,9 +173,9 @@ export default function GlobalSearch() {
                         <p className="text-sm font-medium text-foreground truncate">
                           <Highlight text={r.label} query={query} />
                         </p>
-                        <p className="text-[10px] text-muted-foreground truncate">{r.sub}</p>
+                        <p className="text-xs text-muted-foreground truncate">{r.sub}</p>
                       </div>
-                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full flex-shrink-0">
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full flex-shrink-0">
                         {r.kind === 'project' ? 'Proyecto' : 'Usuario'}
                       </span>
                     </button>
@@ -186,13 +186,13 @@ export default function GlobalSearch() {
               <div className="px-4 py-8 text-center space-y-3">
                 <p className="text-xs text-muted-foreground">Escriba para buscar proyectos y usuarios</p>
                 <div className="flex items-center justify-center gap-4">
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <kbd className="bg-muted border border-border rounded px-1.5 py-0.5">↑↓</kbd> navegar
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <kbd className="bg-muted border border-border rounded px-1.5 py-0.5">↵</kbd> abrir
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <kbd className="bg-muted border border-border rounded px-1.5 py-0.5">⌘K</kbd> cerrar
                   </span>
                 </div>

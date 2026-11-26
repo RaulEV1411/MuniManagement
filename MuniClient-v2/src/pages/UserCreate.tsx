@@ -75,7 +75,7 @@ export default function UserCreatePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 flex-shrink-0" style={{ minHeight: 72 }}>
         <button aria-label="Volver"
           onClick={() => navigate('/users')}
           className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
@@ -92,7 +92,7 @@ export default function UserCreatePage() {
       </div>
 
       {/* Form */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <motion.form
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

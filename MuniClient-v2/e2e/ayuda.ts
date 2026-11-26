@@ -20,7 +20,8 @@ export function ultimoEnlaceDeAcceso(): string {
   const dir = process.env.E2E_CORREOS!
   const archivos = readdirSync(dir).map(f => path.join(dir, f)).sort()
   const textos = archivos.map(f => readFileSync(f, 'utf8')).join('\n')
-  const enlaces = [...textos.matchAll(/http:\/\/localhost:5173\/definir-clave\/[^\s"<]+/g)].map(m => m[0])
+  const web = process.env.E2E_PUERTO_WEB ?? '5173'
+  const enlaces = [...textos.matchAll(new RegExp(`http://localhost:${web}/definir-clave/[^\\s"<]+`, 'g'))].map(m => m[0])
   expect(enlaces.length, 'no llegó ningún correo con enlace').toBeGreaterThan(0)
   return enlaces[enlaces.length - 1]
 }

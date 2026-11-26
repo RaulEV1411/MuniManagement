@@ -95,6 +95,16 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await page.getByRole('button', { name: 'Editar proyecto' }).click()
       await expect(page.getByRole('dialog', { name: 'Editar proyecto' })).toBeVisible()
       await sinFallos(page, 'editar proyecto', '[role=dialog]')
+      await page.keyboard.press('Escape')
+
+      // La confirmación de borrado es un diálogo propio (antes window.confirm); Escape cancela.
+      await page.getByRole('button', { name: /^Eliminar la tarea/ }).first().click()
+      const confirmacion = page.getByRole('dialog', { name: /^¿Eliminar la tarea/ })
+      await expect(confirmacion).toBeVisible()
+      await expect(confirmacion.getByRole('button', { name: 'Cancelar' })).toBeFocused()
+      await sinFallos(page, 'confirmación', '[role=dialog]')
+      await page.keyboard.press('Escape')
+      await expect(confirmacion).toHaveCount(0)
     })
   })
 }
@@ -134,4 +144,33 @@ test('se usa con el teclado: saltar el menú, abrir un proyecto, pestañas y di�
   await page.keyboard.press('Escape')
   await expect(dialogo).toHaveCount(0)
   await expect(editar).toBeFocused()
+})
+
+test.describe('en el celular', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test('el menú es un cajón, nada se corta a lo ancho y pasa axe', async ({ page }) => {
+    test.setTimeout(90_000)
+    await entrar(page)
+    await expect(page.getByRole('link', { name: 'Acera central' }).first()).toBeVisible()
+    // El menú lateral no ocupa la pantalla: queda en el cajón.
+    await expect(page.getByRole('link', { name: 'Configuración' })).toBeHidden()
+
+    await page.getByRole('button', { name: 'Abrir el menú' }).click()
+    const menu = page.getByRole('dialog', { name: 'Menú' })
+    await expect(menu).toBeVisible()
+    await menu.getByRole('link', { name: 'Usuarios' }).click()
+    await page.waitForURL('**/users')
+    await expect(menu).toHaveCount(0)
+
+    for (const ruta of ['/dashboard', '/users', '/reports', '/timeline', '/config']) {
+      await page.goto(ruta)
+      await sinFallos(page, `celular · ${ruta}`)
+      const ancho = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+      expect(ancho, `${ruta} se sale a lo ancho`).toBeLessThanOrEqual(0)
+    }
+    await page.goto('/dashboard')
+    await page.getByRole('link', { name: 'Acera central' }).first().click()
+    await sinFallos(page, 'celular · proyecto')
+  })
 })

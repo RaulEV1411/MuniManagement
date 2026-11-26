@@ -71,7 +71,7 @@ function SummaryRow({ label, value, badge, color }: {
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
       {badge ? (
-        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(color)}>
+        <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(color)}>
           {value}
         </span>
       ) : (
@@ -172,7 +172,7 @@ export default function ProjectCreatePage() {
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="w-9 h-9 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
           <FolderOpen size={16} className="text-white" />
         </div>
@@ -188,7 +188,7 @@ export default function ProjectCreatePage() {
           {STEP_LABELS.map((label, i) => (
             <div key={i} className="flex items-center gap-2 flex-1">
               <div className={cn(
-                'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-all',
+                'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all',
                 i < step  ? 'bg-ocean-500 text-white' :
                 i === step ? 'bg-ocean-500 text-white ring-4 ring-ocean-500/20' :
                              'bg-muted text-muted-foreground',
@@ -207,7 +207,7 @@ export default function ProjectCreatePage() {
       </div>
 
       {/* ── Formulario ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-lg mx-auto">
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div

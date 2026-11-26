@@ -9,6 +9,7 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
+import { confirmar } from '@/lib/confirmar'
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName]     = useState('')
@@ -100,7 +101,7 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`¿Eliminar la dirección "${direction.name}"?`)) return
+    if (!(await confirmar({ titulo: `¿Eliminar la dirección «${direction.name}»?` }))) return
     try {
       await deleteDirection(direction.direccion_ID)
       toast.success('Dirección eliminada')
@@ -164,13 +165,13 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
             <>
               <button aria-label={`Editar ${direction.name}`}
                 onClick={() => setEditing(true)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <Pencil size={13} />
               </button>
               <button aria-label={`Eliminar ${direction.name}`}
                 onClick={handleDelete}
-                className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <Trash2 size={13} />
               </button>
@@ -200,7 +201,7 @@ export default function DirectionsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="w-9 h-9 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
           <GitBranch size={16} className="text-white" />
         </div>
@@ -219,7 +220,7 @@ export default function DirectionsPage() {
       </div>
 
       {/* ── Tabla ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {isLoading ? (
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             {[...Array(5)].map((_, i) => (
@@ -245,9 +246,9 @@ export default function DirectionsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Jefe</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
+                  <th className="px-5 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
+                  <th className="px-5 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Jefe</th>
+                  <th className="px-5 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody>
