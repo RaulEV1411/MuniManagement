@@ -8,13 +8,13 @@
 		max_size 12MB
 	}
 
-	# API y administración de Django.
-	@django path /api/* /admin/*
+	# API de Django.
+	@django path /api/*
 	handle @django {
 		reverse_proxy api:8000
 	}
 
-	# Estáticos del admin de Django (collectstatic deja los archivos en este volumen).
+	# Estáticos de Django, como los de la API navegable (collectstatic deja los archivos en este volumen).
 	handle_path /static/* {
 		root * /srv/static
 		file_server

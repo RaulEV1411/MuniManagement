@@ -4,7 +4,7 @@ Una instalación por municipalidad, en un servidor con Docker. Todo corre en con
 
 | Servicio | Qué hace |
 |---|---|
-| `web` | Caddy: sirve el front, hace de proxy de `/api` y `/admin` hacia Django y saca el certificado HTTPS solo |
+| `web` | Caddy: sirve el front, hace de proxy de `/api` hacia Django y saca el certificado HTTPS solo |
 | `api` | Django con gunicorn. Al arrancar migra la base, siembra los catálogos fijos y junta los estáticos |
 | `worker` y `beat` | Celery: correos y avisos diarios de vencimiento (8:00, hora de Costa Rica) |
 | `mysql` | MySQL 8.4 LTS, con los datos en el volumen `mysql_datos` |

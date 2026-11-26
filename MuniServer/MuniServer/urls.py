@@ -1,5 +1,9 @@
-"""Rutas: la API vive bajo /api/v1/ para no chocar con las rutas del front en el mismo dominio."""
-from django.contrib import admin
+"""Rutas: la API vive bajo /api/v1/ para no chocar con las rutas del front en el mismo dominio.
+
+El admin de Django no se publica: el modelo de usuario no tiene is_staff, así que su login
+daba error 500 con cualquier credencial válida, y además no tiene límite de intentos.
+Todo se gestiona desde la aplicación.
+"""
 from django.urls import include, path
 
 from .salud import salud
@@ -17,6 +21,5 @@ api_v1 = [
 ]
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('api/v1/', include(api_v1)),
 ]
