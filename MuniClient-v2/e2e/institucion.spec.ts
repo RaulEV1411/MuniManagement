@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { BETO, entrar } from './ayuda'
 
 async function guardar(page: Page) {
-  const respuesta = page.waitForResponse(r => r.url().endsWith('/api/v1/configuracion/') && r.request().method() === 'PATCH')
+  const respuesta = page.waitForResponse(r => r.status() !== 401 && r.url().endsWith('/api/v1/configuracion/') && r.request().method() === 'PATCH')
   await page.getByRole('button', { name: 'Guardar' }).click()
   expect((await respuesta).status()).toBe(200)
 }

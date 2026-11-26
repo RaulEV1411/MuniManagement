@@ -8,7 +8,7 @@ test('un cambio queda en la auditoría con el antes y el después, y la cadena s
   const original = await horario.inputValue()
   const guardar = async (valor: string) => {
     await horario.fill(valor)
-    const respuesta = page.waitForResponse(r => r.url().includes('/configuracion/') && r.request().method() === 'PATCH')
+    const respuesta = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/configuracion/') && r.request().method() === 'PATCH')
     await page.getByRole('button', { name: 'Guardar' }).click()
     expect((await respuesta).status()).toBe(200)
   }

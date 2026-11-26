@@ -18,6 +18,10 @@ async function esperarAnimaciones(page: Page) {
   await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('[data-sonner-toast]')]
     .filter(t => t.dataset.visible !== 'false')
     .every(t => getComputedStyle(t).opacity === '1'))
+  // framer-motion anima por JS con opacidad en línea: se espera a que ningún elemento quede a medias
+  // (pasaba con las filas de Usuarios cuando la lista se redibuja al llegar un dato después).
+  await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('[style*="opacity"]')]
+    .every(e => { const o = parseFloat(e.style.opacity); return Number.isNaN(o) || o === 0 || o === 1 }))
 }
 
 /** Con un diálogo abierto se analiza solo el diálogo: lo de atrás queda tapado e inactivo. */
@@ -40,6 +44,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
     })
 
     test('páginas públicas', async ({ page }) => {
+      test.setTimeout(90_000)
       for (const ruta of ['/login', '/login?sesion=terminada', '/olvide-clave', '/publico', '/accesibilidad', '/privacidad']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
@@ -51,7 +56,8 @@ for (const tema of ['claro', 'oscuro'] as const) {
     })
 
     test('pantallas internas, vistas y pestañas', async ({ page }) => {
-      test.setTimeout(150_000)
+      // Recorre todas las pantallas, vistas y pestañas (con la máquina cargada tarda más de 2 min).
+      test.setTimeout(300_000)
       await entrar(page)
       for (const vista of ['Vista de lista', 'Vista de cuadrícula', 'Vista de tablero']) {
         await page.getByRole('button', { name: vista }).click()
@@ -71,14 +77,14 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await sinFallos(page, 'perfil · actividad')
 
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos']) {
+      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }
 
       await page.goto('/dashboard')
       await page.getByRole('link', { name: 'Acera central' }).first().click()
-      for (const pestana of ['Tareas', 'Información', 'Fotos', 'Comentarios', 'Actividad']) {
+      for (const pestana of ['Tareas', 'Información', 'Solicitudes', 'Documentos', 'Fotos', 'Comentarios', 'Actividad']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `proyecto · ${pestana}`)
       }
@@ -121,6 +127,12 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await page.getByRole('button', { name: 'Nueva solicitud' }).click()
       await expect(page.getByRole('dialog', { name: 'Nueva solicitud' })).toBeVisible()
       await sinFallos(page, 'nueva solicitud', '[role=dialog]')
+      await page.keyboard.press('Escape')
+
+      await page.getByRole('tab', { name: /^Tareas/ }).click()
+      await page.getByRole('button', { name: 'Excavar', exact: true }).click()
+      await expect(page.getByRole('dialog', { name: 'Tarea: Excavar' })).toBeVisible()
+      await sinFallos(page, 'detalle de tarea', '[role=dialog]')
       await page.keyboard.press('Escape')
       await page.getByRole('tab', { name: /^Tareas/ }).click()
 

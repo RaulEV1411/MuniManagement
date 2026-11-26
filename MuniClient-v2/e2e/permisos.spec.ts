@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { FABI, entrar } from './ayuda'
 
 async function cambiarCelda(admin: Page, etiqueta: string, valor: string) {
-  const guardado = admin.waitForResponse(r => r.url().includes('/users/roles/') && r.request().method() === 'PATCH')
+  const guardado = admin.waitForResponse(r => r.status() !== 401 && r.url().includes('/users/roles/') && r.request().method() === 'PATCH')
   await admin.getByLabel(etiqueta).selectOption(valor)
   expect((await guardado).status()).toBe(200)
 }
@@ -40,7 +40,7 @@ test('el equipo de un proyecto: agregar con vencimiento, verlo y quitarlo', asyn
   const enDosDias = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10)
   await dialogo.getByLabel('Hasta (opcional)').fill(enDosDias)
   await dialogo.getByLabel('Motivo (opcional)').fill('Revisión de planos')
-  const creado = page.waitForResponse(r => r.url().includes('/projects/miembros/') && r.request().method() === 'POST')
+  const creado = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/projects/miembros/') && r.request().method() === 'POST')
   await dialogo.getByRole('button', { name: 'Guardar' }).click()
   expect((await creado).status()).toBe(201)
 

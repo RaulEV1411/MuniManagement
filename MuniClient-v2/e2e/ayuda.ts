@@ -9,6 +9,8 @@ export const BETO = 'beto@muni.test'    // Funcionario (se usa para recuperar la
 export const FABI = 'fabi@muni.test'    // Funcionaria (sin permiso de crear proyectos por defecto)
 export const JORGE = 'jorge@muni.test'  // Jefe del departamento de Obras (aprueba solicitudes)
 
+// En las e2e el access dura 10 s (para probar la renovación): si vence en medio de una acción, la
+// primera respuesta es un 401 y la app renueva y reintenta. Por eso las esperas de respuesta saltean los 401.
 export async function entrar(page: Page, email = ANA, clave = CLAVE, { aceptarAviso = true } = {}) {
   await page.goto('/login')
   await page.fill('input[type=email]', email)
