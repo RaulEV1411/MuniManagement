@@ -103,7 +103,12 @@ DIAS_AVISO_ACCESO = 3
 
 def desactivar_delegaciones_vencidas(hoy):
     """Los accesos al equipo de un proyecto vencen solos: pasan a inactivos al día siguiente de su fin."""
-    return MiembroProyecto.objects.filter(activo=True, hasta__lt=hoy).update(activo=False)
+    from Auditoria.servicios import registrar
+    vencidos = list(MiembroProyecto.objects.filter(activo=True, hasta__lt=hoy).select_related('usuario', 'proyecto'))
+    MiembroProyecto.objects.filter(pk__in=[m.pk for m in vencidos]).update(activo=False)
+    for m in vencidos:
+        registrar('equipo', 'vencer', objeto=m, motivo=f'Su acceso terminaba el {m.hasta:%d/%m/%Y}', cambios={'activo': [True, False]})
+    return len(vencidos)
 
 
 def avisar_accesos_por_vencer(hoy):

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatearFechaLarga, isOverdue } from './utils'
+import { formatDate, formatearDuracion, formatearFechaLarga, isOverdue } from './utils'
 
 describe('formatDate', () => {
   it('pasa de AAAA-MM-DD a DD/MM/AAAA y muestra — si no hay fecha', () => {
@@ -23,5 +23,14 @@ describe('fecha larga', () => {
     expect(formatearFechaLarga('2026-11-15')).toBe('15 de noviembre de 2026')
     expect(formatearFechaLarga('2027-01-01')).toBe('1 de enero de 2027')
     expect(formatearFechaLarga(null)).toBe('—')
+  })
+})
+
+describe('formatearDuracion', () => {
+  it('muestra horas y minutos, sin ceros de más', () => {
+    expect(formatearDuracion(30)).toBe('menos de 1 min')
+    expect(formatearDuracion(300)).toBe('5 min')
+    expect(formatearDuracion(7200)).toBe('2 h')
+    expect(formatearDuracion(8100)).toBe('2 h 15 min')
   })
 })

@@ -24,6 +24,7 @@ import Dialogo from '@/components/common/Dialogo'
 import { pestanas } from '@/lib/pestanas'
 import { usePermiso } from '@/hooks/usePermiso'
 import PermisosDeUsuario from '@/components/users/PermisosDeUsuario'
+import ActividadDeUsuario from '@/components/users/ActividadDeUsuario'
 
 
 const AVATAR_COLORS = [
@@ -249,7 +250,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-const TABS = ['Información', 'Proyectos'] as const
+const TABS = ['Información', 'Proyectos', 'Actividad'] as const
 type Tab = typeof TABS[number]
 
 export default function UserProfilePage() {
@@ -259,7 +260,6 @@ export default function UserProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [tab, setTab]         = useState<Tab>('Información')
-  const tabs = pestanas('perfil', TABS, tab, setTab)
   const [showEdit, setShowEdit]     = useState(false)
   const [showPassword, setPassword] = useState(false)
   const [uploading, setUploading]   = useState(false)
@@ -267,6 +267,11 @@ export default function UserProfilePage() {
   const esPropio = yo?.user_ID === id
   const gestiona = usePermiso('usuarios.gestionar')
   const veRoles = usePermiso('roles.gestionar')
+  const veAuditoria = usePermiso('auditoria.ver')
+  // La actividad (sesiones y acciones) la ve la propia persona y quien tiene la auditoría.
+  const veActividad = esPropio || veAuditoria
+  const visibles = veActividad ? TABS : TABS.filter(t => t !== 'Actividad')
+  const tabs = pestanas('perfil', visibles, tab, setTab)
   // Con el directorio abierto a todos, editar y cambiar la foto quedan para la persona y la alcaldía.
   const puedeEditar = esPropio || gestiona
 
@@ -437,7 +442,7 @@ export default function UserProfilePage() {
 
         {/* Tabs */}
         <div className="flex gap-1 overflow-x-auto" {...tabs.lista} aria-label="Secciones del perfil">
-          {TABS.map(t => (
+          {visibles.map(t => (
             <button
               key={t}
               {...tabs.pestana(t)}
@@ -484,6 +489,10 @@ export default function UserProfilePage() {
                 </div>
                 {(esPropio || gestiona || veRoles) && <PermisosDeUsuario usuarioId={user.user_ID} />}
               </div>
+            )}
+
+            {tab === 'Actividad' && veActividad && (
+              <ActividadDeUsuario usuarioId={user.user_ID} veAuditoria={veAuditoria} />
             )}
 
             {tab === 'Proyectos' && (

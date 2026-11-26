@@ -34,7 +34,9 @@ def encolar_correo_de_acceso(user, motivo):
         logger.exception('No se pudo encolar el correo de acceso')
 
 
-def revocar_sesiones(user):
+def revocar_sesiones(user, motivo='clave'):
     from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+    from Auditoria import sesiones
     for token in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=token)
+    sesiones.cerrar_todas(user, motivo)

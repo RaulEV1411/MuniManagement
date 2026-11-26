@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'Historial.apps.HistorialConfig',
     'Notifications.apps.NotificationsConfig',
     'Configuracion.apps.ConfiguracionConfig',
+    'Auditoria.apps.AuditoriaConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
@@ -58,6 +59,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'Auditoria.middleware.AuditoriaMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -224,6 +226,10 @@ CELERY_BEAT_SCHEDULE = {
     'avisos-vencimiento-diarios': {
         'task': 'Task.tasks.enviar_alertas_diarias',
         'schedule': crontab(hour=8, minute=0),  # 8 AM Costa Rica
+    },
+    'auditoria-mantenimiento-diario': {
+        'task': 'Auditoria.tasks.mantenimiento_diario',
+        'schedule': crontab(hour=3, minute=0),
     },
 }
 

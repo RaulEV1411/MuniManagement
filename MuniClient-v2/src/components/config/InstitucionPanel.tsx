@@ -49,8 +49,8 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
     e.preventDefault()
     setGuardando(true)
     try {
-      const { nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda } = form
-      actualizar(await updateConfiguracion({ nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda }))
+      const { nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias } = form
+      actualizar(await updateConfiguracion({ nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias }))
       toast.success('Datos de la institución guardados')
     } catch (err) {
       toast.error(mensajeDeError(err, 'No se pudieron guardar los datos'))
@@ -164,6 +164,23 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
             {MONEDAS.map(([codigo, nombre]) => <option key={codigo} value={codigo}>{codigo} · {nombre}</option>)}
           </select>
         </div>
+      </section>
+
+      <section className="bg-card border border-border rounded-2xl p-5 space-y-3" aria-labelledby="inst-auditoria-titulo">
+        <h2 id="inst-auditoria-titulo" className="text-sm font-bold text-foreground">Auditoría</h2>
+        <div className="space-y-1.5 max-w-xs">
+          <label htmlFor="inst-retencion" className="text-xs font-semibold text-muted-foreground">Conservar los registros (días)</label>
+          <input
+            id="inst-retencion" type="number" min={180} max={3650} required
+            value={form.retencion_auditoria_dias}
+            onChange={e => setForm(f => ({ ...f, retencion_auditoria_dias: Number(e.target.value) }))}
+            disabled={!esAdmin} aria-describedby="inst-retencion-ayuda" className={cls}
+          />
+        </div>
+        <p id="inst-retencion-ayuda" className="text-xs text-muted-foreground">
+          De 180 a 3650 días. Cada noche se borran los registros y las sesiones cerradas más viejos que esto, y el borrado queda anotado.
+          Revise el plazo que exige la normativa de archivo de la institución.
+        </p>
       </section>
 
       {esAdmin && (

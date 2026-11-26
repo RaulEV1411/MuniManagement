@@ -51,6 +51,8 @@ export interface User {
   user_photo: string | null
   role: Role
   departamento_ID: Department
+  // Solo para quien ve la ficha completa: la última actividad de sus sesiones.
+  ultima_conexion?: string | null
 }
 
 export interface Estado {
@@ -217,4 +219,100 @@ export interface PublicTask {
 
 export interface PublicProjectDetail extends PublicProject {
   tareas: PublicTask[]
+}
+
+// ── Auditoría ────────────────────────────────────────────────
+export type ResultadoAuditoria = 'exito' | 'fallo' | 'denegado'
+
+export interface CambioAuditoria {
+  campo: string
+  etiqueta: string
+  antes: unknown
+  despues: unknown
+}
+
+export interface RegistroAuditoria {
+  id: number
+  creado_en: string
+  usuario: string | null
+  usuario_nombre: string
+  usuario_email: string
+  rol: string
+  ip: string
+  dispositivo: string
+  sesion: string | null
+  modulo: string
+  modulo_display: string
+  accion: string
+  accion_display: string
+  objeto_tipo: string
+  objeto_id: string
+  objeto_repr: string
+  detalle: CambioAuditoria[]
+  resultado: ResultadoAuditoria
+  resultado_display: string
+  motivo: string
+  hash: string
+}
+
+export interface SesionUsuario {
+  sesion_ID: string
+  iniciada_en: string
+  ultima_actividad: string
+  segundos_activos: number
+  ip: string
+  dispositivo: string
+  cerrada_en: string | null
+  motivo_cierre: string
+  motivo_cierre_display: string
+  cerrada_por_nombre: string
+  abierta: boolean
+  actual: boolean
+}
+
+export interface ActividadUsuario {
+  ultima_conexion: string | null
+  segundos_30_dias: number
+  sesiones_abiertas: number
+  fallidos_24h: number
+  puede_cerrar: boolean
+  sesiones: SesionUsuario[]
+  acciones: RegistroAuditoria[]
+}
+
+export interface PersonaAuditoria {
+  user_ID: string
+  nombre: string
+  email: string
+  ultima_conexion?: string | null
+  intentos?: number
+  ultimo?: string
+}
+
+export interface ResumenAuditoria {
+  conectadas_ahora: number
+  sesiones_abiertas: number
+  registros_hoy: number
+  denegados_24h: number
+  fallidos_24h: number
+  dias_inactiva: number
+  umbral_fallidos: number
+  inactivas: PersonaAuditoria[]
+  total_inactivas: number
+  con_intentos_fallidos: PersonaAuditoria[]
+}
+
+export interface VerificacionAuditoria {
+  ok: boolean
+  revisados: number
+  registro: number | null
+  fecha: string | null
+  motivo: string
+}
+
+export interface OpcionAuditoria { codigo: string; nombre: string }
+export interface CatalogoAuditoria {
+  modulos: OpcionAuditoria[]
+  acciones: OpcionAuditoria[]
+  resultados: OpcionAuditoria[]
 }

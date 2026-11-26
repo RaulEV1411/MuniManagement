@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  Sliders, GanttChartSquare, FileDown, HelpCircle,
+  Sliders, GanttChartSquare, FileDown, HelpCircle, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -13,6 +13,7 @@ import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { useMarca } from '@/hooks/useMarca'
+import { tienePermiso } from '@/hooks/usePermiso'
 
 interface NavItem {
   icon: LucideIcon
@@ -20,6 +21,8 @@ interface NavItem {
   path: string
   match: (p: string) => boolean
   showOverdue?: boolean
+  // Solo se muestra a quien tiene este permiso.
+  permiso?: string
 }
 
 const NAV: { label: string; items: NavItem[] }[] = [
@@ -48,6 +51,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: 'Sistema',
     items: [
       { icon: Sliders,     label: 'Configuración', path: '/config', match: (p: string) => p === '/config' },
+      { icon: ShieldCheck, label: 'Auditoría',     path: '/auditoria', match: (p: string) => p === '/auditoria', permiso: 'auditoria.ver' },
       { icon: HelpCircle,  label: 'Ayuda',         path: '/ayuda',  match: (p: string) => p === '/ayuda' },
     ],
   },
@@ -137,7 +141,7 @@ export default function Sidebar({ enCajon = false }: { enCajon?: boolean }) {
               )}
             </AnimatePresence>
             {!expanded && <div className="h-2" />}
-            {items.map(({ icon: Icon, label: itemLabel, path, match, showOverdue }) => {
+            {items.filter(i => !i.permiso || tienePermiso(user, i.permiso)).map(({ icon: Icon, label: itemLabel, path, match, showOverdue }) => {
               const active = match(location.pathname)
               const badge = showOverdue && overdueCount > 0 ? overdueCount : 0
               return (

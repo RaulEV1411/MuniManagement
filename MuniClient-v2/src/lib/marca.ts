@@ -11,6 +11,8 @@ export interface Marca {
   telefono_soporte: string
   horario_soporte: string
   moneda: string
+  // Días que se conservan la auditoría y las sesiones cerradas.
+  retencion_auditoria_dias: number
 }
 
 const TONOS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const
@@ -138,7 +140,7 @@ export function formatearMonto(monto: number, moneda = 'CRC'): string {
 
 export const MARCA_POR_DEFECTO: Marca = {
   nombre: 'Municipalidad', ubicacion: '', logo: '', color_primario: '#0C3857', color_acento: '#F3951B',
-  correo_soporte: '', telefono_soporte: '', horario_soporte: '', moneda: 'CRC',
+  correo_soporte: '', telefono_soporte: '', horario_soporte: '', moneda: 'CRC', retencion_auditoria_dias: 1825,
 }
 
 export function simboloDe(moneda: string): string {
