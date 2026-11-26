@@ -11,8 +11,10 @@ import {
 import { type Estado, type Prioridad, type Tipo } from '@/types'
 import { cn } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import InstitucionPanel from '@/components/config/InstitucionPanel'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
-const TABS = ['Estados', 'Prioridades', 'Tipos'] as const
+const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -198,8 +200,9 @@ function CrudSection({
 }
 
 export default function ConfigPage() {
+  useTituloDePagina('Configuración')
   const qc = useQueryClient()
-  const [tab, setTab] = useState<Tab>('Estados')
+  const [tab, setTab] = useState<Tab>('Institución')
 
   const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
   const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
@@ -287,7 +290,7 @@ export default function ConfigPage() {
           </div>
           <div>
             <h1 className="text-base font-bold text-foreground">Configuración</h1>
-            <p className="text-xs text-muted-foreground">Estados, prioridades y tipos de proyecto</p>
+            <p className="text-xs text-muted-foreground">Institución, estados, prioridades y tipos de proyecto</p>
           </div>
         </div>
 
@@ -299,13 +302,15 @@ export default function ConfigPage() {
               onClick={() => setTab(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
-                tab === t ? 'border-ocean-500 text-ocean-500' : 'border-transparent text-muted-foreground hover:text-foreground',
+                tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {t}
-              <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
-              </span>
+              {t !== 'Institución' && (
+                <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                  {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -321,6 +326,7 @@ export default function ConfigPage() {
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
           >
+            {tab === 'Institución' && <InstitucionPanel />}
             {tab === 'Estados' && (
               <CrudSection
                 items={estadoItems}

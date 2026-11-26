@@ -4,8 +4,10 @@ import axios from 'axios'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { definirClave } from '@/lib/api'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 export default function DefinirClavePage() {
+  useTituloDePagina('Definir contraseña')
   const { uid = '', token = '' } = useParams<{ uid: string; token: string }>()
   const navigate = useNavigate()
   const [clave, setClave] = useState('')

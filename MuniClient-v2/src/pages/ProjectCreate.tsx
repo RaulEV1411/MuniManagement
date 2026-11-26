@@ -12,6 +12,7 @@ import { cn, formatDate, fullName } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { claseEtiqueta, conColor } from '@/lib/colores'
+import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 
 
 interface FormData {
@@ -81,6 +82,8 @@ function SummaryRow({ label, value, badge, color }: {
 }
 
 export default function ProjectCreatePage() {
+  useTituloDePagina('Nuevo proyecto')
+  const { formatear, simbolo } = useMoneda()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState(1)
@@ -258,7 +261,7 @@ export default function ProjectCreatePage() {
                       <input type="date" value={form.fecha_entrega} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
                     </Field>
                   </div>
-                  <Field label="Costo estimado (₡)" required>
+                  <Field label={`Costo estimado (${simbolo})`} required>
                     <input
                       type="number"
                       value={form.costo}
@@ -321,7 +324,7 @@ export default function ProjectCreatePage() {
                     {form.descripcion && <SummaryRow label="Descripción" value={form.descripcion.slice(0, 80) + (form.descripcion.length > 80 ? '…' : '')} />}
                     {form.fecha_inicio && <SummaryRow label="Inicio" value={formatDate(form.fecha_inicio)} />}
                     {form.fecha_entrega && <SummaryRow label="Entrega" value={formatDate(form.fecha_entrega)} />}
-                    {form.costo && <SummaryRow label="Costo" value={`₡${parseFloat(form.costo).toLocaleString('es-CR')}`} />}
+                    {form.costo && <SummaryRow label="Costo" value={formatear(parseFloat(form.costo))} />}
                     {selectedEstado && (
                       <SummaryRow label="Estado" value={selectedEstado.name} badge color={selectedEstado.color} />
                     )}

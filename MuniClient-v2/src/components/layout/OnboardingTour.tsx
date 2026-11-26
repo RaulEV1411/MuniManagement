@@ -67,7 +67,7 @@ export default function OnboardingTour() {
             <X className="h-5 w-5" />
           </button>
 
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-ocean-500/10 text-ocean-500 mb-4">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-ocean-500/10 text-ocean-500 dark:text-ocean-200 mb-4">
             <Icon className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">{step.title}</h2>

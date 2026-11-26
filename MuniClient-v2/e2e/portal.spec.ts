@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('el portal muestra solo lo público', async ({ page }) => {
   await page.goto('/publico')
-  await expect(page.getByText('Portal de Proyectos Municipales')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Portal de proyectos' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Acera central' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Plan interno' })).toHaveCount(0)
 })

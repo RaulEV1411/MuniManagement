@@ -9,6 +9,7 @@ import {
 import { type Department, type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 function CreateModal({
   directions,
@@ -228,6 +229,7 @@ function DepartmentRow({
 }
 
 export default function DepartmentsPage() {
+  useTituloDePagina('Departamentos')
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 

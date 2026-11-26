@@ -4,13 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  MapPin, Sliders, GanttChartSquare, FileDown, HelpCircle,
+  Sliders, GanttChartSquare, FileDown, HelpCircle,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getResumenProyectos } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
+import LogoInstitucion from '@/components/common/LogoInstitucion'
+import { useMarca } from '@/hooks/useMarca'
 
 interface NavItem {
   icon: LucideIcon
@@ -52,6 +54,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
 ]
 
 export default function Sidebar() {
+  const marca = useMarca()
   const [expanded, setExpanded] = useState(true)
   const { isDark, toggleTheme, user, logout } = useAppStore()
   const navigate = useNavigate()
@@ -76,9 +79,7 @@ export default function Sidebar() {
     >
       {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 h-14 border-b border-border flex-shrink-0">
-        <div className="w-8 h-8 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <MapPin size={16} className="text-white" />
-        </div>
+        <LogoInstitucion tamano={32} />
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -88,8 +89,8 @@ export default function Sidebar() {
               transition={{ duration: 0.15 }}
               className="min-w-0"
             >
-              <p className="text-[13px] font-bold text-ocean-500 leading-tight whitespace-nowrap">Municipalidad</p>
-              <p className="text-[10px] text-muted-foreground whitespace-nowrap">Puntarenas, CR</p>
+              <p className="text-[13px] font-bold text-ocean-500 dark:text-ocean-200 leading-tight line-clamp-2 w-[164px]" title={marca.nombre}>{marca.nombre}</p>
+              {marca.ubicacion && <p className="text-[10px] text-muted-foreground truncate w-[164px]">{marca.ubicacion}</p>}
             </motion.div>
           )}
         </AnimatePresence>

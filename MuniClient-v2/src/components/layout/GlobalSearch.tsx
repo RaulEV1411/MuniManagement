@@ -165,7 +165,7 @@ export default function GlobalSearch() {
                       <div className={cn(
                         'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
                         r.kind === 'project'
-                          ? 'bg-ocean-500/10 text-ocean-500'
+                          ? 'bg-ocean-500/10 text-ocean-500 dark:text-ocean-200'
                           : 'bg-amber-500/10 text-amber-500',
                       )}>
                         {r.kind === 'project' ? <FolderOpen size={13} /> : <Users size={13} />}
