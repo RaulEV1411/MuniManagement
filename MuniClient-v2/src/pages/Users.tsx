@@ -12,6 +12,7 @@ import { cn, getInitials, fullName } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import { usePermiso } from '@/hooks/usePermiso'
 
 const ROLE_STYLE: Record<string, string> = {
   'Administrador': 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
@@ -117,6 +118,7 @@ function UserGridCard({ user }: { user: User }) {
 }
 
 export default function UsersPage() {
+  const puedeCrear = usePermiso('usuarios.gestionar')
   useTituloDePagina('Usuarios')
   const navigate = useNavigate()
   const [search, setSearch]   = useState('')
@@ -251,7 +253,7 @@ export default function UsersPage() {
           <RefreshCw size={13} />
         </button>
 
-        <button
+        <button hidden={!puedeCrear}
           onClick={() => navigate('/users/new')}
           className="flex items-center gap-1.5 px-4 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98] flex-shrink-0"
         >

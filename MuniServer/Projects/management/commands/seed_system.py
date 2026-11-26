@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from Projects.models import Estado, Prioridad
+from Projects.catalogo_permisos import PERMISOS_POR_DEFECTO, ROLES_DE_PROYECTO
+from Projects.models import Estado, Prioridad, RolProyecto
 from Users.models import Roles, Users
 
 
@@ -23,15 +24,8 @@ PRIORIDADES_FIJAS = [
     {'name': 'Urgente',  'color': '#dc2626', 'orden': 4},
 ]
 
-ROLES_FIJOS = [
-    {'name': 'Administrador',       'puede_delegar': True,  'puede_recibir_delegacion': False, 'puede_ver_todo': True},
-    {'name': 'Alcalde',             'puede_delegar': True,  'puede_recibir_delegacion': False, 'puede_ver_todo': True},
-    {'name': 'Vicealcalde',         'puede_delegar': True,  'puede_recibir_delegacion': False, 'puede_ver_todo': True},
-    {'name': 'Jefe de Dirección',   'puede_delegar': True,  'puede_recibir_delegacion': True,  'puede_ver_todo': False},
-    {'name': 'Jefe de Departamento','puede_delegar': True,  'puede_recibir_delegacion': True,  'puede_ver_todo': False},
-    {'name': 'Coordinador',         'puede_delegar': False, 'puede_recibir_delegacion': True,  'puede_ver_todo': False},
-    {'name': 'Funcionario',         'puede_delegar': False, 'puede_recibir_delegacion': True,  'puede_ver_todo': False},
-]
+# Los permisos por defecto de cada rol están en Projects/catalogo_permisos.py.
+ROLES_FIJOS = list(PERMISOS_POR_DEFECTO)
 
 
 class Command(BaseCommand):
@@ -53,17 +47,26 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Prioridades sembradas: {len(PRIORIDADES_FIJAS)}"))
 
-        for rol in ROLES_FIJOS:
-            Roles.objects.update_or_create(
-                name=rol['name'],
-                defaults={
-                    'is_system': True,
-                    'puede_delegar': rol['puede_delegar'],
-                    'puede_recibir_delegacion': rol['puede_recibir_delegacion'],
-                    'puede_ver_todo': rol['puede_ver_todo'],
-                },
-            )
+        # Si ya tiene permisos (ajustados desde la matriz), no se pisan.
+        for nombre in ROLES_FIJOS:
+            rol, _ = Roles.objects.get_or_create(name=nombre, defaults={'is_system': True})
+            cambios = []
+            if not rol.is_system:
+                rol.is_system = True
+                cambios.append('is_system')
+            if not rol.permisos:
+                rol.permisos = dict(PERMISOS_POR_DEFECTO[nombre])
+                cambios.append('permisos')
+            if cambios:
+                rol.save(update_fields=cambios)
         self.stdout.write(self.style.SUCCESS(f"Roles sembrados: {len(ROLES_FIJOS)}"))
+
+        for r in ROLES_DE_PROYECTO:
+            RolProyecto.objects.get_or_create(
+                nombre=r['nombre'],
+                defaults={'descripcion': r['descripcion'], 'permisos': r['permisos'], 'orden': r['orden'], 'is_system': True},
+            )
+        self.stdout.write(self.style.SUCCESS(f"Roles de proyecto sembrados: {len(ROLES_DE_PROYECTO)}"))
 
         from Configuracion.models import Configuracion
         Configuracion.actual()

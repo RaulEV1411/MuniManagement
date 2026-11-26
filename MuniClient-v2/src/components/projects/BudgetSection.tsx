@@ -14,10 +14,12 @@ interface Props {
   tareaId?: string
   costoBase: number
   compact?: boolean
+  /** Registrar ajustes (presupuesto.ajustar); sin él se ve el historial pero no el botón. */
+  puedeAjustar?: boolean
 }
 
 
-export default function BudgetSection({ proyectoId, tareaId, costoBase, compact }: Props) {
+export default function BudgetSection({ proyectoId, tareaId, costoBase, compact, puedeAjustar = true }: Props) {
   const { formatear, simbolo } = useMoneda()
   const qc = useQueryClient()
   const queryKey = ['ajustes', proyectoId ?? '', tareaId ?? '']
@@ -68,6 +70,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
         </div>
         <button
           onClick={() => setOpen(true)}
+          hidden={!puedeAjustar}
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
         >
           <Plus className="h-3.5 w-3.5" /> Ajuste

@@ -40,7 +40,7 @@ test('el administrador cambia nombre y color, y se ven en toda la app', async ({
 test('un funcionario ve los datos de la institución, pero no los cambia', async ({ page }) => {
   await entrar(page, BETO)
   await page.goto('/config')
-  await expect(page.getByText('Solo un administrador puede cambiar estos datos.')).toBeVisible()
+  await expect(page.getByText('Su rol no permite cambiar estos datos.')).toBeVisible()
   await expect(page.locator('#inst-nombre')).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Guardar' })).toHaveCount(0)
 })

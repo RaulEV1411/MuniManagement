@@ -8,7 +8,7 @@ from Feedback.models import Feedback
 from Historial.models import HistorialCambios
 from MuniServer.pruebas import Escenario, crear_proyecto, crear_tarea
 from Notifications.models import Notificacion
-from Projects.models import DelegacionSupervision, Estado, Tipos
+from Projects.models import Estado, MiembroProyecto, RolProyecto, Tipos
 from Task import cron
 
 
@@ -49,7 +49,8 @@ class AvisosPorEventoTests(Escenario, APITestCase):
 class HistorialDeAltasYBajasTests(Escenario, APITestCase):
     def test_crear_proyecto_queda_en_el_historial_y_guarda_el_tipo(self):
         tipo = Tipos.objects.create(name='Vial')
-        r = self.como(self.dueno).post('/api/v1/projects/proyectosWrite/', {
+        # Crea la jefatura (por defecto el Funcionario ya no crea proyectos).
+        r = self.como(self.jefe_a).post('/api/v1/projects/proyectosWrite/', {
             'name': 'Nuevo', 'descripcion': 'x', 'fecha_inicio': '2026-12-01', 'fecha_entrega': '2026-12-31',
             'costo': 100, 'estado_ID': str(self.proyecto.estado_ID_id), 'prioridad_ID': str(self.proyecto.prioridad_ID_id),
             'departamento_ID': str(self.depto_a.pk), 'user_ID': str(self.dueno.pk), 'tipos_ID': str(tipo.pk),
@@ -81,14 +82,23 @@ class CronTests(Escenario, APITestCase):
         self.assertTrue(any('venció hace 2 día(s)' in t for t in titulos), titulos)
         self.assertFalse(any(completado.name in t for t in titulos), titulos)
 
-    def test_las_delegaciones_vencidas_se_desactivan_y_dejan_de_dar_acceso(self):
-        d = DelegacionSupervision.objects.create(proyecto=self.proyecto, supervisor=self.ajeno, otorgado_por=self.jefe_a,
-                                                 expira_en=self.hoy - timedelta(days=1))
+    def test_los_accesos_vencidos_se_desactivan_y_dejan_de_dar_acceso(self):
+        m = MiembroProyecto.objects.create(proyecto=self.proyecto, usuario=self.ajeno, otorgado_por=self.jefe_a,
+                                           rol=RolProyecto.objects.get(nombre='Supervisor'),
+                                           desde=self.hoy - timedelta(days=10), hasta=self.hoy - timedelta(days=1))
         r = self.como(self.ajeno).get(f'/api/v1/projects/proyectosRead/{self.proyecto.pk}/')
         self.assertEqual(r.status_code, 404)
         cron.send_due_date_warnings()
-        d.refresh_from_db()
-        self.assertFalse(d.activa)
+        m.refresh_from_db()
+        self.assertFalse(m.activo)
+
+    def test_avisa_una_vez_antes_de_que_venza_el_acceso(self):
+        MiembroProyecto.objects.create(proyecto=self.proyecto, usuario=self.ajeno, otorgado_por=self.jefe_a,
+                                       rol=RolProyecto.objects.get(nombre='Observador'), hasta=self.hoy + timedelta(days=2))
+        cron.send_due_date_warnings()
+        cron.send_due_date_warnings()
+        for persona in (self.ajeno, self.jefe_a):
+            self.assertEqual(Notificacion.objects.filter(usuario=persona, clave_dedupe__startswith='acceso-vence:').count(), 1, persona.email)
 
 
 class PerfilPropioTests(Escenario, APITestCase):

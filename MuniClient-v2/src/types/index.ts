@@ -1,9 +1,29 @@
+export type Alcance = 'propio' | 'departamento' | 'direccion' | 'todos'
+
 export interface Role {
   role_ID: string
   name: string
-  puede_delegar?: boolean
-  puede_recibir_delegacion?: boolean
-  puede_ver_todo?: boolean
+  descripcion?: string
+  is_system?: boolean
+  // {permiso: alcance}; el Administrador siempre tiene todo.
+  permisos?: Record<string, Alcance>
+  // Si puede sumarse al equipo de proyectos de otros (equipo.integrar).
+  integra_equipos?: boolean
+}
+
+export interface CatalogoPermisos {
+  modulos: Array<{ codigo: string; nombre: string }>
+  permisos: Array<{ codigo: string; modulo: string; etiqueta: string; admite_alcance: boolean; en_proyecto: boolean }>
+  alcances: Array<{ codigo: Alcance; etiqueta: string }>
+}
+
+export interface RolProyecto {
+  rol_proyecto_ID: string
+  nombre: string
+  descripcion: string
+  permisos: string[]
+  is_system: boolean
+  orden: number
 }
 
 export interface Direction {
@@ -77,6 +97,8 @@ export interface Project {
   costo_total?: number
   created_at?: string
   tipos?: Array<{ tipos_ID: string; name: string }>
+  // Solo en el detalle: lo que puede hacer quien lo mira (proyectos.editar, tareas.gestionar, …).
+  mis_permisos?: string[] | null
 }
 
 export interface TaskImage {
@@ -139,17 +161,23 @@ export interface Notificacion {
   created_at: string
 }
 
-export interface Delegacion {
-  delegacion_ID: string
+export interface MiembroProyecto {
+  miembro_ID: string
   proyecto: string
-  supervisor: string
-  otorgado_por: string
-  puede_editar: boolean
-  activa: boolean
-  creada_en: string
-  expira_en: string | null
-  supervisor_info?: User
+  usuario: string
+  rol: string
+  desde: string
+  hasta: string | null
+  motivo: string
+  activo: boolean
+  otorgado_por: string | null
+  creado_en: string
+  revocado_en: string | null
+  usuario_info?: User
   otorgado_por_info?: User
+  rol_info?: RolProyecto
+  vigente: boolean
+  dias_restantes: number | null
 }
 
 export interface AjustePresupuesto {

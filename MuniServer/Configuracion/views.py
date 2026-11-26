@@ -28,7 +28,7 @@ class ConfiguracionView(APIView):
         return Response(ConfiguracionSerializer(Configuracion.actual()).data)
 
     def patch(self, request):
-        if not authz.es_administrador(request.user):
+        if not authz.puede(request.user, 'configuracion.gestionar'):
             return Response(SOLO_ADMIN, status=403)
         serializer = ConfiguracionSerializer(Configuracion.actual(), data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -39,7 +39,7 @@ class ConfiguracionView(APIView):
 @api_view(['POST', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def logo(request):
-    if not authz.es_administrador(request.user):
+    if not authz.puede(request.user, 'configuracion.gestionar'):
         return Response(SOLO_ADMIN, status=403)
     actual = Configuracion.actual()
     if request.method == 'DELETE':

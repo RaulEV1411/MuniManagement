@@ -4,12 +4,12 @@ from . import authz
 
 
 class CatalogoSoloAdministrador(BasePermission):
-    """Estados, prioridades y tipos: todos leen, solo el Administrador los modifica."""
+    """Estados, prioridades y tipos: todos leen; los modifica quien tiene catalogos.gestionar."""
 
-    message = 'Solo un administrador puede modificar los catálogos.'
+    message = 'No tiene permisos para modificar los catálogos.'
 
     def has_permission(self, request, view):
-        return request.method in SAFE_METHODS or authz.es_administrador(request.user)
+        return request.method in SAFE_METHODS or authz.puede(request.user, 'catalogos.gestionar')
 
 
 class SystemRecordReadOnly(BasePermission):

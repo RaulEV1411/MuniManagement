@@ -91,29 +91,34 @@ class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
         self.assertTrue({'creacion', 'cambio_estado_tarea', 'solicitud_presupuesto', 'cancelacion'} <= tipos, tipos)
 
 
-class DelegacionDePrincipioAFinTests(Escenario, APITestCase):
-    def test_delegar_dar_edicion_y_revocar(self):
+class EquipoDePrincipioAFinTests(Escenario, APITestCase):
+    def test_sumar_al_equipo_dar_edicion_y_revocar(self):
+        from Projects.models import RolProyecto
         url_proyecto = f'{API}/projects/proyectosWrite/{self.proyecto.pk}/'
         manana = (timezone.localdate() + timedelta(days=1)).isoformat()
+        rol = lambda n: str(RolProyecto.objects.get(nombre=n).pk)
 
-        r = self.como(self.jefe_a).post(f'{API}/projects/delegaciones/', {
-            'proyecto': str(self.proyecto.pk), 'supervisor': str(self.companero.pk), 'expira_en': manana,
+        r = self.como(self.jefe_a).post(f'{API}/projects/miembros/', {
+            'proyecto': str(self.proyecto.pk), 'usuario': str(self.companero.pk), 'rol': rol('Observador'),
+            'hasta': manana, 'motivo': 'Vacaciones del responsable',
         }, format='json')
         self.assertEqual(r.status_code, 201, r.data)
-        delegacion = r.data['delegacion_ID']
+        miembro = r.data['miembro_ID']
         self.assertEqual(avisos(self.companero, 'delegacion'), 1)
 
-        # Solo lectura: ve, pero no edita.
+        # Observador: ve, pero no edita; el detalle le dice qué puede hacer.
         companero = self.como(self.companero)
-        self.assertEqual(companero.get(url_proyecto).status_code, 200)
+        detalle = companero.get(f'{API}/projects/proyectosRead/{self.proyecto.pk}/')
+        self.assertEqual(detalle.status_code, 200)
+        self.assertEqual(detalle.data['mis_permisos'], ['proyectos.ver'])
         self.assertEqual(companero.patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 403)
 
-        # Con edición.
-        self.como(self.jefe_a).patch(f'{API}/projects/delegaciones/{delegacion}/', {'puede_editar': True}, format='json')
+        # Supervisor: edita.
+        self.como(self.jefe_a).patch(f'{API}/projects/miembros/{miembro}/', {'rol': rol('Supervisor')}, format='json')
         self.assertEqual(self.como(self.companero).patch(url_proyecto, {'name': 'Otro nombre'}, format='json').status_code, 200)
 
-        # Revocada: deja de verlo.
-        self.assertEqual(self.como(self.jefe_a).delete(f'{API}/projects/delegaciones/{delegacion}/').status_code, 204)
+        # Revocado: deja de verlo.
+        self.assertEqual(self.como(self.jefe_a).delete(f'{API}/projects/miembros/{miembro}/').status_code, 204)
         self.assertEqual(self.como(self.companero).get(url_proyecto).status_code, 404)
 
 

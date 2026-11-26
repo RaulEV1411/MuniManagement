@@ -1,8 +1,12 @@
+from datetime import date
+
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField, ValidationError
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
-    DelegacionSupervision, AjustePresupuesto,
+    AjustePresupuesto, MiembroProyecto, RolProyecto,
 )
+from . import authz
+from .catalogo_permisos import PERMISOS_DE_PROYECTO
 from Departments.serializers import DepartamentosSerializer
 from Users.serializers import UsuarioResumenSerializer
 
@@ -61,6 +65,7 @@ class ProyectosReadSerializer(ModelSerializer):
     images = ProjectImageSerializer(many=True, read_only=True)
     costo_total = SerializerMethodField()
     tipos = SerializerMethodField()
+    mis_permisos = SerializerMethodField()
 
     class Meta:
         model = Proyectos
@@ -68,6 +73,12 @@ class ProyectosReadSerializer(ModelSerializer):
 
     def get_tipos(self, obj):
         return [{'tipos_ID': str(pt.tipo_id), 'name': pt.tipo.name} for pt in obj.proyectos_tipos_set.all()]
+
+    def get_mis_permisos(self, obj):
+        # Solo en el detalle: calcularlo en cada fila de una lista costaría consultas por proyecto.
+        if not self.context.get('incluir_mis_permisos') or 'request' not in self.context:
+            return None
+        return authz.mis_permisos_en(self.context['request'].user, obj)
 
     def get_costo_total(self, obj):
         ajustes = obj.ajustes_presupuesto.all()
@@ -81,18 +92,49 @@ class ProyectosTiposSerializer(ModelSerializer):
         fields = '__all__'
 
 
-class DelegacionSupervisionSerializer(ModelSerializer):
-    supervisor_info = UsuarioResumenSerializer(source='supervisor', read_only=True)
+class RolProyectoSerializer(ModelSerializer):
+    class Meta:
+        model = RolProyecto
+        fields = ['rol_proyecto_ID', 'nombre', 'descripcion', 'permisos', 'is_system', 'orden']
+        read_only_fields = ['rol_proyecto_ID', 'is_system']
+
+    def validate_permisos(self, value):
+        if not isinstance(value, list) or any(c not in PERMISOS_DE_PROYECTO for c in value):
+            raise ValidationError('Hay permisos que no existen o que no valen dentro de un proyecto.')
+        return sorted(set(value))
+
+
+class MiembroProyectoSerializer(ModelSerializer):
+    usuario_info = UsuarioResumenSerializer(source='usuario', read_only=True)
     otorgado_por_info = UsuarioResumenSerializer(source='otorgado_por', read_only=True)
+    rol_info = RolProyectoSerializer(source='rol', read_only=True)
+    vigente = SerializerMethodField()
+    dias_restantes = SerializerMethodField()
 
     class Meta:
-        model = DelegacionSupervision
+        model = MiembroProyecto
         fields = [
-            'delegacion_ID', 'proyecto', 'supervisor', 'otorgado_por',
-            'puede_editar', 'activa', 'creada_en', 'expira_en',
-            'supervisor_info', 'otorgado_por_info',
+            'miembro_ID', 'proyecto', 'usuario', 'rol', 'desde', 'hasta', 'motivo', 'activo',
+            'otorgado_por', 'creado_en', 'revocado_en',
+            'usuario_info', 'otorgado_por_info', 'rol_info', 'vigente', 'dias_restantes',
         ]
-        read_only_fields = ['delegacion_ID', 'creada_en', 'otorgado_por']
+        read_only_fields = ['miembro_ID', 'otorgado_por', 'creado_en', 'revocado_en', 'activo']
+
+    def get_vigente(self, obj):
+        hoy = date.today()
+        return obj.activo and obj.desde <= hoy and (obj.hasta is None or obj.hasta >= hoy)
+
+    def get_dias_restantes(self, obj):
+        return (obj.hasta - date.today()).days if obj.hasta else None
+
+    def validate(self, attrs):
+        desde = attrs.get('desde', getattr(self.instance, 'desde', None) or date.today())
+        hasta = attrs.get('hasta', getattr(self.instance, 'hasta', None))
+        if hasta and desde and hasta < desde:
+            raise ValidationError({'hasta': 'La fecha de fin no puede ser anterior a la de inicio.'})
+        if self.instance is None and hasta and hasta < date.today():
+            raise ValidationError({'hasta': 'La vigencia ya habría vencido.'})
+        return attrs
 
 
 class AjustePresupuestoSerializer(ModelSerializer):

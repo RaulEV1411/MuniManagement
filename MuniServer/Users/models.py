@@ -7,12 +7,9 @@ class Roles(models.Model):
     role_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
     is_system = models.BooleanField(default=False)
-    puede_delegar = models.BooleanField(default=False)
-    puede_recibir_delegacion = models.BooleanField(default=False)
-    puede_ver_todo = models.BooleanField(
-        default=False,
-        help_text='Si es True, ve todos los proyectos sin importar si es dueño/jefe/delegado.',
-    )
+    descripcion = models.CharField(max_length=255, blank=True, default='')
+    # {permiso: alcance}: ver Projects/catalogo_permisos.py. El Administrador siempre tiene todo.
+    permisos = models.JSONField(default=dict, blank=True)
 
 class Users(AbstractBaseUser):
     user_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -2,12 +2,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getMe, logout as apiLogout, setCsrfToken } from '@/lib/api'
 
-interface RoleFlags {
-  puede_delegar: boolean
-  puede_recibir_delegacion: boolean
-  puede_ver_todo: boolean
-}
-
 export interface SessionUser {
   user_ID: string
   first_name: string
@@ -15,7 +9,8 @@ export interface SessionUser {
   email: string
   role: string
   user_photo: string | null
-  role_flags?: RoleFlags
+  // {permiso: alcance} del rol: el front muestra solo lo que el servidor va a permitir.
+  permisos?: Record<string, string>
   departamento_ID?: string
   onboarding_completado?: boolean
 }

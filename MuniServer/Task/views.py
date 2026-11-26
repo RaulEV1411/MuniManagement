@@ -15,7 +15,7 @@ CAMPOS_DEL_ASIGNADO = {'estado_ID'}
 
 
 def _puede_gestionar_imagenes(user, tarea):
-    return tarea.asignado_a_id == user.user_ID or authz.puede_editar(user, tarea.proyecto_ID)
+    return tarea.asignado_a_id == user.user_ID or authz.puede(user, 'fotos.subir', tarea.proyecto_ID)
 
 
 class TareasViewSet(ModelViewSet):
@@ -37,7 +37,7 @@ class TareasViewSet(ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto_ID']):
+        if not authz.puede(self.request.user, 'tareas.gestionar', serializer.validated_data['proyecto_ID']):
             raise PermissionDenied('No tiene permisos para crear tareas en este proyecto.')
         tarea = serializer.save()
         HistorialCambios.objects.create(
@@ -47,7 +47,7 @@ class TareasViewSet(ModelViewSet):
         self._avisar_asignacion(tarea)
 
     def perform_destroy(self, instance):
-        if not authz.puede_editar(self.request.user, instance.proyecto_ID):
+        if not authz.puede(self.request.user, 'tareas.gestionar', instance.proyecto_ID):
             raise PermissionDenied('No tiene permisos para borrar tareas de este proyecto.')
         datos = {'name': instance.name, 'tareas_ID': str(instance.tareas_ID)}
         proyecto_id = instance.proyecto_ID_id
@@ -72,7 +72,7 @@ class TareasViewSet(ModelViewSet):
         nuevo_proyecto = serializer.validated_data.get('proyecto_ID', prev.proyecto_ID)
         if nuevo_proyecto.pk != prev.proyecto_ID_id:
             raise ValidationError({'proyecto_ID': 'Una tarea no se puede mover a otro proyecto.'})
-        if not authz.puede_editar(user, prev.proyecto_ID):
+        if not authz.puede(user, 'tareas.gestionar', prev.proyecto_ID):
             cambios = {
                 campo for campo, valor in serializer.validated_data.items()
                 if getattr(prev, campo) != valor

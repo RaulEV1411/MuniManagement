@@ -18,10 +18,10 @@ def notificar(destinatarios, actor, tipo, titulo, mensaje, link):
 
 
 def interesados_del_proyecto(proyecto):
-    """Dueño y supervisores delegados activos."""
-    from Projects.authz import delegacion_vigente
+    """Dueño y miembros vigentes del equipo."""
+    from Projects.authz import membresia_vigente
     personas = [proyecto.user_ID]
-    personas += [d.supervisor for d in proyecto.delegaciones.filter(delegacion_vigente()).select_related('supervisor')]
+    personas += [m.usuario for m in proyecto.miembros.filter(membresia_vigente()).select_related('usuario')]
     return personas
 
 

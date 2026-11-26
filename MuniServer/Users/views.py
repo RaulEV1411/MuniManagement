@@ -14,13 +14,15 @@ from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from .models import Roles, Users
 from .serializers import RolesSerializer, UsersSerializer, UsuarioDirectorioSerializer
-from .permissions import UsersPermission, RolesPermission, _role_name, _role_flag, ROLES_ADMIN, ROLES_JEFES
-from Projects.permissions import SystemRecordReadOnly
+from .permissions import UsersPermission, RolesPermission
 from Projects import authz
+from Projects import catalogo_permisos as cat
+from MuniServer.borrado import ProtegidoAlBorrarMixin
 from MuniServer.subidas import borrar_imagen_por_url, error_de_imagen, subir_imagen
 from .acceso import encolar_correo_de_acceso, revocar_sesiones, usuario_del_enlace
 from django.conf import settings as django_settings
 from rest_framework import exceptions
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from .autenticacion import (
     ACCESS, REFRESH, RUTA_REFRESH, borrar_cookies_de_sesion, datos_de_sesion, fijar_cookie, fijar_cookies_de_sesion,
@@ -48,11 +50,42 @@ def _errores_de_clave(password, user):
     return None
 
 
-class RolesViewSet(ModelViewSet):
-    queryset = Roles.objects.all()
+class RolesViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
+    """Roles de la institución y su matriz de permisos.
+
+    Los del sistema no se renombran ni se borran, pero sus permisos sí se ajustan; los del
+    Administrador quedan fijos para que nadie pierda el acceso a la configuración."""
+    queryset = Roles.objects.all().order_by('name')
     serializer_class = RolesSerializer
-    permission_classes = [IsAuthenticated, RolesPermission, SystemRecordReadOnly]
+    permission_classes = [IsAuthenticated, RolesPermission]
     pagination_class = None
+    mensaje_protegido = 'No se puede borrar: hay personas con este rol.'
+
+    def perform_update(self, serializer):
+        rol = serializer.instance
+        datos = serializer.validated_data
+        if rol.name == 'Administrador' and 'permisos' in datos:
+            raise ValidationError({'permisos': 'Los permisos del Administrador no se cambian: siempre tiene todo.'})
+        if rol.is_system and 'name' in datos and datos['name'] != rol.name:
+            raise ValidationError({'name': 'Los roles del sistema no se renombran.'})
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.is_system:
+            raise ValidationError('Los roles del sistema no se borran.')
+        super().perform_destroy(instance)
+
+    @action(detail=False, methods=['get'])
+    def catalogo(self, request):
+        """Módulos, permisos y alcances, para armar la matriz en el front."""
+        return Response({
+            'modulos': [{'codigo': c, 'nombre': n} for c, n in cat.MODULOS.items()],
+            'permisos': [
+                {'codigo': c, 'modulo': cat.modulo_de(c), 'etiqueta': e, 'admite_alcance': alc, 'en_proyecto': proy}
+                for c, (e, alc, proy) in cat.PERMISOS.items()
+            ],
+            'alcances': [{'codigo': a, 'etiqueta': cat.ETIQUETAS_ALCANCE[a]} for a in cat.ALCANCES],
+        })
 
 
 class UsersViewSet(ModelViewSet):
@@ -63,7 +96,7 @@ class UsersViewSet(ModelViewSet):
         # La alcaldía y la propia persona ven la ficha completa; el resto, solo el directorio
         # (nombre, correo, puesto, foto, rol y departamento; sin cédula, teléfono ni nacimiento).
         user = self.request.user
-        if _role_name(user) in ROLES_ADMIN or _role_flag(user, 'puede_ver_todo'):
+        if authz.alcance_de(user, 'usuarios.ver_datos') == cat.TODOS or authz.es_administrador(user):
             return UsersSerializer
         if self.action == 'list' or (self.action == 'retrieve' and str(self.kwargs.get('pk')) != str(user.user_ID)):
             return UsuarioDirectorioSerializer
@@ -73,7 +106,8 @@ class UsersViewSet(ModelViewSet):
         # Cada quien ve a quienes su lugar en la jerarquía le permite (authz.usuarios_visibles);
         # qué datos ve de cada uno lo decide get_serializer_class.
         user = self.request.user
-        gestiona = _role_name(user) in ROLES_ADMIN or _role_flag(user, 'puede_ver_todo') or _role_name(user) in ROLES_JEFES
+        # Pedir también a los dados de baja: quien gestiona usuarios o equipos (antes: alcaldía y jefaturas).
+        gestiona = authz.puede(user, 'usuarios.gestionar') or authz.puede(user, 'equipo.gestionar')
         qs = authz.usuarios_visibles(user).select_related('role', 'departamento_ID')
         # Los dados de baja no aparecen en las listas; la alcaldía y los jefes pueden pedirlos.
         if self.action == 'list':
@@ -93,6 +127,49 @@ class UsersViewSet(ModelViewSet):
             qs = qs.order_by('first_name', 'last_name')
         return qs
 
+    def _validar_departamento_y_rol(self, datos, anterior=None):
+        user = self.request.user
+        depto = datos.get('departamento_ID')
+        if depto is not None and (anterior is None or depto.pk != anterior.departamento_ID_id):
+            alcance = authz.alcance_de(user, 'usuarios.gestionar')
+            if not authz.es_administrador(user) and not authz.en_alcance_de_departamento(user, alcance, depto):
+                raise PermissionDenied('No puede gestionar usuarios de ese departamento.')
+        rol = datos.get('role')
+        if rol is not None and (anterior is None or rol.pk != anterior.role_id):
+            if rol.name == 'Administrador' and not authz.es_administrador(user):
+                raise PermissionDenied('Solo un Administrador puede dar el rol de Administrador.')
+            # Nadie da más de lo que tiene: sin roles.gestionar, solo roles que no superen los propios permisos.
+            if not authz.puede(user, 'roles.gestionar') and not authz.rol_no_supera(rol, user):
+                raise PermissionDenied('No puede asignar un rol con más permisos que los suyos.')
+
+    def perform_create(self, serializer):
+        self._validar_departamento_y_rol(serializer.validated_data)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._validar_departamento_y_rol(serializer.validated_data, serializer.instance)
+        serializer.save()
+
+    @action(detail=True, methods=['get'])
+    def permisos(self, request, pk=None):
+        """«Ver como»: lo que puede hacer esta persona, por su rol y por los equipos donde está."""
+        persona = self.get_object()
+        if persona.pk != request.user.pk and not (
+            authz.puede(request.user, 'roles.gestionar') or authz.puede_sobre_usuario(request.user, 'usuarios.gestionar', persona)
+        ):
+            raise PermissionDenied('No puede ver los permisos de esta persona.')
+        from Projects.models import MiembroProyecto
+        equipos = MiembroProyecto.objects.filter(authz.membresia_vigente(), usuario=persona).select_related('proyecto', 'rol')
+        return Response({
+            'rol': persona.role.name if persona.role_id else '',
+            'permisos': authz.permisos_del_rol(persona),
+            'equipos': [
+                {'proyecto': str(m.proyecto_id), 'nombre': m.proyecto.name, 'rol': m.rol.nombre,
+                 'hasta': m.hasta.isoformat() if m.hasta else None}
+                for m in equipos
+            ],
+        })
+
     def perform_destroy(self, instance):
         # Dar de baja en lugar de borrar: conserva sus proyectos, ajustes e historial.
         instance.is_active = False
@@ -103,8 +180,8 @@ class UsersViewSet(ModelViewSet):
     def enviar_acceso(self, request, pk=None):
         """La alcaldía reenvía el enlace para definir contraseña (cuenta nueva o clave olvidada)."""
         user = self.get_object()
-        if not (_role_name(request.user) in ROLES_ADMIN or _role_flag(request.user, 'puede_ver_todo')):
-            return Response({'error': 'Solo la alcaldía o un administrador pueden reenviar el acceso.'}, status=403)
+        if not authz.puede_gestionar_a(request.user, user):
+            return Response({'error': 'No tiene permisos para reenviar el acceso a esta persona.'}, status=403)
         if not user.is_active:
             return Response({'error': 'El usuario está dado de baja.'}, status=400)
         encolar_correo_de_acceso(user, 'recuperacion')
@@ -215,7 +292,7 @@ def upload_user_photo(request, user_id):
     except Users.DoesNotExist:
         return Response({'error': 'Usuario no encontrado.'}, status=404)
 
-    if request.user.user_ID != user.user_ID and not (_role_name(request.user) in ROLES_ADMIN or _role_flag(request.user, 'puede_ver_todo')):
+    if request.user.user_ID != user.user_ID and not authz.puede_gestionar_a(request.user, user):
         return Response({'error': 'No tiene permisos para modificar esta foto.'}, status=403)
 
     error = error_de_imagen(file)

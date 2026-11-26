@@ -10,6 +10,7 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
 import { confirmar } from '@/lib/confirmar'
+import { usePermiso } from '@/hooks/usePermiso'
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName]     = useState('')
@@ -78,6 +79,7 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
   onSaved: () => void
   onDeleted: () => void
 }) {
+  const puedeEditar = usePermiso('estructura.gestionar')
   const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(direction.name)
   const [jefeId, setJefeId]   = useState(direction.jefe ?? '')
@@ -163,13 +165,13 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
             </>
           ) : (
             <>
-              <button aria-label={`Editar ${direction.name}`}
+              <button hidden={!puedeEditar} aria-label={`Editar ${direction.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <Pencil size={13} />
               </button>
-              <button aria-label={`Eliminar ${direction.name}`}
+              <button hidden={!puedeEditar} aria-label={`Eliminar ${direction.name}`}
                 onClick={handleDelete}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
               >
@@ -184,6 +186,7 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
 }
 
 export default function DirectionsPage() {
+  const puedeCrear = usePermiso('estructura.gestionar')
   useTituloDePagina('Direcciones')
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -211,7 +214,7 @@ export default function DirectionsPage() {
             <p className="text-xs text-muted-foreground">{directions.length} registrada{directions.length !== 1 ? 's' : ''}</p>
           )}
         </div>
-        <button
+        <button hidden={!puedeCrear}
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-1.5 px-4 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
         >
@@ -234,7 +237,7 @@ export default function DirectionsPage() {
             </div>
             <p className="text-sm font-medium text-foreground">Sin direcciones</p>
             <p className="text-xs text-muted-foreground">Cree la primera dirección para comenzar</p>
-            <button
+            <button hidden={!puedeCrear}
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
             >

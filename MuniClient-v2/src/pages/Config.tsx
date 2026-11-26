@@ -15,8 +15,10 @@ import InstitucionPanel from '@/components/config/InstitucionPanel'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import { pestanas } from '@/lib/pestanas'
 import { confirmar } from '@/lib/confirmar'
+import { usePermiso } from '@/hooks/usePermiso'
+import RolesPermisosPanel from '@/components/config/RolesPermisosPanel'
 
-const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos'] as const
+const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -205,7 +207,10 @@ export default function ConfigPage() {
   useTituloDePagina('Configuración')
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('Institución')
-  const tabs = pestanas('configuracion', TABS, tab, setTab)
+  const veRoles = usePermiso('roles.gestionar')
+  const editaCatalogos = usePermiso('catalogos.gestionar')
+  const visibles = veRoles ? TABS : TABS.filter(t => t !== 'Roles y permisos')
+  const tabs = pestanas('configuracion', visibles, tab, setTab)
 
   const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
   const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
@@ -293,13 +298,13 @@ export default function ConfigPage() {
           </div>
           <div>
             <h1 className="text-base font-bold text-foreground">Configuración</h1>
-            <p className="text-xs text-muted-foreground">Institución, estados, prioridades y tipos de proyecto</p>
+            <p className="text-xs text-muted-foreground">Institución, catálogos, roles y permisos</p>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 overflow-x-auto" {...tabs.lista} aria-label="Secciones de la configuración">
-          {TABS.map(t => (
+          {visibles.map(t => (
             <button
               key={t}
               {...tabs.pestana(t)}
@@ -309,7 +314,7 @@ export default function ConfigPage() {
               )}
             >
               {t}
-              {t !== 'Institución' && (
+              {(t === 'Estados' || t === 'Prioridades' || t === 'Tipos') && (
                 <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
                   {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
                 </span>
@@ -340,8 +345,8 @@ export default function ConfigPage() {
                 onSave={onSaveEstado}
                 onDelete={onDeleteEstado}
                 onCreate={onCreateEstado}
-                readOnly={estadoItems.every(e => e.isSystem)}
-                readOnlyMessage="Los estados de proyectos y tareas son definidos por el sistema."
+                readOnly={!editaCatalogos || estadoItems.every(e => e.isSystem)}
+                readOnlyMessage={editaCatalogos ? 'Los estados de proyectos y tareas son definidos por el sistema.' : 'Su rol no permite editar los catálogos.'}
               />
             )}
             {tab === 'Prioridades' && (
@@ -353,8 +358,8 @@ export default function ConfigPage() {
                 onSave={onSavePrioridad}
                 onDelete={onDeletePrioridad}
                 onCreate={onCreatePrioridad}
-                readOnly={prioridadItems.every(p => p.isSystem)}
-                readOnlyMessage="Las prioridades son definidas por el sistema."
+                readOnly={!editaCatalogos || prioridadItems.every(p => p.isSystem)}
+                readOnlyMessage={editaCatalogos ? 'Las prioridades son definidas por el sistema.' : 'Su rol no permite editar los catálogos.'}
               />
             )}
             {tab === 'Tipos' && (
@@ -366,8 +371,11 @@ export default function ConfigPage() {
                 onSave={onSaveTipo}
                 onDelete={onDeleteTipo}
                 onCreate={onCreateTipo}
+                readOnly={!editaCatalogos}
+                readOnlyMessage="Su rol no permite editar los catálogos."
               />
             )}
+            {tab === 'Roles y permisos' && veRoles && <RolesPermisosPanel />}
           </motion.div>
         </AnimatePresence>
       </div>

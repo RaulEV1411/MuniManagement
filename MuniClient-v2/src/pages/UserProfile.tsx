@@ -22,6 +22,8 @@ import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colo
 import { useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
 import { pestanas } from '@/lib/pestanas'
+import { usePermiso } from '@/hooks/usePermiso'
+import PermisosDeUsuario from '@/components/users/PermisosDeUsuario'
 
 
 const AVATAR_COLORS = [
@@ -263,9 +265,10 @@ export default function UserProfilePage() {
   const [uploading, setUploading]   = useState(false)
   const yo = useAppStore(s => s.user)
   const esPropio = yo?.user_ID === id
-  const esAlcaldia = !!yo?.role_flags?.puede_ver_todo
+  const gestiona = usePermiso('usuarios.gestionar')
+  const veRoles = usePermiso('roles.gestionar')
   // Con el directorio abierto a todos, editar y cambiar la foto quedan para la persona y la alcaldía.
-  const puedeEditar = esPropio || esAlcaldia
+  const puedeEditar = esPropio || gestiona
 
   const reenviarAcceso = async () => {
     try {
@@ -419,7 +422,7 @@ export default function UserProfilePage() {
                 <Lock size={14} />
               </button>
             )}
-            {!esPropio && esAlcaldia && (
+            {!esPropio && gestiona && (
               <button
                 onClick={reenviarAcceso}
                 className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
@@ -479,6 +482,7 @@ export default function UserProfilePage() {
                   {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />}
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>
+                {(esPropio || gestiona || veRoles) && <PermisosDeUsuario usuarioId={user.user_ID} />}
               </div>
             )}
 
@@ -530,7 +534,7 @@ export default function UserProfilePage() {
             user={user}
             roles={roles}
             departments={departments}
-            puedeEditarTodo={esAlcaldia}
+            puedeEditarTodo={gestiona}
             onClose={() => setShowEdit(false)}
             onSaved={() => qc.invalidateQueries({ queryKey: ['user', id] })}
           />

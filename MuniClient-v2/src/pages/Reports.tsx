@@ -12,11 +12,13 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, colorDeEstado, conColor } from '@/lib/colores'
 import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import { usePermiso } from '@/hooks/usePermiso'
 
 // Costo con los aumentos y rebajos aprobados; si el servidor no lo manda, el costo base.
 const costoTotal = (p: Project) => p.costo_total ?? p.costo ?? 0
 
 export default function ReportsPage() {
+  const puedeExportar = usePermiso('reportes.exportar')
   useTituloDePagina('Reportes')
   const marca = useMarca()
   const { formatear, simbolo } = useMoneda()
@@ -141,13 +143,13 @@ export default function ReportsPage() {
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
+          <button hidden={!puedeExportar}
             onClick={exportExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
           >
             <FileSpreadsheet size={13} /> Excel
           </button>
-          <button
+          <button hidden={!puedeExportar}
             onClick={exportPDF}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
           >
