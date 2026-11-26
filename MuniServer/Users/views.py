@@ -7,6 +7,8 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
 from django.db.models import OuterRef, Q, Subquery
+from django.http import HttpResponse
+from django.utils import timezone
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -181,6 +183,48 @@ class UsersViewSet(ModelViewSet):
         instance.is_active = False
         instance.save(update_fields=['is_active'])
         revocar_sesiones(instance, 'baja')
+
+    @action(detail=True, methods=['get'])
+    def datos(self, request, pk=None):
+        """«Mis datos» (Ley 8968, derecho de acceso): todo lo que el sistema guarda de la persona.
+        La propia persona, o el Administrador cuando ella lo pide por otra vía."""
+        persona = self.get_object()
+        if persona.pk != request.user.pk and not authz.es_administrador(request.user):
+            raise PermissionDenied('Solo puede descargar sus propios datos.')
+        from .datos_personales import datos_de
+        auditoria.registrar('usuarios', 'exportar', objeto=persona, objeto_repr=f'Datos personales de {persona.first_name} {persona.last_name}')
+        return Response(datos_de(persona))
+
+    @action(detail=False, methods=['get'])
+    def exportar(self, request):
+        """Lista de usuarios en CSV, con datos personales: quien exporta reportes y ve los datos de todos."""
+        user = request.user
+        if not authz.es_administrador(user) and not (
+            authz.puede(user, 'reportes.exportar') and authz.alcance_de(user, 'usuarios.ver_datos') == cat.TODOS
+        ):
+            raise PermissionDenied('Su rol no permite exportar los datos de las personas.')
+        from .datos_personales import csv_de_usuarios
+        qs = self.get_queryset().order_by('first_name', 'last_name')
+        contenido, total = csv_de_usuarios(qs)
+        auditoria.registrar('usuarios', 'exportar', objeto_repr='Lista de usuarios (CSV)', motivo=f'{total} personas')
+        respuesta = HttpResponse(contenido, content_type='text/csv; charset=utf-8')
+        respuesta['Content-Disposition'] = f'attachment; filename="usuarios_{timezone.localdate().isoformat()}.csv"'
+        return respuesta
+
+    @action(detail=True, methods=['post'])
+    def anonimizar(self, request, pk=None):
+        """A pedido de la persona, y solo con la cuenta dada de baja: se borran sus datos personales y
+        quedan sus proyectos, tareas e historial a nombre de «Persona anonimizada»."""
+        persona = self.get_object()
+        if not authz.es_administrador(request.user):
+            raise PermissionDenied('Solo el Administrador anonimiza cuentas.')
+        if persona.is_active:
+            raise ValidationError({'is_active': 'Primero dé de baja la cuenta.'})
+        if persona.first_name == 'Persona' and persona.last_name == 'anonimizada':
+            raise ValidationError({'is_active': 'La cuenta ya está anonimizada.'})
+        from .datos_personales import anonimizar
+        anonimizar(persona, str(request.data.get('motivo', '')).strip()[:255])
+        return Response({'ok': True})
 
     @action(detail=True, methods=['post'], url_path='enviar-acceso')
     def enviar_acceso(self, request, pk=None):
@@ -385,3 +429,19 @@ class RenovarSesionView(APIView):
         if 'refresh' in datos:
             fijar_cookie(respuesta, REFRESH, datos['refresh'], int(jwt['REFRESH_TOKEN_LIFETIME'].total_seconds()), RUTA_REFRESH)
         return respuesta
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def aceptar_privacidad(request):
+    """Acepta la versión vigente del aviso de privacidad (queda la versión y la fecha)."""
+    from Configuracion.models import Configuracion
+    user = request.user
+    version = Configuracion.actual().privacidad_version
+    if str(request.data.get('version', '')) != str(version):
+        return Response({'error': 'El aviso cambió: vuelva a leerlo.', 'version': version}, status=409)
+    user.privacidad_version = version
+    user.privacidad_aceptada_en = timezone.now()
+    user.save(update_fields=['privacidad_version', 'privacidad_aceptada_en'])
+    return Response({'ok': True, 'version': version})
+

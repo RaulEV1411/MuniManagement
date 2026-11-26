@@ -25,7 +25,8 @@ class Command(BaseCommand):
 
         def persona(rol, nombre, email, cedula):
             u = Users(role=Roles.objects.get(name=rol), departamento_ID=obras, first_name=nombre, last_name='Prueba',
-                      cedula=cedula, phone_number=88880000, email=email, puesto=rol, onboarding_completado=True)
+                      cedula=str(100000000 + cedula), phone_number='88880000', email=email, puesto=rol,
+                      onboarding_completado=True, privacidad_version=1)
             u.set_password(CLAVE)
             u.save()
             return u

@@ -2,6 +2,7 @@ from django.contrib.auth.models import UserManager,AbstractBaseUser
 from django.db import models
 import uuid
 from Departments.models import Departamentos
+from .identificacion import TIPOS as TIPOS_IDENTIFICACION
 
 class Roles(models.Model):
     role_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -17,8 +18,10 @@ class Users(AbstractBaseUser):
     departamento_ID = models.ForeignKey(Departamentos, on_delete=models.PROTECT)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
-    cedula = models.IntegerField(unique=True)
-    phone_number = models.IntegerField()
+    # Identificación con su tipo, como texto (validada en Users/identificacion.py).
+    tipo_identificacion = models.CharField(max_length=10, choices=TIPOS_IDENTIFICACION, default='fisica')
+    cedula = models.CharField('número de identificación', max_length=20, unique=True)
+    phone_number = models.CharField('teléfono', max_length=20)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
     # Opcional: solo se piden los datos que el sistema usa (Ley 8968, art. 6).
@@ -28,6 +31,9 @@ class Users(AbstractBaseUser):
     onboarding_completado = models.BooleanField(default=False)
     # Baja lógica: un funcionario que se va no se borra, para no perder su historial.
     is_active = models.BooleanField(default=True)
+    # Versión del aviso de privacidad que aceptó y cuándo (Ley 8968, art. 5: consentimiento informado).
+    privacidad_version = models.PositiveIntegerField(default=0)
+    privacidad_aceptada_en = models.DateTimeField(null=True, blank=True)
 
     objects = UserManager()
 

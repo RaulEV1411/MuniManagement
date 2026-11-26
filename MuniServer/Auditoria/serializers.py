@@ -24,7 +24,9 @@ ETIQUETAS = {
     'fecha_fin_real': 'Fecha real de fin', 'costo_real': 'Costo real', 'lecciones': 'Lecciones aprendidas',
     'cerrado_por': 'Cerrado por', 'cerrado_en': 'Cerrado el', 'reabierto_en': 'Reabierto el',
     'reabierto_por': 'Reabierto por', 'motivo_reapertura': 'Motivo de la reapertura', 'cierre': 'Cierre',
-    'subido_por': 'Subido por', 'estado': 'Estado', 'retencion_auditoria_dias': 'Retención de la auditoría (días)',
+    'subido_por': 'Subido por', 'estado': 'Estado', 'tipo_identificacion': 'Tipo de identificación',
+    'privacidad_version': 'Aviso de privacidad aceptado (versión)', 'privacidad_aceptada_en': 'Aviso aceptado el',
+    'aviso_privacidad': 'Aviso de privacidad', 'encargados': 'Encargados', 'privacidad_actualizada': 'Aviso actualizado el', 'retencion_auditoria_dias': 'Retención de la auditoría (días)',
 }
 
 

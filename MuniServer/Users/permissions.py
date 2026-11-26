@@ -4,7 +4,7 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 from Projects import authz
 
 
-CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'cedula', 'email', 'is_active'}
+CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'tipo_identificacion', 'cedula', 'email', 'is_active'}
 
 
 class UsersPermission(BasePermission):
@@ -49,7 +49,7 @@ class UsersPermission(BasePermission):
             datos = request.data if hasattr(request.data, 'keys') else {}
             actuales = {
                 'role': obj.role_id, 'departamento_ID': obj.departamento_ID_id,
-                'cedula': obj.cedula, 'email': obj.email, 'is_active': obj.is_active,
+                'tipo_identificacion': obj.tipo_identificacion, 'cedula': obj.cedula, 'email': obj.email, 'is_active': obj.is_active,
             }
             invalidos = {
                 campo for campo in CAMPOS_PROTEGIDOS_AUTO_EDIT & set(datos.keys())

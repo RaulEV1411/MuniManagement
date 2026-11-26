@@ -30,9 +30,17 @@ class ConfiguracionView(APIView):
     def patch(self, request):
         if not authz.puede(request.user, 'configuracion.gestionar'):
             return Response(SOLO_ADMIN, status=403)
-        serializer = ConfiguracionSerializer(Configuracion.actual(), data=request.data, partial=True)
+        actual = Configuracion.actual()
+        version = actual.privacidad_version
+        serializer = ConfiguracionSerializer(actual, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        nueva = serializer.save()
+        if nueva.privacidad_version != version:
+            # Quien publica el aviso nuevo lo acaba de leer: no se le vuelve a pedir.
+            from django.utils import timezone
+            request.user.privacidad_version = nueva.privacidad_version
+            request.user.privacidad_aceptada_en = timezone.now()
+            request.user.save(update_fields=['privacidad_version', 'privacidad_aceptada_en'])
         return Response(serializer.data)
 
 

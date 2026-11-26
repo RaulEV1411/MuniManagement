@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import make_password
 
 from Projects import catalogo_permisos as cat
 from .acceso import encolar_correo_de_acceso
+from .identificacion import normalizar_identificacion, normalizar_telefono
 from .models import Roles, Users
 
 class RolesSerializer(ModelSerializer):
@@ -62,8 +63,23 @@ class UsersSerializer(RolYDepartamentoAnidados, ModelSerializer):
 
     class Meta:
         model = Users
-        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado','is_active','ultima_conexion']
-        read_only_fields = ['user_ID']
+        fields = ['user_ID','first_name','last_name','tipo_identificacion','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado','is_active','ultima_conexion','privacidad_version','privacidad_aceptada_en']
+        read_only_fields = ['user_ID', 'privacidad_version', 'privacidad_aceptada_en']
+
+    def validate(self, datos):
+        datos = super().validate(datos)
+        if 'cedula' in datos or 'tipo_identificacion' in datos:
+            tipo = datos.get('tipo_identificacion', getattr(self.instance, 'tipo_identificacion', 'fisica'))
+            numero = normalizar_identificacion(tipo, datos.get('cedula', getattr(self.instance, 'cedula', '')))
+            otros = Users.objects.filter(cedula=numero)
+            if self.instance is not None:
+                otros = otros.exclude(pk=self.instance.pk)
+            if otros.exists():
+                raise ValidationError({'cedula': 'Ya hay una persona con esa identificación.'})
+            datos['cedula'] = numero
+        if 'phone_number' in datos:
+            datos['phone_number'] = normalizar_telefono(datos['phone_number'])
+        return datos
 
 class UsuarioResumenSerializer(ModelSerializer):
     """Lo mínimo para mostrar a una persona dentro de proyectos, tareas, historial y comentarios.
