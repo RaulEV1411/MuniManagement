@@ -58,12 +58,10 @@ export default function NotificationPanel({ onClose }: Props) {
         ) : (
           <ul className="divide-y divide-border">
             {notifs.slice(0, 20).map(n => (
-              <li key={n.notificacion_ID}>
+              <li key={n.notificacion_ID} className={`flex items-start ${n.leida ? '' : 'bg-primary/5'}`}>
                 <button
                   onClick={() => handleClick(n)}
-                  className={`flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-accent transition ${
-                    n.leida ? '' : 'bg-primary/5'
-                  }`}
+                  className="flex flex-1 min-w-0 items-start gap-3 px-4 py-3 text-left hover:bg-accent transition"
                 >
                   <span
                     className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -79,16 +77,18 @@ export default function NotificationPanel({ onClose }: Props) {
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
                     </p>
                   </div>
-                  {!n.leida && (
-                    <Check
-                      className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100"
-                      onClick={e => {
-                        e.stopPropagation()
-                        marcar.mutate(n.notificacion_ID)
-                      }}
-                    />
-                  )}
                 </button>
+                {/* Antes era un ícono dentro del botón que solo aparecía con hover y nunca se veía. */}
+                {!n.leida && (
+                  <button
+                    onClick={() => marcar.mutate(n.notificacion_ID)}
+                    className="m-2 p-1.5 rounded-lg text-primary hover:bg-accent shrink-0"
+                    title="Marcar como leída"
+                    aria-label="Marcar como leída"
+                  >
+                    <Check className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
               </li>
             ))}
           </ul>

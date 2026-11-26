@@ -479,7 +479,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                       {p.prioridad_ID.name}
                     </span>
                   )}
-                  {days !== null && status !== 'Completado' && status !== 'Cancelado' && (
+                  {days !== null && estado.name !== 'Completado' && estado.name !== 'Cancelado' && (
                     <span className={cn('text-[9px] font-medium ml-auto',
                       od ? 'text-red-500' : days <= 3 ? 'text-amber-500' : 'text-muted-foreground',
                     )}>

@@ -9,12 +9,14 @@ export interface Role {
 export interface Direction {
   direccion_ID: string
   name: string
+  jefe?: string | null
 }
 
 export interface Department {
   departamentos_ID: string
   name: string
   direccion: Direction | string | null
+  jefe?: string | null
 }
 
 export interface User {

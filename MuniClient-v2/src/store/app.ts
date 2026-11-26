@@ -25,6 +25,9 @@ type DatosDeSesion = SessionUser & { csrf_token?: string }
 interface AppState {
   isDark: boolean
   user: SessionUser | null
+  // Tour pedido a mano desde Ayuda; el del primer ingreso lo decide useOnboardingTour.
+  tourForzado: boolean
+  setTourForzado: (v: boolean) => void
   toggleTheme: () => void
   initTheme: () => void
   iniciarSesion: (datos: DatosDeSesion) => void
@@ -42,6 +45,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       isDark: false,
       user: null,
+      tourForzado: false,
+      setTourForzado: v => set({ tourForzado: v }),
 
       toggleTheme: () => {
         const next = !get().isDark

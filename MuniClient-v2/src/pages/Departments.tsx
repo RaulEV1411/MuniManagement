@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Building2, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections,
+  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections, getUsers,
 } from '@/lib/api'
-import { type Department, type Direction } from '@/types'
+import { type Department, type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
@@ -93,11 +93,13 @@ function CreateModal({
 function DepartmentRow({
   dept,
   directions,
+  users,
   onSaved,
   onDeleted,
 }: {
   dept: Department
   directions: Direction[]
+  users: User[]
   onSaved: () => void
   onDeleted: () => void
 }) {
@@ -107,6 +109,9 @@ function DepartmentRow({
     typeof dept.direccion === 'string' ? dept.direccion : (dept.direccion as Direction | null)?.direccion_ID ?? ''
   )
   const [saving, setSaving]   = useState(false)
+  const [jefeId, setJefeId]   = useState(dept.jefe ?? '')
+  const jefe = users.find(u => u.user_ID === dept.jefe)
+  const nombreJefe = jefe ? `${jefe.first_name} ${jefe.last_name}` : '—'
 
   const dirName = directions.find(d => d.direccion_ID === dirId)?.name ?? '—'
 
@@ -115,7 +120,7 @@ function DepartmentRow({
     if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
     setSaving(true)
     try {
-      await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined })
+      await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined, jefe: jefeId || null })
       toast.success('Departamento actualizado')
       onSaved()
       setEditing(false)
@@ -129,6 +134,7 @@ function DepartmentRow({
   const handleCancel = () => {
     setName(dept.name)
     setDirId(typeof dept.direccion === 'string' ? dept.direccion : (dept.direccion as Direction | null)?.direccion_ID ?? '')
+    setJefeId(dept.jefe ?? '')
     setEditing(false)
   }
 
@@ -176,6 +182,16 @@ function DepartmentRow({
           <span className="text-sm text-muted-foreground">{dirName}</span>
         )}
       </td>
+      <td className="px-5 py-3.5 min-w-0">
+        {editing ? (
+          <select value={jefeId} onChange={e => setJefeId(e.target.value)} aria-label="Jefe" className="w-full px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">Sin jefe</option>
+            {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}{u.role?.name ? ` · ${u.role.name}` : ''}</option>)}
+          </select>
+        ) : (
+          <span className="text-sm text-muted-foreground">{nombreJefe}</span>
+        )}
+      </td>
       <td className="px-5 py-3.5 text-right">
         <div className="flex items-center justify-end gap-1.5">
           {editing ? (
@@ -220,6 +236,7 @@ export default function DepartmentsPage() {
     queryFn: getDepartments,
   })
 
+  const { data: users = [] } = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
   const { data: directions = [] } = useQuery<Direction[]>({
     queryKey: ['directions'],
     queryFn: getDirections,
@@ -279,6 +296,7 @@ export default function DepartmentsPage() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Dirección</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Jefe</th>
                   <th className="px-5 py-3 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -289,6 +307,7 @@ export default function DepartmentsPage() {
                       key={d.departamentos_ID}
                       dept={d}
                       directions={directions}
+                      users={users}
                       onSaved={invalidate}
                       onDeleted={invalidate}
                     />

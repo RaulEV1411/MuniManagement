@@ -79,7 +79,7 @@ export const updateUser      = (id: string, data: object) => api.patch(`/users/u
 export const deleteUser      = (id: string) => api.delete(`/users/users/${seg(id)}/`).then(r => r.data)
 export const enviarAcceso    = (id: string) => api.post(`/users/users/${seg(id)}/enviar-acceso/`).then(r => r.data)
 export const uploadUserPhoto = (id: string, file: File) => {
-  const fd = new FormData(); fd.append('photo', file)
+  const fd = new FormData(); fd.append('image', file)
   return api.post(`/users/upload-photo/${seg(id)}/`, fd).then(r => r.data)
 }
 export const getRoles        = ()           => api.get('/users/roles/').then(r => r.data)

@@ -22,7 +22,6 @@ import StatusStepper from '@/components/projects/StatusStepper'
 import BudgetSection from '@/components/projects/BudgetSection'
 import DelegacionPanel from '@/components/projects/DelegacionPanel'
 
-const ROLES_DELEGADORES = new Set(['Alcalde', 'Vicealcalde', 'Jefe de Dirección', 'Jefe de Departamento'])
 import {
   type Project, type Task, type TaskImage, type Feedback,
   type Estado, type Prioridad, type Department, type User as UserModel,
@@ -983,7 +982,8 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { user } = useAppStore()
-  const canDelegate = !!user?.role && ROLES_DELEGADORES.has(user.role)
+  // Lo decide el rol que manda el servidor (antes dejaba afuera al Administrador); el alcance lo valida el servidor.
+  const canDelegate = !!(user?.role_flags?.puede_ver_todo || user?.role_flags?.puede_delegar)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
   const [showTaskModal, setShowTaskModal]       = useState(false)
@@ -1565,8 +1565,21 @@ export default function ProjectDetailPage() {
                           const n = entry.datos_nuevos
                           if (a.name && n.name && a.name !== n.name) changes.push(`Nombre: "${a.name}" → "${n.name}"`)
                           if (a.fecha_entrega && n.fecha_entrega && a.fecha_entrega !== n.fecha_entrega) changes.push(`Entrega: ${formatDate(a.fecha_entrega)} → ${formatDate(n.fecha_entrega)}`)
-                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ₡${Number(a.costo).toLocaleString()} → ₡${Number(n.costo).toLocaleString()}`)
+                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ₡${Number(a.costo).toLocaleString('es-CR')} → ₡${Number(n.costo).toLocaleString('es-CR')}`)
+                          const nombreEstado = (id?: string) => estados.find(e => e.estado_ID === id)?.name ?? '—'
+                          if (a.estado_ID && n.estado_ID && a.estado_ID !== n.estado_ID) changes.push(`Estado: ${nombreEstado(a.estado_ID)} → ${nombreEstado(n.estado_ID)}`)
+                          const nombrePersona = (id?: string) => {
+                            const u = users.find(x => x.user_ID === id)
+                            return u ? `${u.first_name} ${u.last_name}` : (id ? 'otra persona' : 'sin asignar')
+                          }
+                          if (a.asignado_a !== undefined && a.asignado_a !== n.asignado_a) changes.push(`Responsable: ${nombrePersona(a.asignado_a)} → ${nombrePersona(n.asignado_a)}`)
                         }
+                        const nuevos = entry.datos_nuevos
+                        if (nuevos?.tipo && nuevos?.monto) {
+                          changes.push(`${nuevos.tipo === 'rebajo' ? 'Rebajo' : 'Aumento'} de ₡${Number(nuevos.monto).toLocaleString('es-CR')}`)
+                        }
+                        if (entry.tipo === 'creacion' && nuevos?.name) changes.push(`«${nuevos.name}»`)
+                        if (entry.tipo === 'eliminacion' && entry.datos_anteriores?.name) changes.push(`«${entry.datos_anteriores.name}»`)
                         return (
                           <div key={entry.historial_ID} className="flex items-start gap-3 bg-card border border-border rounded-xl px-4 py-3">
                             <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 flex items-center justify-center flex-shrink-0">
