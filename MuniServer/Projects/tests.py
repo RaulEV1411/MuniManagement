@@ -6,9 +6,9 @@ from Projects.models import AjustePresupuesto, DelegacionSupervision, Estado, Pr
 
 class CatalogosTests(Escenario, APITestCase):
     def test_solo_el_administrador_modifica_catalogos(self):
-        for url, datos in [('/projects/estados/', {'name': 'Nuevo', 'color': '#000000'}),
-                           ('/projects/prioridades/', {'name': 'Nueva', 'color': '#000000'}),
-                           ('/projects/tipos/', {'name': 'Vial'})]:
+        for url, datos in [('/api/v1/projects/estados/', {'name': 'Nuevo', 'color': '#000000'}),
+                           ('/api/v1/projects/prioridades/', {'name': 'Nueva', 'color': '#000000'}),
+                           ('/api/v1/projects/tipos/', {'name': 'Vial'})]:
             self.assertEqual(self.como(self.alcalde).post(url, datos, format='json').status_code, 403, url)
             self.assertEqual(self.como(self.admin).post(url, datos, format='json').status_code, 201, url)
 
@@ -16,27 +16,27 @@ class CatalogosTests(Escenario, APITestCase):
         propio = Estado.objects.create(name='En licitación')
         self.proyecto.estado_ID = propio
         self.proyecto.save()
-        self.assertEqual(self.como(self.admin).delete(f'/projects/estados/{propio.pk}/').status_code, 409)
+        self.assertEqual(self.como(self.admin).delete(f'/api/v1/projects/estados/{propio.pk}/').status_code, 409)
 
 
 class ProyectosTests(Escenario, APITestCase):
     def test_proyectos_write_solo_lista_lo_visible(self):
-        r = self.como(self.ajeno).get('/projects/proyectosWrite/')
+        r = self.como(self.ajeno).get('/api/v1/projects/proyectosWrite/')
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(str(self.proyecto.proyect_ID), self.ids(r, 'proyect_ID'))
-        self.assertIn(str(self.proyecto.proyect_ID), self.ids(self.como(self.dueno).get('/projects/proyectosWrite/'), 'proyect_ID'))
+        self.assertIn(str(self.proyecto.proyect_ID), self.ids(self.como(self.dueno).get('/api/v1/projects/proyectosWrite/'), 'proyect_ID'))
 
     def test_tipos_de_proyecto_solo_con_permiso_de_edicion(self):
         tipo = Tipos.objects.create(name='Vial')
         datos = {'proyecto': str(self.proyecto.proyect_ID), 'tipo': str(tipo.pk)}
-        self.assertEqual(self.como(self.ajeno).post('/projects/proyectos-tipos/', datos, format='json').status_code, 403)
-        self.assertEqual(self.como(self.dueno).post('/projects/proyectos-tipos/', datos, format='json').status_code, 201)
-        self.assertEqual(self.como(self.admin).delete(f'/projects/tipos/{tipo.pk}/').status_code, 409)
+        self.assertEqual(self.como(self.ajeno).post('/api/v1/projects/proyectos-tipos/', datos, format='json').status_code, 403)
+        self.assertEqual(self.como(self.dueno).post('/api/v1/projects/proyectos-tipos/', datos, format='json').status_code, 201)
+        self.assertEqual(self.como(self.admin).delete(f'/api/v1/projects/tipos/{tipo.pk}/').status_code, 409)
         self.assertEqual(Proyectos_tipos.objects.count(), 1)
 
 
 class DelegacionTests(Escenario, APITestCase):
-    URL = '/projects/delegaciones/'
+    URL = '/api/v1/projects/delegaciones/'
 
     def datos(self, supervisor):
         return {'proyecto': str(self.proyecto.proyect_ID), 'supervisor': str(supervisor.user_ID)}
@@ -62,7 +62,7 @@ class DelegacionTests(Escenario, APITestCase):
 
 class AjustesTests(Escenario, APITestCase):
     def test_aprobado_por_no_lo_pone_el_usuario(self):
-        r = self.como(self.dueno).post('/projects/ajustes-presupuesto/', {
+        r = self.como(self.dueno).post('/api/v1/projects/ajustes-presupuesto/', {
             'proyecto': str(self.proyecto.proyect_ID), 'tipo': 'aumento', 'monto': 500,
             'motivo': 'Materiales', 'aprobado_por': str(self.alcalde.user_ID),
         }, format='json')
@@ -71,4 +71,4 @@ class AjustesTests(Escenario, APITestCase):
 
     def test_quien_no_ve_el_proyecto_no_ve_sus_ajustes(self):
         AjustePresupuesto.objects.create(proyecto=self.proyecto, tipo='aumento', monto=1, motivo='x', usuario=self.dueno)
-        self.assertEqual(self.ids(self.como(self.ajeno).get('/projects/ajustes-presupuesto/'), 'ajuste_ID'), set())
+        self.assertEqual(self.ids(self.como(self.ajeno).get('/api/v1/projects/ajustes-presupuesto/'), 'ajuste_ID'), set())

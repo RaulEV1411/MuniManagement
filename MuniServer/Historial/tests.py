@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 from Historial.models import HistorialCambios
 from MuniServer.pruebas import Escenario
 
-URL = '/historial/cambios/'
+URL = '/api/v1/historial/cambios/'
 
 
 class HistorialTests(Escenario, APITestCase):

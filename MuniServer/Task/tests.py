@@ -7,7 +7,7 @@ from MuniServer.pruebas import Escenario, crear_proyecto
 from Projects.models import Estado
 from Task.models import TaskImage
 
-URL = '/task/tareas/'
+URL = '/api/v1/task/tareas/'
 
 
 class TareasPermisosTests(Escenario, APITestCase):
@@ -59,7 +59,7 @@ class TareasPermisosTests(Escenario, APITestCase):
 
 
 class ImagenesDeTareasTests(Escenario, APITestCase):
-    URL = '/task/task-images/'
+    URL = '/api/v1/task/task-images/'
 
     def setUp(self):
         super().setUp()
