@@ -53,10 +53,16 @@ cd MuniServer
 python -m venv ../.venv && ../.venv/bin/pip install -r requirements.txt
 DJANGO_SETTINGS_MODULE=MuniServer.settings_test ../.venv/bin/python manage.py test
 
-# Frontend
+# Frontend: linter, pruebas unitarias (Vitest) y build
 cd MuniClient-v2
-npm run build && npm run lint
+npm run lint && npm test && npm run build
+
+# Punta a punta (Playwright): levanta solo Django con datos de ejemplo y el front
+cd MuniClient-v2
+PYTHON=../.venv/bin/python npm run e2e
 ```
+
+El CI de GitHub Actions (`.github/workflows/ci.yml`) corre todo esto en cada PR y además construye las imágenes de Docker.
 
 ## Producción
 

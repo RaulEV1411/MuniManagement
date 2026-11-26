@@ -27,6 +27,11 @@ from .autenticacion import (
 DEMASIADOS_INTENTOS = {'error': 'Demasiados intentos. Espere un minuto e inténtelo de nuevo.'}
 
 
+def _limite(nombre):
+    """La tasa sale de settings, para poder ajustarla por instalación (y subirla en las pruebas e2e)."""
+    return lambda group, request: getattr(django_settings, nombre)
+
+
 def _clave_email(group, request):
     return str(request.data.get('email', '')).strip().lower()
 
@@ -91,8 +96,8 @@ class UsersViewSet(ModelViewSet):
 
 # Por correo, para frenar a quien prueba claves de una cuenta; por IP, más alto, porque
 # toda una oficina municipal suele salir a internet con la misma IP.
-@method_decorator(ratelimit(key='ip', rate='30/m', method='POST', block=False), name='post')
-@method_decorator(ratelimit(key=_clave_email, rate='5/m', method='POST', block=False), name='post')
+@method_decorator(ratelimit(key='ip', rate=_limite('LOGIN_LIMITE_POR_IP'), method='POST', block=False), name='post')
+@method_decorator(ratelimit(key=_clave_email, rate=_limite('LOGIN_LIMITE_POR_CORREO'), method='POST', block=False), name='post')
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []

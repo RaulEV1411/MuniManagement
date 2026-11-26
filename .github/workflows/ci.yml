@@ -1,0 +1,105 @@
+# Corre en cada PR y en cada push a main. Las acciones van fijadas por SHA (el tag al lado):
+# un tag se puede mover, un SHA no.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Django)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MuniServer
+    env:
+      DJANGO_SETTINGS_MODULE: MuniServer.settings_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: MuniServer/requirements.txt
+      - run: pip install --require-hashes -r requirements.txt
+      - name: Migraciones al día
+        run: python manage.py makemigrations --check --dry-run
+      - name: Pruebas
+        run: python manage.py test
+
+  frontend:
+    name: Frontend (lint, unitarias y build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MuniClient-v2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: MuniClient-v2/.nvmrc
+          cache: npm
+          cache-dependency-path: MuniClient-v2/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: Punta a punta (Playwright)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MuniClient-v2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: MuniServer/requirements.txt
+      - run: pip install --require-hashes -r ../MuniServer/requirements.txt
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: MuniClient-v2/.nvmrc
+          cache: npm
+          cache-dependency-path: MuniClient-v2/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Pruebas e2e
+        run: npx playwright test
+        env:
+          PYTHON: python
+      - name: Reporte si falló
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reporte-playwright
+          path: |
+            MuniClient-v2/playwright-report/
+            MuniClient-v2/test-results/
+          retention-days: 7
+
+  docker:
+    name: Imágenes de Docker
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Variables de prueba para el compose
+        run: |
+          printf 'DOMINIO=localhost\nSECRET_KEY=solo-ci\nDB_PASSWORD=solo-ci\nDB_ROOT_PASSWORD=solo-ci\n' > .env
+      - name: El compose de producción es válido
+        run: docker compose config --quiet && docker compose -f docker-compose.dev.yaml config --quiet
+      - name: Construir las imágenes
+        run: docker compose build api web
