@@ -1,0 +1,93 @@
+.standard_container {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: url('/src/assets/Fondo_Prueba_1.png') no-repeat center center fixed;
+    background-size: cover;  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+.standard_input {
+    border: none;
+    background: transparent;
+    font-size: 17px;
+    color: #333;
+    width: 100%;
+    outline: none;
+}
+
+.standard_input_label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background-color: #f5f5f5;
+    padding: 0 5px;
+    font-size: 12px;
+    color: #0C3857;
+}
+
+.standard_input_container {
+    position: relative;
+    width: 200px;
+    height: 45px;
+    background-color: #f5f5f5;
+    border-radius: 25px;
+    border: 2px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.standard_title {
+    color: #ffffff;
+}
+
+.standard_div_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    border-radius: 25px;
+    background-color: #dee1e3;
+    width: 70%;
+    height: 590px;
+}
+
+.standard_form_container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 25px;
+}
+
+.roles_list_container {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.role_card {
+    color: black;
+    background-color: white;
+    border-radius: 5px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    width: 80%; /* Ancho completo */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+    font-size: 16px; /* Tamaño de fuente */
+    margin-left: 12%;
+}
+
+/* Media queries */
+@media (max-width: 600px) {
+    .standard_div_container {
+        width: 90%; /* Ajuste en pantallas pequeñas */
+    }
+}
+
