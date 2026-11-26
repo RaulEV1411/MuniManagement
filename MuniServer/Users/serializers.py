@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, ValidationError
+from rest_framework.serializers import ModelSerializer, SerializerMethodField, ValidationError
 from django.contrib.auth.hashers import make_password
 
 from Projects import catalogo_permisos as cat
@@ -46,6 +46,12 @@ class RolYDepartamentoAnidados:
 
 
 class UsersSerializer(RolYDepartamentoAnidados, ModelSerializer):
+    # La anota UsersViewSet: la última actividad de sus sesiones.
+    ultima_conexion = SerializerMethodField()
+
+    def get_ultima_conexion(self, obj):
+        valor = getattr(obj, 'ultima_conexion', None)
+        return valor.isoformat() if valor else None
 
     def create(self, validated_data):
         # La cuenta nace sin contraseña usable: la persona la define con el enlace del correo.
@@ -56,7 +62,7 @@ class UsersSerializer(RolYDepartamentoAnidados, ModelSerializer):
 
     class Meta:
         model = Users
-        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado','is_active']
+        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado','is_active','ultima_conexion']
         read_only_fields = ['user_ID']
 
 class UsuarioResumenSerializer(ModelSerializer):

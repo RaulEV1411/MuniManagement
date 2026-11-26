@@ -6,6 +6,7 @@
 - Se sigue aceptando "Authorization: Bearer" para scripts y pruebas.
 """
 from django.conf import settings
+from Auditoria import sesiones
 from Projects import authz
 from django.middleware.csrf import get_token
 from rest_framework import exceptions
@@ -19,6 +20,15 @@ RUTA_REFRESH = '/api/v1/users/'
 
 class JWTCookieAuthentication(JWTAuthentication):
     def authenticate(self, request):
+        resultado = self._autenticar(request)
+        if resultado is not None:
+            # Una sesión cerrada (a distancia, por baja o por cambio de clave) corta el acceso ya.
+            sid = resultado[1].get('sid')
+            if sid and not sesiones.seguir_activa(sid):
+                raise exceptions.AuthenticationFailed('La sesión se cerró. Inicie sesión de nuevo.', code='sesion_cerrada')
+        return resultado
+
+    def _autenticar(self, request):
         if self.get_header(request) is not None:
             return super().authenticate(request)
         crudo = request.COOKIES.get(ACCESS)

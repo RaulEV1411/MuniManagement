@@ -21,6 +21,7 @@ api_v1 = [
     path('notifications/', include('Notifications.urls')),
     path('public/', include('Projects.public_urls')),
     path('configuracion/', include('Configuracion.urls')),
+    path('auditoria/', include('Auditoria.urls')),
 ]
 
 urlpatterns = [

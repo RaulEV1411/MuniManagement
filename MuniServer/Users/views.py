@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -20,6 +20,8 @@ from Projects import catalogo_permisos as cat
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from MuniServer.subidas import borrar_imagen_por_url, error_de_imagen, subir_imagen
 from .acceso import encolar_correo_de_acceso, revocar_sesiones, usuario_del_enlace
+from Auditoria import contexto as auditoria_contexto, servicios as auditoria, sesiones
+from Auditoria.models import SesionUsuario
 from django.conf import settings as django_settings
 from rest_framework import exceptions
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -108,7 +110,11 @@ class UsersViewSet(ModelViewSet):
         user = self.request.user
         # Pedir también a los dados de baja: quien gestiona usuarios o equipos (antes: alcaldía y jefaturas).
         gestiona = authz.puede(user, 'usuarios.gestionar') or authz.puede(user, 'equipo.gestionar')
-        qs = authz.usuarios_visibles(user).select_related('role', 'departamento_ID')
+        qs = authz.usuarios_visibles(user).select_related('role', 'departamento_ID').annotate(
+            ultima_conexion=Subquery(
+                SesionUsuario.objects.filter(usuario=OuterRef('pk')).order_by('-ultima_actividad').values('ultima_actividad')[:1]
+            ),
+        )
         # Los dados de baja no aparecen en las listas; la alcaldía y los jefes pueden pedirlos.
         if self.action == 'list':
             p = self.request.query_params
@@ -174,7 +180,7 @@ class UsersViewSet(ModelViewSet):
         # Dar de baja en lugar de borrar: conserva sus proyectos, ajustes e historial.
         instance.is_active = False
         instance.save(update_fields=['is_active'])
-        revocar_sesiones(instance)
+        revocar_sesiones(instance, 'baja')
 
     @action(detail=True, methods=['post'], url_path='enviar-acceso')
     def enviar_acceso(self, request, pk=None):
@@ -185,7 +191,19 @@ class UsersViewSet(ModelViewSet):
         if not user.is_active:
             return Response({'error': 'El usuario está dado de baja.'}, status=400)
         encolar_correo_de_acceso(user, 'recuperacion')
+        auditoria.registrar('usuarios', 'enviar_acceso', objeto=user)
         return Response({'ok': True})
+
+
+def _fallo_de_inicio(email, motivo):
+    """El correo se anota solo si es de una cuenta: a veces se escribe la clave en el campo del correo."""
+    cuenta = Users.objects.filter(email__iexact=email).first() if email else None
+    if cuenta is not None and not cuenta.is_active and motivo == 'Credenciales incorrectas':
+        motivo = 'La cuenta está dada de baja'
+    auditoria.registrar(
+        'sesion', 'fallo_inicio', objeto=cuenta, usuario_email=cuenta.email if cuenta else '',
+        resultado='fallo', motivo=motivo if cuenta else f'{motivo} (correo no registrado)',
+    )
 
 
 # Por correo, para frenar a quien prueba claves de una cuenta; por IP, más alto, porque
@@ -197,15 +215,22 @@ class LoginView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        email = str(request.data.get('email') or '').strip()
         if getattr(request, 'limited', False):
+            _fallo_de_inicio(email, 'Demasiados intentos: bloqueado por un minuto')
             return Response(DEMASIADOS_INTENTOS, status=429)
-        email = request.data.get('email')
         password = request.data.get('password')
         user = authenticate(username=email, password=password)
         if user is None:
+            _fallo_de_inicio(email, 'Credenciales incorrectas')
             return Response({'error': 'Credenciales incorrectas'}, status=400)
+        auditoria_contexto.fijar_usuario(user)
+        sesion = sesiones.abrir(user, request)
+        refresh = RefreshToken.for_user(user)
+        refresh['sid'] = str(sesion.pk)
+        auditoria.registrar('sesion', 'iniciar_sesion', objeto=user, sesion=sesion.pk)
         respuesta = Response(datos_de_sesion(request, user))
-        fijar_cookies_de_sesion(respuesta, RefreshToken.for_user(user))
+        fijar_cookies_de_sesion(respuesta, refresh)
         return respuesta
 
 
@@ -225,9 +250,10 @@ class DefinirClaveView(APIView):
         error = _errores_de_clave(password, user)
         if error:
             return Response({'error': error}, status=400)
+        auditoria_contexto.fijar_usuario(user)
         user.set_password(password)
         user.save(update_fields=['password'])
-        revocar_sesiones(user)
+        revocar_sesiones(user, 'clave')
         return Response({'ok': True})
 
 
@@ -257,9 +283,14 @@ class LogoutView(APIView):
         crudo = request.COOKIES.get(REFRESH) or request.data.get('refresh')
         if crudo:
             try:
-                RefreshToken(crudo).blacklist()
+                token = RefreshToken(crudo)
+                token.blacklist()
             except TokenError:
-                pass
+                token = None
+            if token is not None and token.get('sid'):
+                if sesiones.cerrar(token['sid'], 'cierre'):
+                    persona = Users.objects.filter(pk=token.get('user_ID')).first()
+                    auditoria.registrar('sesion', 'cerrar_sesion', objeto=persona, usuario=persona, sesion=token['sid'])
         respuesta = Response({'ok': True})
         borrar_cookies_de_sesion(respuesta)
         return respuesta
@@ -338,6 +369,9 @@ class RenovarSesionView(APIView):
         crudo = request.COOKIES.get(REFRESH) or request.data.get('refresh')
         serializer = TokenRefreshSerializer(data={'refresh': crudo or ''})
         try:
+            sid = RefreshToken(crudo).get('sid') if crudo else None
+            if sid and not sesiones.esta_abierta(sid):
+                raise exceptions.AuthenticationFailed('La sesión se cerró.')
             serializer.is_valid(raise_exception=True)
         except (TokenError, exceptions.ValidationError, exceptions.AuthenticationFailed):
             # Vencida, revocada, de un usuario dado de baja o ausente: hay que volver a entrar.

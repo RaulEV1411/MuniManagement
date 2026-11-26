@@ -1,4 +1,4 @@
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
 COLOR = RegexValidator(r'^#[0-9a-fA-F]{6}$', 'Use un color en formato #RRGGBB.')
@@ -17,6 +17,10 @@ class Configuracion(models.Model):
     telefono_soporte = models.CharField(max_length=40, blank=True, default='')
     horario_soporte = models.CharField(max_length=80, blank=True, default='')
     moneda = models.CharField(max_length=3, default='CRC', validators=[MONEDA])
+    # Cuánto se conservan los registros de auditoría y las sesiones cerradas (de 6 meses a 10 años).
+    retencion_auditoria_dias = models.PositiveIntegerField(
+        default=1825, validators=[MinValueValidator(180), MaxValueValidator(3650)],
+    )
     actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:

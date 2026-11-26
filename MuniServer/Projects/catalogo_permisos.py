@@ -29,6 +29,7 @@ MODULOS = {
     'configuracion': 'Configuración de la institución',
     'roles': 'Roles y permisos',
     'reportes': 'Reportes',
+    'auditoria': 'Auditoría',
 }
 
 # codigo: (etiqueta, admite alcance, vale dentro de un rol de proyecto)
@@ -50,6 +51,7 @@ PERMISOS = {
     'configuracion.gestionar': ('Editar los datos de la institución', False, False),
     'roles.gestionar': ('Editar roles y permisos', False, False),
     'reportes.exportar': ('Exportar reportes', True, True),
+    'auditoria.ver': ('Ver la auditoría y la actividad de todas las personas', False, False),
 }
 
 

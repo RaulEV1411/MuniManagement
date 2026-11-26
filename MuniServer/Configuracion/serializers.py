@@ -21,7 +21,7 @@ class ConfiguracionSerializer(serializers.ModelSerializer):
         model = Configuracion
         fields = [
             'nombre', 'ubicacion', 'logo', 'color_primario', 'color_acento',
-            'correo_soporte', 'telefono_soporte', 'horario_soporte', 'moneda', 'actualizado',
+            'correo_soporte', 'telefono_soporte', 'horario_soporte', 'moneda', 'retencion_auditoria_dias', 'actualizado',
         ]
         read_only_fields = ['logo', 'actualizado']
 
