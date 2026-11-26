@@ -35,7 +35,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
     })
 
     test('páginas públicas', async ({ page }) => {
-      for (const ruta of ['/login', '/olvide-clave', '/publico', '/accesibilidad']) {
+      for (const ruta of ['/login', '/login?sesion=terminada', '/olvide-clave', '/publico', '/accesibilidad']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
       }
@@ -52,7 +52,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
         await page.getByRole('button', { name: vista }).click()
         await sinFallos(page, `proyectos · ${vista}`)
       }
-      for (const ruta of ['/projects/new', '/users', '/users/new', '/directions', '/departments', '/timeline', '/reports', '/ayuda']) {
+      for (const ruta of ['/projects/new', '/users', '/users/new', '/directions', '/departments', '/timeline', '/reports', '/ayuda', '/auditoria']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
       }
@@ -61,6 +61,9 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await sinFallos(page, 'usuarios · cuadrícula')
       await page.getByRole('link', { name: 'Beto Prueba' }).click()
       await sinFallos(page, 'perfil')
+      await page.getByRole('tab', { name: 'Actividad' }).click()
+      await expect(page.getByRole('heading', { name: 'Sesiones' })).toBeVisible()
+      await sinFallos(page, 'perfil · actividad')
 
       await page.goto('/config')
       for (const pestana of ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Roles y permisos']) {
@@ -170,7 +173,7 @@ test.describe('en el celular', () => {
     await page.waitForURL('**/users')
     await expect(menu).toHaveCount(0)
 
-    for (const ruta of ['/dashboard', '/users', '/reports', '/timeline', '/config']) {
+    for (const ruta of ['/dashboard', '/users', '/reports', '/timeline', '/config', '/auditoria']) {
       await page.goto(ruta)
       await sinFallos(page, `celular · ${ruta}`)
       const ancho = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)

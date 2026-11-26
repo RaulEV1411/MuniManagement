@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import type {
-  AjustePresupuesto, CatalogoPermisos, Feedback, MiembroProyecto, Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User,
+  ActividadUsuario, AjustePresupuesto, CatalogoAuditoria, CatalogoPermisos, Feedback, MiembroProyecto, RegistroAuditoria, ResumenAuditoria,
+  Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User, VerificacionAuditoria,
 } from '@/types'
 import type { Marca } from './marca'
 
@@ -25,6 +26,7 @@ export function seg(valor: string): string {
 }
 
 let renovando: Promise<void> | null = null
+let redirigiendo = false
 const renovarSesion = () => {
   renovando ??= axios
     .post(`${BASE_URL}/users/token/refresh/`, null, { withCredentials: true })
@@ -50,8 +52,14 @@ api.interceptors.response.use(
       await renovarSesion()
       return api(original)
     } catch (refreshErr) {
+      // El aviso «su sesión terminó» solo si había una abierta (el token CSRF llega con la sesión);
+      // no al entrar sin sesión ni después de cerrarla uno mismo. Si fallan varias peticiones a la
+      // vez, decide la primera.
+      if (!redirigiendo && window.location.pathname !== '/login') {
+        redirigiendo = true
+        window.location.href = csrfToken !== null ? '/login?sesion=terminada' : '/login'
+      }
       setCsrfToken(null)
-      if (window.location.pathname !== '/login') window.location.href = '/login'
       return Promise.reject(refreshErr)
     }
   },
@@ -239,6 +247,26 @@ export interface ResumenProyectos {
 }
 
 // ── Institución ───────────────────────────────────────────────
+// ── Auditoría ────────────────────────────────────────────────
+export const getRegistrosAuditoria = (params: Filtros) =>
+  api.get<Pagina<RegistroAuditoria>>('/auditoria/registros/', { params }).then(r => r.data)
+export const getCatalogoAuditoria = () => api.get<CatalogoAuditoria>('/auditoria/catalogo/').then(r => r.data)
+export const getResumenAuditoria = () => api.get<ResumenAuditoria>('/auditoria/resumen/').then(r => r.data)
+export const verificarAuditoria = () => api.get<VerificacionAuditoria>('/auditoria/verificar/').then(r => r.data)
+export const getActividad = (userId: string) =>
+  api.get<ActividadUsuario>(`/auditoria/actividad/${seg(userId)}/`).then(r => r.data)
+export const cerrarSesionRemota = (sesionId: string) =>
+  api.post(`/auditoria/sesiones/${seg(sesionId)}/cerrar/`).then(r => r.data)
+/** Los reportes se arman en el navegador: se avisa al servidor para que quede en la auditoría. */
+export const registrarExportacion = (datos: { formato: 'xlsx' | 'pdf'; cantidad: number; filtros: Record<string, string> }) =>
+  api.post('/auditoria/exportaciones/', datos).then(r => r.data)
+/** URL de descarga con los filtros: el navegador la baja con las cookies de la sesión. */
+export function urlExportarAuditoria(formato: 'csv' | 'json', filtros: Filtros): string {
+  const params = new URLSearchParams({ formato })
+  for (const [k, v] of Object.entries(filtros)) if (v !== undefined && v !== '' && k !== 'page') params.set(k, String(v))
+  return `${BASE_URL}/auditoria/registros/exportar/?${params}`
+}
+
 export const getConfiguracion = () => api.get<Marca>('/configuracion/').then(r => r.data)
 export const updateConfiguracion = (datos: Partial<Marca>) => api.patch<Marca>('/configuracion/', datos).then(r => r.data)
 export const subirLogo = (archivo: File) => {

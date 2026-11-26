@@ -19,6 +19,7 @@ import AyudaPage from '@/pages/Ayuda'
 import OlvideClavePage from '@/pages/OlvideClave'
 import DefinirClavePage from '@/pages/DefinirClave'
 import AccesibilidadPage from '@/pages/Accesibilidad'
+import AuditoriaPage from '@/pages/Auditoria'
 
 export const router = createBrowserRouter([
   { path: '/',      element: <Navigate to="/login" replace /> },
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
         { path: '/directions',        element: <DirectionsPage /> },
         { path: '/departments',       element: <DepartmentsPage /> },
         { path: '/config',            element: <ConfigPage /> },
+        { path: '/auditoria',         element: <AuditoriaPage /> },
         { path: '/timeline',          element: <TimelinePage /> },
         { path: '/reports',           element: <ReportsPage /> },
         { path: '/ayuda',             element: <AyudaPage /> },

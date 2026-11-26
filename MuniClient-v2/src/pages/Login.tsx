@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -24,6 +24,7 @@ export default function LoginPage() {
   const marca = useMarca()
   const [showPass, setShowPass] = useState(false)
   const navigate = useNavigate()
+  const sesionTerminada = useSearchParams()[0].get('sesion') === 'terminada'
   const { iniciarSesion, isDark, toggleTheme } = useAppStore()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
@@ -136,6 +137,11 @@ export default function LoginPage() {
 
           <h2 className="text-2xl font-bold text-foreground mb-1">Le damos la bienvenida</h2>
           <p className="text-sm text-muted-foreground mb-8">Ingrese su correo y su contraseña para continuar.</p>
+          {sesionTerminada && (
+            <p role="status" className="-mt-4 mb-6 text-sm rounded-xl border border-sunset-200 bg-sunset-50 text-sunset-900 dark:bg-sunset-500/10 dark:border-sunset-500/30 dark:text-sunset-100 px-3 py-2">
+              Su sesión terminó: venció o se cerró desde otro lugar. Inicie sesión de nuevo para continuar.
+            </p>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>

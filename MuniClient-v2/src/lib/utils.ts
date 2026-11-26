@@ -11,6 +11,24 @@ export function formatDate(dateStr: string | null | undefined): string {
   return `${d}/${m}/${y}`
 }
 
+/** «26/11/2026, 14:05» en la hora local, para fechas con hora (auditoría, sesiones). */
+export function formatearFechaHora(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return iso
+  return new Intl.DateTimeFormat('es-CR', { dateStyle: 'short', timeStyle: 'short' }).format(fecha)
+}
+
+/** «2 h 15 min», «5 min» o «menos de 1 min». */
+export function formatearDuracion(segundos: number): string {
+  const minutos = Math.floor(segundos / 60)
+  if (minutos < 1) return 'menos de 1 min'
+  const horas = Math.floor(minutos / 60)
+  const resto = minutos % 60
+  if (!horas) return `${minutos} min`
+  return resto ? `${horas} h ${resto} min` : `${horas} h`
+}
+
 /** «15 de noviembre de 2026»: para el portal, que lee la ciudadanía. */
 export function formatearFechaLarga(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'

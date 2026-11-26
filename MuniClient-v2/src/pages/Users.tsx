@@ -6,9 +6,9 @@ import {
   Users, Search, LayoutList, LayoutGrid, RefreshCw,
   Plus, X, ChevronDown,
 } from 'lucide-react'
-import { getUsuariosPagina, getDepartments, getRoles } from '@/lib/api'
+import { getUsuariosPagina, getDepartments, getRoles, getResumenAuditoria } from '@/lib/api'
 import { type User, type Department, type Role } from '@/types'
-import { cn, getInitials, fullName } from '@/lib/utils'
+import { cn, getInitials, fullName, formatearFechaHora } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { useTituloDePagina } from '@/hooks/useMarca'
@@ -71,8 +71,13 @@ function UserListRow({ user }: { user: User }) {
         </p>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
       </div>
-      <div className="hidden md:block flex-shrink-0 min-w-0 max-w-40">
+      <div className="hidden md:block flex-shrink-0 min-w-0 max-w-56 text-right">
         <p className="text-xs text-muted-foreground truncate">{user.departamento_ID?.name ?? '—'}</p>
+        {user.ultima_conexion !== undefined && (
+          <p className="text-[11px] text-muted-foreground truncate">
+            {user.ultima_conexion ? `Conectado: ${formatearFechaHora(user.ultima_conexion)}` : 'Sin conexiones'}
+          </p>
+        )}
       </div>
       {user.role?.name && (
         <span className={cn(
@@ -119,6 +124,12 @@ function UserGridCard({ user }: { user: User }) {
 
 export default function UsersPage() {
   const puedeCrear = usePermiso('usuarios.gestionar')
+  const veAuditoria = usePermiso('auditoria.ver')
+  const { data: resumen } = useQuery({ queryKey: ['auditoria-resumen'], queryFn: getResumenAuditoria, enabled: veAuditoria })
+  const avisos = resumen ? [
+    resumen.con_intentos_fallidos.length && `${resumen.con_intentos_fallidos.length} con ${resumen.umbral_fallidos} o más intentos fallidos de inicio en 24 h`,
+    resumen.total_inactivas && `${resumen.total_inactivas} sin conectarse en ${resumen.dias_inactiva} días`,
+  ].filter(Boolean) : []
   useTituloDePagina('Usuarios')
   const navigate = useNavigate()
   const [search, setSearch]   = useState('')
@@ -263,6 +274,12 @@ export default function UsersPage() {
 
       {/* ── Contenido ── */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+        {avisos.length > 0 && (
+          <p role="status" className="mb-3 text-xs rounded-xl border border-sunset-200 bg-sunset-50 text-sunset-900 dark:bg-sunset-500/10 dark:border-sunset-500/30 dark:text-sunset-100 px-3 py-2">
+            Cuentas para revisar: {avisos.join(' · ')}.{' '}
+            <Link to="/auditoria" className="font-semibold underline">Ver en Auditoría</Link>
+          </p>
+        )}
         {isLoading ? (
           <div className={view === 'grid'
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3'

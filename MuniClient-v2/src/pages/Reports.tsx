@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileDown, FileSpreadsheet, Search, ChevronDown } from 'lucide-react'
-import { getProjects, getDepartments, getEstados } from '@/lib/api'
+import { getProjects, getDepartments, getEstados, registrarExportacion } from '@/lib/api'
 import { type Project, type Department, type Estado } from '@/types'
 import { cn, formatDate, isOverdue } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -48,7 +48,7 @@ export default function ReportsPage() {
 
   const totalCost = filtered.reduce((sum, p) => sum + costoTotal(p), 0)
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     try {
       const doc = new jsPDF()
 
@@ -89,6 +89,7 @@ export default function ReportsPage() {
         columnStyles: { 0: { cellWidth: 8 }, 6: { halign: 'right' } },
       })
 
+      await anotarExportacion('pdf')
       doc.save(`proyectos_${new Date().toISOString().slice(0, 10)}.pdf`)
       toast.success('PDF exportado correctamente')
     } catch (err) {
@@ -112,6 +113,7 @@ export default function ReportsPage() {
         costoTotal(p),
       ])
 
+      await anotarExportacion('xlsx')
       await writeExcelFile([encabezados, ...filas], {
         sheet: 'Proyectos',
         columns: [4, 35, 22, 14, 10, 25, 14, 14, 16].map(width => ({ width })),
@@ -121,6 +123,17 @@ export default function ReportsPage() {
       toast.error(mensajeDeError(err, 'Error al exportar Excel'))
     }
   }
+
+  // El reporte se arma acá, pero el servidor autoriza la exportación y la deja en la auditoría.
+  const anotarExportacion = (formato: 'xlsx' | 'pdf') => registrarExportacion({
+    formato,
+    cantidad: filtered.length,
+    filtros: {
+      busqueda: search,
+      departamento: departments.find(d => d.departamentos_ID === deptFilter)?.name ?? '',
+      estado: statusFilter,
+    },
+  })
 
   const selectCls = 'pl-2.5 pr-7 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring'
 
