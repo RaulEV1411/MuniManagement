@@ -49,7 +49,8 @@ La API aplica las migraciones al arrancar. **Antes de actualizar, conviene un re
 ## Respaldos
 
 - El servicio `respaldo` deja un archivo `muni-AAAA-MM-DD-HHMM.sql.gz` por día en `./respaldos` y borra los de más de `RESPALDO_DIAS` días (14 por defecto).
-- **Copie esa carpeta fuera del servidor**, por ejemplo con `rsync` a otro equipo o a un almacenamiento de la municipalidad. Un respaldo que vive en el mismo disco no sirve si el disco falla.
+- Los archivos se crean con permiso 600 y la carpeta con 700: solo los lee el usuario dueño, porque tienen datos personales.
+- **Copie esa carpeta fuera del servidor**, por ejemplo con `rsync` a otro equipo o a un almacenamiento de la municipalidad. Un respaldo que vive en el mismo disco no sirve si el disco falla. Si la copia sale de la red municipal, cífrela antes, por ejemplo con `age` o `gpg`.
 - Respaldo manual en cualquier momento:
   ```bash
   docker compose restart respaldo

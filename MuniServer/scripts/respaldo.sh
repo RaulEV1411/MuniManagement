@@ -2,6 +2,9 @@
 # Respaldo de la base: uno al arrancar y después cada 24 horas, en /respaldos (carpeta
 # ./respaldos del servidor). Se conservan los últimos RESPALDO_DIAS días (14 por defecto).
 set -uo pipefail
+# Los respaldos tienen datos personales (Ley 8968): solo los puede leer el dueño.
+umask 077
+chmod 700 /respaldos 2>/dev/null || echo "Aviso: no se pudo restringir /respaldos a 700" >&2
 DIAS="${RESPALDO_DIAS:-14}"
 CONF=$(mktemp)
 chmod 600 "$CONF"
