@@ -15,7 +15,7 @@
     --secondary: 210 20% 96%;
     --secondary-foreground: 215 28% 17%;
     --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 16% 42%;
     --accent: 210 20% 94%;
     --accent-foreground: 215 28% 17%;
     --destructive: 0 84% 60%;
@@ -60,7 +60,7 @@
     --secondary: 220 16% 15%;
     --secondary-foreground: 210 20% 94%;
     --muted: 220 16% 15%;
-    --muted-foreground: 215 16% 55%;
+    --muted-foreground: 215 16% 62%;
     --accent: 220 16% 17%;
     --accent-foreground: 210 20% 94%;
     --destructive: 0 72% 51%;
@@ -83,4 +83,13 @@
   ::-webkit-scrollbar-track { @apply bg-transparent; }
   ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
   ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/30; }
+}
+
+/* Avisos (sonner): en modo claro, el texto de sus colores no llega a 4,5:1 sobre su propio fondo.
+   El selector repite el atributo para ganarle al de sonner sin depender del orden de carga. */
+[data-sonner-toaster][data-sonner-toaster][data-sonner-theme='light'] {
+  --info-text: hsl(210, 92%, 37%);
+  --success-text: hsl(140, 100%, 19%);
+  --error-text: hsl(360, 100%, 37%);
+  --warning-text: hsl(31, 92%, 33%);
 }

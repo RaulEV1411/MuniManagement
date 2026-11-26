@@ -34,7 +34,7 @@ export default function RazonModal({
               onChange={e => setRazon(e.target.value)}
               rows={3}
               placeholder="Describa el motivo de este cambio…"
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
               autoFocus
             />
           </div>

@@ -67,7 +67,7 @@ export default function UserCreatePage() {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   const errorDatos = errRoles ?? errDepartments
   if (errorDatos) return <ErrorDeCarga error={errorDatos} que="los datos del formulario" />

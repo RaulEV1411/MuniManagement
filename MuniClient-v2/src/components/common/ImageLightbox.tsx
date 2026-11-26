@@ -35,7 +35,7 @@ export default function ImageLightbox({
       onClick={onClose}
     >
       {/* Contador */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-xs font-medium bg-black/40 px-3 py-1 rounded-full pointer-events-none">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/85 text-xs font-medium bg-black/60 px-3 py-1 rounded-full pointer-events-none">
         {idx + 1} / {images.length}
       </div>
 

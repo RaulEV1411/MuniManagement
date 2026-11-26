@@ -22,8 +22,8 @@ const ROLE_STYLE: Record<string, string> = {
 }
 
 const AVATAR_COLORS = [
-  'bg-ocean-500', 'bg-sunset-500', 'bg-purple-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-cyan-500', 'bg-rose-500', 'bg-indigo-500',
+  'bg-ocean-500', 'bg-purple-700', 'bg-emerald-700', 'bg-amber-700',
+  'bg-cyan-700', 'bg-rose-700', 'bg-indigo-600', 'bg-teal-700',
 ]
 
 function avatarColor(name: string): string {
@@ -105,7 +105,7 @@ function UserGridCard({ user }: { user: User }) {
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
         {user.departamento_ID?.name && (
-          <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{user.departamento_ID.name}</p>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user.departamento_ID.name}</p>
         )}
       </div>
       {user.role?.name && (
@@ -187,7 +187,7 @@ export default function UsersPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPagina(1) }}
             placeholder="Buscar usuarios..."
-            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">

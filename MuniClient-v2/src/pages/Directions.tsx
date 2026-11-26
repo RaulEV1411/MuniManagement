@@ -51,7 +51,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               onChange={e => setName(e.target.value)}
               placeholder="Ej: Dirección de Obras"
               autoFocus
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="flex justify-end gap-2">

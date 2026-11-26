@@ -62,7 +62,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   )
 }
 
-const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all'
+const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all'
 
 function SummaryRow({ label, value, badge, color }: {
   label: string; value: string; badge?: boolean; color?: string

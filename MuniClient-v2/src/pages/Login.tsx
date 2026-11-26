@@ -65,7 +65,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, x: -40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="hidden lg:flex flex-col w-[420px] flex-shrink-0 bg-ocean-500 relative overflow-hidden"
+        className="hidden lg:flex flex-col w-[420px] flex-shrink-0 bg-ocean-700 relative overflow-hidden"
       >
         {/* Fondo decorativo */}
         <div className="absolute inset-0">
@@ -79,7 +79,7 @@ export default function LoginPage() {
             <LogoInstitucion tamano={40} claro />
             <div>
               <p className="text-white font-bold text-sm leading-tight">{marca.nombre}</p>
-              {marca.ubicacion && <p className="text-white/60 text-xs">{marca.ubicacion}</p>}
+              {marca.ubicacion && <p className="text-white/85 text-xs">{marca.ubicacion}</p>}
             </div>
           </div>
 
@@ -87,7 +87,7 @@ export default function LoginPage() {
             <h1 className="text-4xl font-bold text-white leading-tight mb-4">
               Sistema de<br />Gestión Municipal
             </h1>
-            <p className="text-white/70 text-sm leading-relaxed">
+            <p className="text-white/85 text-sm leading-relaxed">
               Proyectos, equipos y presupuestos de la municipalidad en un solo lugar.
             </p>
           </div>
@@ -100,7 +100,7 @@ export default function LoginPage() {
             ].map(s => (
               <div key={s.label} className="bg-white/10 rounded-xl p-3">
                 <p className="text-white font-bold text-sm">{s.value}</p>
-                <p className="text-white/60 text-[10px] mt-0.5">{s.label}</p>
+                <p className="text-white text-[10px] mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>

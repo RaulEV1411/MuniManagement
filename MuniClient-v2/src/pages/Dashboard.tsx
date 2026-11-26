@@ -113,7 +113,7 @@ function StatCard({ icon: Icon, value, label, color, alert }: {
     <div className={cn(
       'flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold',
       alert
-        ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400'
+        ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400'
         : 'bg-card border-border text-muted-foreground',
     )}>
       <Icon size={12} className={alert ? '' : color} />
@@ -287,8 +287,8 @@ function ProjectListRow({ project }: { project: Project }) {
           {days !== null && status !== 'Completado' && status !== 'Cancelado' && (
             <span className={cn(
               'hidden md:block px-2 py-0.5 rounded-full text-[10px] font-medium',
-              overdue ? 'bg-red-50 text-red-500 dark:bg-red-500/10' :
-              days <= 3 ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' :
+              overdue ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
+              days <= 3 ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400' :
               'bg-muted text-muted-foreground',
             )}>
               {overdue ? `Vencido ${Math.abs(days)}d` : days === 0 ? 'Vence hoy' : `${days}d`}
@@ -619,7 +619,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">{marca.nombre}</span>
             {stats.pct > 0 && !isLoading && (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
                 <TrendingUp size={9} /> {stats.pct}% completado
               </span>
             )}
@@ -657,7 +657,7 @@ export default function DashboardPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar proyectos..."
-            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">

@@ -8,6 +8,7 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
+import { textoSobre } from '@/lib/colores'
 
 export default function PublicProjectsPage() {
   useTituloDePagina('Portal de proyectos')
@@ -28,7 +29,7 @@ export default function PublicProjectsPage() {
             <LogoInstitucion tamano={36} claro />
             <h1 className="text-2xl font-bold">Portal de proyectos</h1>
           </div>
-          <p className="text-white/80">{marca.nombre}{marca.ubicacion ? ` · ${marca.ubicacion}` : ''}</p>
+          <p className="text-white">{marca.nombre}{marca.ubicacion ? ` · ${marca.ubicacion}` : ''}</p>
         </div>
       </header>
 
@@ -75,8 +76,8 @@ export default function PublicProjectsPage() {
                     <h3 className="font-semibold text-slate-900 leading-tight">{p.name}</h3>
                     {p.estado && (
                       <span
-                        className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold shrink-0"
-                        style={{ backgroundColor: p.estado.color }}
+                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0"
+                        style={{ backgroundColor: p.estado.color, color: textoSobre(p.estado.color) }}
                       >
                         {p.estado.name}
                       </span>

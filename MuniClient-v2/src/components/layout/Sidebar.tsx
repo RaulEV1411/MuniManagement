@@ -128,7 +128,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest px-2 pt-3 pb-1.5 whitespace-nowrap"
+                  className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 pt-3 pb-1.5 whitespace-nowrap"
                 >
                   {label}
                 </motion.p>
@@ -155,7 +155,7 @@ export default function Sidebar() {
                   <div className="relative flex-shrink-0">
                     <Icon size={15} />
                     {!expanded && badge > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
@@ -175,7 +175,7 @@ export default function Sidebar() {
                   {expanded && badge > 0 && (
                     <span className={cn(
                       'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center',
-                      active ? 'bg-white/20 text-white' : 'bg-red-500 text-white',
+                      active ? 'bg-white/20 text-white' : 'bg-red-600 text-white',
                     )}>
                       {badge > 99 ? '99+' : badge}
                     </span>
@@ -248,7 +248,7 @@ export default function Sidebar() {
           {user?.user_photo ? (
             <img src={user.user_photo} alt="" className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
           ) : (
-            <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">
+            <div className="w-8 h-8 rounded-xl bg-amber-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">
               {user ? getInitials(user.first_name, user.last_name) : '?'}
             </div>
           )}
@@ -271,7 +271,7 @@ export default function Sidebar() {
           onClick={() => setExpanded(v => !v)}
           title={expanded ? 'Colapsar' : 'Expandir'}
           className={cn(
-            'flex items-center rounded-xl transition-all w-full text-muted-foreground/50 hover:bg-accent hover:text-muted-foreground',
+            'flex items-center rounded-xl transition-all w-full text-muted-foreground hover:bg-accent hover:text-foreground',
             expanded ? 'gap-2 px-2.5 py-1.5 justify-between' : 'justify-center',
           )}
           style={!expanded ? { height: 32, width: 36, margin: '0 auto' } : undefined}

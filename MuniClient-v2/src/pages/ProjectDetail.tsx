@@ -72,7 +72,7 @@ function ImageGrid({
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onDelete(img.imagen_ID) }}
-                className="p-2 rounded-xl bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 active:scale-95"
+                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
                 title="Eliminar imagen"
               >
                 <Trash2 size={12} />
@@ -166,7 +166,7 @@ function EditProjectModal({
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -309,7 +309,7 @@ function EditTaskModal({
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   const doSave = async (razon = '') => {
     setLoading(true)
@@ -490,7 +490,7 @@ function TaskModal({
     }
   }
 
-  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -779,7 +779,7 @@ function TaskCard({
                 {task.asignado_a.user_photo ? (
                   <img src={task.asignado_a.user_photo} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[8px] font-bold text-white">
+                  <div className="w-3.5 h-3.5 rounded-full bg-amber-700 flex items-center justify-center text-[8px] font-bold text-white">
                     {task.asignado_a.first_name?.[0]}
                   </div>
                 )}
@@ -1271,7 +1271,7 @@ export default function ProjectDetailPage() {
                       value={taskSearch}
                       onChange={e => setTaskSearch(e.target.value)}
                       placeholder="Buscar tareas..."
-                      className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                      className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                     />
                     {taskSearch && (
                       <button onClick={() => setTaskSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -1428,7 +1428,7 @@ export default function ProjectDetailPage() {
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder="Agregar comentario..."
-                    className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <button
                     type="submit"
@@ -1547,7 +1547,7 @@ export default function ProjectDetailPage() {
                     <div className="flex flex-col items-center justify-center py-12 gap-3 text-center bg-card border border-border rounded-xl">
                       <Activity size={28} className="text-muted-foreground/30" />
                       <p className="text-sm text-muted-foreground">Sin cambios registrados aún</p>
-                      <p className="text-[11px] text-muted-foreground/60">Los cambios a tareas y al proyecto aparecerán aquí</p>
+                      <p className="text-[11px] text-muted-foreground">Los cambios a tareas y al proyecto aparecerán aquí</p>
                     </div>
                   ) : (
                     <div className="space-y-2">

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Loader2, X } from 'lucide-react'
 import type { Estado } from '@/types'
+import { textoSobre } from '@/lib/colores'
 
 const STATE_ICON: Record<string, string> = {
   'Pendiente': '📋',
@@ -69,10 +70,10 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               whileTap={{ scale: 0.96 }}
               className={`group inline-flex items-center gap-1.5 rounded-full border font-medium transition ${px} ${
                 active
-                  ? 'text-white border-transparent shadow-md'
+                  ? 'border-transparent shadow-md'
                   : 'border-border bg-card text-foreground hover:border-foreground/30 hover:bg-accent'
               } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-              style={active ? { backgroundColor: color } : undefined}
+              style={active ? { backgroundColor: color, color: textoSobre(color) } : undefined}
               title={`Cambiar a ${estado.name}`}
             >
               <span aria-hidden>{STATE_ICON[estado.name] ?? '•'}</span>

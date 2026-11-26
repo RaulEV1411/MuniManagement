@@ -143,7 +143,7 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={exportExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
           >
             <FileSpreadsheet size={13} /> Excel
           </button>
@@ -167,7 +167,7 @@ export default function ReportsPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar proyecto..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="relative">
