@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('Projects', '0009_remove_proyectos_project_photo_projectimage'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('Users', '0002_users'),
     ]
 
     operations = [
