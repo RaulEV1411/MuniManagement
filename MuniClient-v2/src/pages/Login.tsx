@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Eye, EyeOff, MapPin, Loader2 } from 'lucide-react'
 import { login, getResumenLogin } from '@/lib/api'
 import axios from 'axios'
+import { mensajeDeError } from '@/lib/errores'
 import { useAppStore } from '@/store/app'
 
 const schema = z.object({
@@ -46,11 +47,9 @@ export default function LoginPage() {
         .catch(() => {})
       navigate('/dashboard')
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 429) {
-        toast.error(err.response.data?.error ?? 'Demasiados intentos. Espere un minuto.')
-      } else {
-        toast.error('Credenciales incorrectas. Intenta de nuevo.')
-      }
+      // 400 = correo o contraseña incorrectos; lo demás (sin conexión, 429, 500) se explica tal cual.
+      const credenciales = axios.isAxiosError(err) && err.response?.status === 400
+      toast.error(credenciales ? 'Correo o contraseña incorrectos.' : mensajeDeError(err, 'No se pudo iniciar sesión.'))
     }
   }
 

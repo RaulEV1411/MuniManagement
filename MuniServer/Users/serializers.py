@@ -11,7 +11,26 @@ class RolesSerializer(ModelSerializer):
         read_only_fields = ['is_system', 'puede_delegar', 'puede_recibir_delegacion']
 
 
-class UsersSerializer(ModelSerializer):
+class RolYDepartamentoAnidados:
+    """Al leer, rol y departamento salen como objetos; al escribir se mandan sus ids."""
+
+    def to_representation(self, instance):
+        datos = super().to_representation(instance)
+        if 'role' in datos:
+            rol = instance.role
+            datos['role'] = rol and {
+                'role_ID': str(rol.role_ID), 'name': rol.name,
+                'puede_delegar': rol.puede_delegar,
+                'puede_recibir_delegacion': rol.puede_recibir_delegacion,
+                'puede_ver_todo': rol.puede_ver_todo,
+            }
+        if 'departamento_ID' in datos:
+            depto = instance.departamento_ID
+            datos['departamento_ID'] = depto and {'departamentos_ID': str(depto.departamentos_ID), 'name': depto.name}
+        return datos
+
+
+class UsersSerializer(RolYDepartamentoAnidados, ModelSerializer):
 
     def create(self, validated_data):
         # La cuenta nace sin contraseña usable: la persona la define con el enlace del correo.
@@ -35,7 +54,7 @@ class UsuarioResumenSerializer(ModelSerializer):
         read_only_fields = fields
 
 
-class UsuarioDirectorioSerializer(ModelSerializer):
+class UsuarioDirectorioSerializer(RolYDepartamentoAnidados, ModelSerializer):
     """Lo que un jefe ve de otras personas: el resumen más su rol, departamento y estado."""
 
     class Meta:

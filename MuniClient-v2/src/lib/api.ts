@@ -75,11 +75,11 @@ export const olvideClave = (email: string) =>
 export const getUsers        = ()           => api.get('/users/users/').then(r => r.data)
 export const getUserById     = (id: string) => api.get(`/users/users/${seg(id)}/`).then(r => r.data)
 export const createUser      = (data: FormData | object) => api.post('/users/users/', data).then(r => r.data)
-export const updateUser      = (id: string, data: object) => api.put(`/users/users/${seg(id)}/`, data).then(r => r.data)
+export const updateUser      = (id: string, data: object) => api.patch(`/users/users/${seg(id)}/`, data).then(r => r.data)
 export const deleteUser      = (id: string) => api.delete(`/users/users/${seg(id)}/`).then(r => r.data)
 export const enviarAcceso    = (id: string) => api.post(`/users/users/${seg(id)}/enviar-acceso/`).then(r => r.data)
 export const uploadUserPhoto = (id: string, file: File) => {
-  const fd = new FormData(); fd.append('photo', file)
+  const fd = new FormData(); fd.append('image', file)
   return api.post(`/users/upload-photo/${seg(id)}/`, fd).then(r => r.data)
 }
 export const getRoles        = ()           => api.get('/users/roles/').then(r => r.data)

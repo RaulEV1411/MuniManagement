@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Building2, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections,
+  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections, getUsers,
 } from '@/lib/api'
-import { type Department, type Direction } from '@/types'
+import { type Department, type Direction, type User } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 function CreateModal({
   directions,
@@ -24,14 +26,15 @@ function CreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
     setLoading(true)
     try {
       await createDepartment({ name: name.trim(), direccion: dirId || undefined })
       toast.success('Departamento creado')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear departamento')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear departamento'))
     } finally {
       setLoading(false)
     }
@@ -65,9 +68,9 @@ function CreateModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Dirección</label>
+            <label className="text-xs font-semibold text-muted-foreground">Dirección *</label>
             <select value={dirId} onChange={e => setDirId(e.target.value)} className={inputCls}>
-              <option value="">Sin dirección</option>
+              <option value="">Seleccionar dirección...</option>
               {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
             </select>
           </div>
@@ -90,11 +93,13 @@ function CreateModal({
 function DepartmentRow({
   dept,
   directions,
+  users,
   onSaved,
   onDeleted,
 }: {
   dept: Department
   directions: Direction[]
+  users: User[]
   onSaved: () => void
   onDeleted: () => void
 }) {
@@ -104,19 +109,23 @@ function DepartmentRow({
     typeof dept.direccion === 'string' ? dept.direccion : (dept.direccion as Direction | null)?.direccion_ID ?? ''
   )
   const [saving, setSaving]   = useState(false)
+  const [jefeId, setJefeId]   = useState(dept.jefe ?? '')
+  const jefe = users.find(u => u.user_ID === dept.jefe)
+  const nombreJefe = jefe ? `${jefe.first_name} ${jefe.last_name}` : '—'
 
   const dirName = directions.find(d => d.direccion_ID === dirId)?.name ?? '—'
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
+    if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
     setSaving(true)
     try {
-      await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined })
+      await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined, jefe: jefeId || null })
       toast.success('Departamento actualizado')
       onSaved()
       setEditing(false)
-    } catch {
-      toast.error('Error al actualizar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar'))
     } finally {
       setSaving(false)
     }
@@ -125,6 +134,7 @@ function DepartmentRow({
   const handleCancel = () => {
     setName(dept.name)
     setDirId(typeof dept.direccion === 'string' ? dept.direccion : (dept.direccion as Direction | null)?.direccion_ID ?? '')
+    setJefeId(dept.jefe ?? '')
     setEditing(false)
   }
 
@@ -134,8 +144,8 @@ function DepartmentRow({
       await deleteDepartment(dept.departamentos_ID)
       toast.success('Departamento eliminado')
       onDeleted()
-    } catch {
-      toast.error('Error al eliminar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar'))
     }
   }
 
@@ -165,11 +175,21 @@ function DepartmentRow({
       <td className="px-5 py-3.5 min-w-0">
         {editing ? (
           <select value={dirId} onChange={e => setDirId(e.target.value)} className={cellInput}>
-            <option value="">Sin dirección</option>
+            <option value="">Seleccionar dirección...</option>
             {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
           </select>
         ) : (
           <span className="text-sm text-muted-foreground">{dirName}</span>
+        )}
+      </td>
+      <td className="px-5 py-3.5 min-w-0">
+        {editing ? (
+          <select value={jefeId} onChange={e => setJefeId(e.target.value)} aria-label="Jefe" className="w-full px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">Sin jefe</option>
+            {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}{u.role?.name ? ` · ${u.role.name}` : ''}</option>)}
+          </select>
+        ) : (
+          <span className="text-sm text-muted-foreground">{nombreJefe}</span>
         )}
       </td>
       <td className="px-5 py-3.5 text-right">
@@ -211,17 +231,20 @@ export default function DepartmentsPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 
-  const { data: departments = [], isLoading } = useQuery<Department[]>({
+  const { data: departments = [], isLoading, isError, error, refetch } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
 
+  const { data: users = [] } = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
   const { data: directions = [] } = useQuery<Direction[]>({
     queryKey: ['directions'],
     queryFn: getDirections,
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['departments'] })
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los departamentos" />
 
   return (
     <div className="flex flex-col h-full">
@@ -273,6 +296,7 @@ export default function DepartmentsPage() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Dirección</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Jefe</th>
                   <th className="px-5 py-3 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -283,6 +307,7 @@ export default function DepartmentsPage() {
                       key={d.departamentos_ID}
                       dept={d}
                       directions={directions}
+                      users={users}
                       onSaved={invalidate}
                       onDeleted={invalidate}
                     />

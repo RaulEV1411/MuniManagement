@@ -11,7 +11,7 @@ import ImageLightbox from '@/components/common/ImageLightbox'
 import { toast } from 'sonner'
 import {
   getProjectById, getTasksByProject, getFeedback,
-  createTask, updateTask, patchTask, deleteTask, updateProject, patchProject,
+  createTask, patchTask, deleteTask, patchProject,
   deleteProject, createFeedback, deleteFeedback,
   uploadProjectImage, deleteProjectImage,
   uploadTaskImage, deleteTaskImage,
@@ -22,7 +22,6 @@ import StatusStepper from '@/components/projects/StatusStepper'
 import BudgetSection from '@/components/projects/BudgetSection'
 import DelegacionPanel from '@/components/projects/DelegacionPanel'
 
-const ROLES_DELEGADORES = new Set(['Alcalde', 'Vicealcalde', 'Jefe de Dirección', 'Jefe de Departamento'])
 import {
   type Project, type Task, type TaskImage, type Feedback,
   type Estado, type Prioridad, type Department, type User as UserModel,
@@ -30,27 +29,13 @@ import {
 } from '@/types'
 import { cn, formatDate, daysUntil, isOverdue, fullName } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { esNoEncontrado } from '@/lib/errores'
+import RazonModal from '@/components/common/RazonModal'
+import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
-
-const STATUS_DOT: Record<string, string> = {
-  'En progreso': 'bg-blue-500',
-  'Pendiente':   'bg-muted-foreground/40',
-  'Completado':  'bg-emerald-500',
-  'Cancelado':   'bg-red-400',
-}
-
-const TASK_GROUP_ORDER = ['En progreso', 'Pendiente', 'Completado', 'Cancelado']
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
 function ImageGrid({
@@ -119,6 +104,7 @@ function EditProjectModal({
   onSaved: () => void
 }) {
   const [loading, setLoading] = useState(false)
+  const [pidiendoMotivo, setPidiendoMotivo] = useState(false)
   const [form, setForm] = useState({
     name:            project.name,
     descripcion:     project.descripcion ?? '',
@@ -129,12 +115,13 @@ function EditProjectModal({
     prioridad_ID:    project.prioridad_ID?.prioridad_ID ?? '',
     departamento_ID: project.departamento_ID?.departamentos_ID ?? '',
     user_ID:         project.user_ID?.user_ID ?? '',
+    es_publico:      project.es_publico ?? false,
   })
 
   const { data: departments = [] } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
   const { data: users = [] }       = useQuery<UserModel[]>({ queryKey: ['users'], queryFn: getUsers })
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -142,9 +129,20 @@ function EditProjectModal({
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
+    const nuevoEstado = estados.find(x => x.estado_ID === form.estado_ID)?.name ?? ''
+    if (form.estado_ID !== (project.estado_ID?.estado_ID ?? '') && ESTADOS_CON_MOTIVO.includes(nuevoEstado)) {
+      setPidiendoMotivo(true)
+      return
+    }
+    await guardar()
+  }
+
+  const guardar = async (razon?: string) => {
+    setPidiendoMotivo(false)
     setLoading(true)
     try {
-      await updateProject(project.proyect_ID, {
+      await patchProject(project.proyect_ID, {
+        ...(razon && { razon }),
         name:            form.name,
         descripcion:     form.descripcion || undefined,
         fecha_inicio:    form.fecha_inicio || undefined,
@@ -154,12 +152,13 @@ function EditProjectModal({
         prioridad_ID:    form.prioridad_ID || undefined,
         departamento_ID: form.departamento_ID || undefined,
         user_ID:         form.user_ID || undefined,
+        es_publico:      form.es_publico,
       })
       toast.success('Proyecto actualizado')
       onSaved()
       onClose()
-    } catch {
-      toast.error('Error al actualizar proyecto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar proyecto'))
     } finally {
       setLoading(false)
     }
@@ -193,11 +192,11 @@ function EditProjectModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio</label>
+              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
               <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega</label>
+              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
               <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
             </div>
           </div>
@@ -237,6 +236,15 @@ function EditProjectModal({
               </select>
             </div>
           </div>
+          <label className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.es_publico}
+              onChange={e => set('es_publico', e.target.checked)}
+              className="h-4 w-4 accent-ocean-500"
+            />
+            Mostrar en el portal público
+          </label>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl transition-colors">
@@ -249,6 +257,14 @@ function EditProjectModal({
           </div>
         </form>
       </motion.div>
+      {pidiendoMotivo && (
+        <RazonModal
+          title="Motivo del cambio de estado"
+          description="Para pasar a Cancelado o Pausado hay que indicar el motivo; queda en el historial."
+          onConfirm={razon => guardar(razon)}
+          onClose={() => setPidiendoMotivo(false)}
+        />
+      )}
     </div>
   )
 }
@@ -263,62 +279,6 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 // ── Razón modal (genérico) ───────────────────────────────────────────────────
-function RazonModal({
-  title, description, onConfirm, onClose,
-}: {
-  title: string
-  description?: string
-  onConfirm: (razon: string) => void
-  onClose: () => void
-}) {
-  const [razon, setRazon] = useState('')
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-base font-bold text-foreground">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
-            <X size={15} />
-          </button>
-        </div>
-        <div className="p-6 space-y-4">
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Motivo *</label>
-            <textarea
-              value={razon}
-              onChange={e => setRazon(e.target.value)}
-              rows={3}
-              placeholder="Describe el motivo de este cambio..."
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-              autoFocus
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl transition-colors">
-              Cancelar
-            </button>
-            <button
-              type="button"
-              disabled={!razon.trim()}
-              onClick={() => onConfirm(razon.trim())}
-              className="px-4 py-2 text-sm font-semibold bg-ocean-500 hover:bg-ocean-600 text-white rounded-xl transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Confirmar
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
 // ── Edit task modal ──────────────────────────────────────────────────────────
 function EditTaskModal({
   task, estados, prioridades, users, projectId, onClose, onSaved,
@@ -367,8 +327,8 @@ function EditTaskModal({
       toast.success('Tarea actualizada')
       onSaved()
       onClose()
-    } catch {
-      toast.error('Error al actualizar tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar tarea'))
     } finally {
       setLoading(false)
     }
@@ -377,6 +337,7 @@ function EditTaskModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!form.fecha_inicio || !form.fecha_entrega) { toast.error('Las fechas de inicio y de entrega son requeridas'); return }
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
@@ -424,11 +385,11 @@ function EditTaskModal({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Fecha inicio</label>
+                <label className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
                 <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Fecha entrega</label>
+                <label className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
                 <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
               </div>
             </div>
@@ -510,6 +471,7 @@ function TaskModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!form.fecha_inicio || !form.fecha_entrega) { toast.error('Las fechas de inicio y de entrega son requeridas'); return }
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
@@ -519,8 +481,8 @@ function TaskModal({
       toast.success('Tarea creada')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear tarea'))
     } finally {
       setLoading(false)
     }
@@ -553,11 +515,11 @@ function TaskModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio</label>
+              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
               <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega</label>
+              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
               <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
             </div>
           </div>
@@ -609,6 +571,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
     if (!files.length) return
     let done = 0
     let failed = 0
+    let ultimoError: unknown = null
     setTaskUploadProgress({ current: 0, total: files.length })
     for (const file of files) {
       try {
@@ -616,8 +579,9 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
         done++
         setTaskUploadProgress({ current: done, total: files.length })
         qc.invalidateQueries({ queryKey: ['tasks', projectId] })
-      } catch {
+      } catch (err) {
         failed++
+        ultimoError = err
       }
     }
     setTaskUploadProgress(null)
@@ -625,9 +589,9 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
     if (failed === 0) {
       toast.success(files.length > 1 ? `${files.length} imágenes subidas` : 'Imagen subida')
     } else if (done > 0) {
-      toast.warning(`${done} de ${files.length} imágenes subidas`)
+      toast.warning(`${done} de ${files.length} imágenes subidas`, { description: mensajeDeError(ultimoError, '') })
     } else {
-      toast.error('Error al subir las imágenes')
+      toast.error(mensajeDeError(ultimoError, 'Error al subir las imágenes'))
     }
   }
 
@@ -649,8 +613,8 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
       await deleteTaskImage(imageId)
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       toast.success('Imagen eliminada')
-    } catch {
-      toast.error('Error al eliminar imagen')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar imagen'))
     }
   }
 
@@ -756,11 +720,11 @@ function TaskCard({
   const handleStatusChange = async (estadoId: string) => {
     setUpdating(true)
     try {
-      await updateTask(task.tareas_ID, { estado_ID: estadoId })
+      await patchTask(task.tareas_ID, { estado_ID: estadoId })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       toast.success('Estado actualizado')
-    } catch {
-      toast.error('Error al actualizar estado')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar estado'))
     } finally {
       setUpdating(false)
     }
@@ -772,8 +736,8 @@ function TaskCard({
       await deleteTask(task.tareas_ID)
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       toast.success('Tarea eliminada')
-    } catch {
-      toast.error('Error al eliminar tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar tarea'))
     }
   }
 
@@ -804,7 +768,7 @@ function TaskCard({
               </span>
             )}
             {task.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', PRIORITY_STYLE[task.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(task.prioridad_ID.color)}>
                 {task.prioridad_ID.name}
               </span>
             )}
@@ -894,10 +858,10 @@ function TaskGroup({
     const estado = estados.find(es => es.name === status)
     if (!taskId || !estado) return
     try {
-      await updateTask(taskId, { estado_ID: estado.estado_ID })
+      await patchTask(taskId, { estado_ID: estado.estado_ID })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
-    } catch {
-      toast.error('Error al mover tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al mover tarea'))
     }
   }
 
@@ -920,7 +884,7 @@ function TaskGroup({
           : <ChevronRight size={13} className="text-muted-foreground" />
         }
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{status}</span>
-        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', STATUS_STYLE[status] ?? 'bg-muted text-muted-foreground')}>
+        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(estados.find(es => es.name === status)?.color)}>
           {tasks.length}
         </span>
         {dragOver && <span className="text-[10px] text-ocean-500 font-medium ml-1">Soltar aquí</span>}
@@ -1018,7 +982,8 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { user } = useAppStore()
-  const canDelegate = !!user?.role && ROLES_DELEGADORES.has(user.role)
+  // Lo decide el rol que manda el servidor (antes dejaba afuera al Administrador); el alcance lo valida el servidor.
+  const canDelegate = !!(user?.role_flags?.puede_ver_todo || user?.role_flags?.puede_delegar)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
   const [showTaskModal, setShowTaskModal]       = useState(false)
@@ -1028,7 +993,7 @@ export default function ProjectDetailPage() {
   const [submittingComment, setSubmittingComment] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
 
-  const { data: project, isLoading: loadingProject } = useQuery<Project>({
+  const { data: project, isLoading: loadingProject, isError: errorProject, error: errProject, refetch: refetchProject } = useQuery<Project>({
     queryKey: ['project', id],
     queryFn: () => getProjectById(id!),
     enabled: !!id,
@@ -1065,8 +1030,8 @@ export default function ProjectDetailPage() {
       await deleteProject(id!)
       toast.success('Proyecto eliminado')
       navigate('/dashboard')
-    } catch {
-      toast.error('Error al eliminar proyecto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar proyecto'))
     }
   }
 
@@ -1079,8 +1044,8 @@ export default function ProjectDetailPage() {
       setNewComment('')
       await qc.invalidateQueries({ queryKey: ['feedback', id] })
       toast.success('Comentario agregado')
-    } catch {
-      toast.error('Error al agregar comentario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al agregar comentario'))
     } finally {
       setSubmittingComment(false)
     }
@@ -1090,6 +1055,7 @@ export default function ProjectDetailPage() {
     if (!files.length) return
     let done = 0
     let failed = 0
+    let ultimoError: unknown = null
     setUploadProgress({ current: 0, total: files.length })
     for (const file of files) {
       try {
@@ -1097,17 +1063,18 @@ export default function ProjectDetailPage() {
         done++
         setUploadProgress({ current: done, total: files.length })
         qc.invalidateQueries({ queryKey: ['project', id] })
-      } catch {
+      } catch (err) {
         failed++
+        ultimoError = err
       }
     }
     setUploadProgress(null)
     if (failed === 0) {
       toast.success(files.length > 1 ? `${files.length} imágenes subidas` : 'Imagen subida')
     } else if (done > 0) {
-      toast.warning(`${done} de ${files.length} imágenes subidas`)
+      toast.warning(`${done} de ${files.length} imágenes subidas`, { description: mensajeDeError(ultimoError, '') })
     } else {
-      toast.error('Error al subir las imágenes')
+      toast.error(mensajeDeError(ultimoError, 'Error al subir las imágenes'))
     }
   }
 
@@ -1117,8 +1084,8 @@ export default function ProjectDetailPage() {
       await deleteProjectImage(imageId)
       await qc.invalidateQueries({ queryKey: ['project', id] })
       toast.success('Imagen eliminada')
-    } catch {
-      toast.error('Error al eliminar imagen')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar imagen'))
     }
   }
 
@@ -1128,8 +1095,8 @@ export default function ProjectDetailPage() {
       await deleteFeedback(feedId)
       await qc.invalidateQueries({ queryKey: ['feedback', id] })
       toast.success('Comentario eliminado')
-    } catch {
-      toast.error('Error al eliminar comentario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar comentario'))
     }
   }
 
@@ -1144,11 +1111,15 @@ export default function ProjectDetailPage() {
     )
   }
 
+  if (errorProject && !esNoEncontrado(errProject)) {
+    return <ErrorDeCarga error={errProject} onReintentar={refetchProject} que="el proyecto" />
+  }
+
   if (!project) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
         <AlertCircle size={32} />
-        <p className="text-sm">Proyecto no encontrado</p>
+        <p className="text-sm">Proyecto no encontrado o sin acceso</p>
         <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 hover:underline">Volver</button>
       </div>
     )
@@ -1164,11 +1135,13 @@ export default function ProjectDetailPage() {
     ? tasks.filter(t => t.name.toLowerCase().includes(taskSearch.toLowerCase()) || t.descripcion?.toLowerCase().includes(taskSearch.toLowerCase()))
     : tasks
 
-  const grouped: Record<string, Task[]> = { 'En progreso': [], 'Pendiente': [], 'Completado': [], 'Cancelado': [] }
+  // Un grupo por estado de Configuración, en su orden (antes solo había 4 y el resto caía en Pendiente).
+  const ordenGrupos = estados.map(e => e.name)
+  const grouped: Record<string, Task[]> = Object.fromEntries(ordenGrupos.map(n => [n, [] as Task[]]))
   filteredTasks.forEach(t => {
-    const s = t.estado_ID?.name ?? 'Pendiente'
-    if (grouped[s]) grouped[s].push(t)
-    else grouped['Pendiente'].push(t)
+    const s = t.estado_ID?.name ?? ''
+    if (!grouped[s]) { grouped[s] = []; ordenGrupos.push(s) }
+    grouped[s].push(t)
   })
 
   const projectImages = project.images ?? []
@@ -1190,12 +1163,12 @@ export default function ProjectDetailPage() {
             <div className="flex items-start gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-foreground leading-tight">{project.name}</h1>
               {project.estado_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', STATUS_STYLE[project.estado_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
                   {project.estado_ID.name}
                 </span>
               )}
               {project.prioridad_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                   {project.prioridad_ID.name}
                 </span>
               )}
@@ -1330,7 +1303,7 @@ export default function ProjectDetailPage() {
                     <p className="text-[10px] text-muted-foreground">
                       {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastra las tarjetas entre grupos para cambiar el estado'}
                     </p>
-                    {TASK_GROUP_ORDER.map(status => (
+                    {ordenGrupos.map(status => (
                       <TaskGroup
                         key={status}
                         status={status}
@@ -1549,10 +1522,10 @@ export default function ProjectDetailPage() {
                       />
                     </div>
                     <div className="flex gap-3 flex-wrap">
-                      {TASK_GROUP_ORDER.map(s => (
+                      {ordenGrupos.map(s => (
                         (grouped[s]?.length ?? 0) > 0 && (
                           <div key={s} className="flex items-center gap-1.5">
-                            <div className={cn('w-2 h-2 rounded-full', STATUS_DOT[s])} />
+                            <div className={cn('w-2 h-2 rounded-full', claseRelleno)} style={conColor(estados.find(e => e.name === s)?.color)} />
                             <span className="text-[10px] text-muted-foreground">{s}: {grouped[s].length}</span>
                           </div>
                         )
@@ -1592,8 +1565,21 @@ export default function ProjectDetailPage() {
                           const n = entry.datos_nuevos
                           if (a.name && n.name && a.name !== n.name) changes.push(`Nombre: "${a.name}" → "${n.name}"`)
                           if (a.fecha_entrega && n.fecha_entrega && a.fecha_entrega !== n.fecha_entrega) changes.push(`Entrega: ${formatDate(a.fecha_entrega)} → ${formatDate(n.fecha_entrega)}`)
-                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ₡${Number(a.costo).toLocaleString()} → ₡${Number(n.costo).toLocaleString()}`)
+                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ₡${Number(a.costo).toLocaleString('es-CR')} → ₡${Number(n.costo).toLocaleString('es-CR')}`)
+                          const nombreEstado = (id?: string) => estados.find(e => e.estado_ID === id)?.name ?? '—'
+                          if (a.estado_ID && n.estado_ID && a.estado_ID !== n.estado_ID) changes.push(`Estado: ${nombreEstado(a.estado_ID)} → ${nombreEstado(n.estado_ID)}`)
+                          const nombrePersona = (id?: string) => {
+                            const u = users.find(x => x.user_ID === id)
+                            return u ? `${u.first_name} ${u.last_name}` : (id ? 'otra persona' : 'sin asignar')
+                          }
+                          if (a.asignado_a !== undefined && a.asignado_a !== n.asignado_a) changes.push(`Responsable: ${nombrePersona(a.asignado_a)} → ${nombrePersona(n.asignado_a)}`)
                         }
+                        const nuevos = entry.datos_nuevos
+                        if (nuevos?.tipo && nuevos?.monto) {
+                          changes.push(`${nuevos.tipo === 'rebajo' ? 'Rebajo' : 'Aumento'} de ₡${Number(nuevos.monto).toLocaleString('es-CR')}`)
+                        }
+                        if (entry.tipo === 'creacion' && nuevos?.name) changes.push(`«${nuevos.name}»`)
+                        if (entry.tipo === 'eliminacion' && entry.datos_anteriores?.name) changes.push(`«${entry.datos_anteriores.name}»`)
                         return (
                           <div key={entry.historial_ID} className="flex items-start gap-3 bg-card border border-border rounded-xl px-4 py-3">
                             <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 flex items-center justify-center flex-shrink-0">

@@ -10,6 +10,7 @@ import {
 } from '@/lib/api'
 import { type Estado, type Prioridad, type Tipo } from '@/types'
 import { cn } from '@/lib/utils'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 const TABS = ['Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
@@ -115,7 +116,8 @@ function ItemRow({
 function CrudSection({
   items,
   isLoading,
-  emptyLabel,
+  textoNuevo,
+  textoVacio,
   onSave,
   onDelete,
   onCreate,
@@ -124,7 +126,8 @@ function CrudSection({
 }: {
   items: GenericItem[]
   isLoading: boolean
-  emptyLabel: string
+  textoNuevo: string
+  textoVacio: string
   onSave: (id: string, name: string) => Promise<void>
   onDelete: (id: string, name: string) => Promise<void>
   onCreate: (name: string) => Promise<void>
@@ -157,7 +160,7 @@ function CrudSection({
           <input
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            placeholder={`Nuevo ${emptyLabel.toLowerCase()}...`}
+            placeholder={textoNuevo}
             className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
@@ -179,7 +182,7 @@ function CrudSection({
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-2 text-center bg-card border border-border rounded-2xl">
-          <p className="text-sm text-muted-foreground">No hay {emptyLabel.toLowerCase()}s registrado{emptyLabel.toLowerCase().endsWith('o') ? 's' : 's'}</p>
+          <p className="text-sm text-muted-foreground">{textoVacio}</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -198,9 +201,9 @@ export default function ConfigPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('Estados')
 
-  const { data: estados = [],     isLoading: loadingEstados }     = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
-  const { data: prioridades = [], isLoading: loadingPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
-  const { data: tipos = [],       isLoading: loadingTipos }       = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
+  const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
+  const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
+  const { data: tipos = [],       isLoading: loadingTipos, error: errTipos, refetch: refetchTipos } = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
 
   // ── Estados ──
   const estadoItems: GenericItem[] = estados.map(e => ({
@@ -269,6 +272,11 @@ export default function ConfigPage() {
     toast.success('Tipo creado')
   }
 
+  const errorCatalogos = errEstados ?? errPrioridades ?? errTipos
+  if (errorCatalogos) {
+    return <ErrorDeCarga error={errorCatalogos} onReintentar={() => { refetchEstados(); refetchPrioridades(); refetchTipos() }} que="los catálogos" />
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
@@ -317,7 +325,8 @@ export default function ConfigPage() {
               <CrudSection
                 items={estadoItems}
                 isLoading={loadingEstados}
-                emptyLabel="Estado"
+                textoNuevo="Nuevo estado..."
+                textoVacio="No hay estados registrados"
                 onSave={onSaveEstado}
                 onDelete={onDeleteEstado}
                 onCreate={onCreateEstado}
@@ -329,7 +338,8 @@ export default function ConfigPage() {
               <CrudSection
                 items={prioridadItems}
                 isLoading={loadingPrioridades}
-                emptyLabel="Prioridad"
+                textoNuevo="Nueva prioridad..."
+                textoVacio="No hay prioridades registradas"
                 onSave={onSavePrioridad}
                 onDelete={onDeletePrioridad}
                 onCreate={onCreatePrioridad}
@@ -341,7 +351,8 @@ export default function ConfigPage() {
               <CrudSection
                 items={tipoItems}
                 isLoading={loadingTipos}
-                emptyLabel="Tipo"
+                textoNuevo="Nuevo tipo..."
+                textoVacio="No hay tipos registrados"
                 onSave={onSaveTipo}
                 onDelete={onDeleteTipo}
                 onCreate={onCreateTipo}

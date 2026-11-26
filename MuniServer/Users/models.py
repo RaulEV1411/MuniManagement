@@ -24,7 +24,8 @@ class Users(AbstractBaseUser):
     phone_number = models.IntegerField()
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
-    birthday = models.DateField()
+    # Opcional: solo se piden los datos que el sistema usa (Ley 8968, art. 6).
+    birthday = models.DateField(null=True, blank=True)
     puesto = models.CharField(max_length=25)
     user_photo = models.TextField(null=True)
     onboarding_completado = models.BooleanField(default=False)
@@ -34,7 +35,7 @@ class Users(AbstractBaseUser):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name','last_name', 'role', 'departamento_ID', 'cedula', 'phone_number', 'birthday', 'puesto','user_photo']
+    REQUIRED_FIELDS = ['first_name','last_name', 'role', 'departamento_ID', 'cedula', 'phone_number', 'puesto','user_photo']
 
     def _str_(self):
         return self.email

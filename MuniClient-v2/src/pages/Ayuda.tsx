@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HelpCircle, ChevronDown, BookOpen, MessageCircle, Phone, Mail, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAppStore } from '@/store/app'
 
 interface FAQ {
   q: string
@@ -35,6 +36,7 @@ const FAQS: FAQ[] = [
 ]
 
 export default function AyudaPage() {
+  const setTourForzado = useAppStore(s => s.setTourForzado)
   const [open, setOpen] = useState<number | null>(0)
 
   return (
@@ -56,7 +58,7 @@ export default function AyudaPage() {
           <p className="text-xs text-muted-foreground">Respuestas a dudas comunes.</p>
         </a>
         <button
-          onClick={() => { localStorage.removeItem('muni-onboarding-done'); location.reload() }}
+          onClick={() => setTourForzado(true)}
           className="text-left rounded-2xl bg-card border border-border p-4 hover:border-foreground/30 transition"
         >
           <Sparkles className="h-5 w-5 text-ocean-500 mb-2" />

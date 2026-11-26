@@ -5,6 +5,8 @@ import { Trash2, UserPlus, X, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { getDelegaciones, createDelegacion, deleteDelegacion, getUsers } from '@/lib/api'
 import type { Delegacion, User } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import { formatDate } from '@/lib/utils'
 
 interface Props {
   proyectoId: string
@@ -47,7 +49,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
       setPuedeEditar(false)
       setExpira('')
     },
-    onError: () => toast.error('No se pudo delegar la supervisión'),
+    onError: err => toast.error(mensajeDeError(err, 'No se pudo delegar la supervisión')),
   })
 
   const revocar = useMutation({
@@ -56,6 +58,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
       toast.success('Delegación revocada')
       qc.invalidateQueries({ queryKey: ['delegaciones', proyectoId] })
     },
+    onError: err => toast.error(mensajeDeError(err, 'No se pudo revocar la delegación')),
   })
 
   const candidatos = users.filter(u => {
@@ -96,12 +99,15 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {d.puede_editar ? 'Puede editar' : 'Solo lectura'}
-                  {d.expira_en ? ` · Expira ${d.expira_en}` : ''}
+                  {d.expira_en ? ` · Vence el ${formatDate(d.expira_en)}` : ''}
                 </p>
               </div>
               {canManage && (
                 <button
-                  onClick={() => revocar.mutate(d.delegacion_ID)}
+                  onClick={() => {
+                    const nombre = d.supervisor_info ? `${d.supervisor_info.first_name} ${d.supervisor_info.last_name}` : 'esta persona'
+                    if (window.confirm(`¿Revocar la supervisión de ${nombre}? Dejará de ver el proyecto.`)) revocar.mutate(d.delegacion_ID)
+                  }}
                   className="text-muted-foreground hover:text-red-600"
                   aria-label="Revocar delegación"
                 >

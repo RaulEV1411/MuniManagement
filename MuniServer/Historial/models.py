@@ -11,8 +11,9 @@ TIPO_CHOICES = [
     ('ampliacion_plazo',      'Ampliación de plazo'),
     ('reprogramacion',        'Reprogramación'),
     ('cancelacion',           'Cancelación'),
-    ('solicitud_presupuesto', 'Solicitud de presupuesto adicional'),
+    ('solicitud_presupuesto', 'Ajuste de presupuesto'),
     ('asignacion',            'Asignación de tarea'),
+    ('eliminacion',           'Eliminación'),
 ]
 
 

@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GitBranch, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { getDirections, createDirection, updateDirection, deleteDirection } from '@/lib/api'
-import { type Direction } from '@/types'
+import { getDirections, createDirection, updateDirection, deleteDirection, getUsers } from '@/lib/api'
+import { type Direction, type User } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName]     = useState('')
@@ -19,8 +21,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       toast.success('Dirección creada')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear dirección')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear dirección'))
     } finally {
       setLoading(false)
     }
@@ -67,25 +69,29 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   )
 }
 
-function DirectionRow({ direction, onSaved, onDeleted }: {
+function DirectionRow({ direction, users, onSaved, onDeleted }: {
   direction: Direction
+  users: User[]
   onSaved: () => void
   onDeleted: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(direction.name)
+  const [jefeId, setJefeId]   = useState(direction.jefe ?? '')
+  const jefe = users.find(u => u.user_ID === direction.jefe)
+  const nombreJefe = jefe ? `${jefe.first_name} ${jefe.last_name}` : '—'
   const [saving, setSaving]   = useState(false)
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
     setSaving(true)
     try {
-      await updateDirection(direction.direccion_ID, { name: name.trim() })
+      await updateDirection(direction.direccion_ID, { name: name.trim(), jefe: jefeId || null })
       toast.success('Dirección actualizada')
       onSaved()
       setEditing(false)
-    } catch {
-      toast.error('Error al actualizar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar'))
     } finally {
       setSaving(false)
     }
@@ -97,13 +103,14 @@ function DirectionRow({ direction, onSaved, onDeleted }: {
       await deleteDirection(direction.direccion_ID)
       toast.success('Dirección eliminada')
       onDeleted()
-    } catch {
-      toast.error('Error al eliminar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar'))
     }
   }
 
   const handleCancel = () => {
     setName(direction.name)
+    setJefeId(direction.jefe ?? '')
     setEditing(false)
   }
 
@@ -126,6 +133,16 @@ function DirectionRow({ direction, onSaved, onDeleted }: {
           />
         ) : (
           <span className="text-sm text-foreground font-medium">{direction.name}</span>
+        )}
+      </td>
+      <td className="px-5 py-3.5 min-w-0">
+        {editing ? (
+          <select value={jefeId} onChange={e => setJefeId(e.target.value)} aria-label="Jefe" className="w-full px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">Sin jefe</option>
+            {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}{u.role?.name ? ` · ${u.role.name}` : ''}</option>)}
+          </select>
+        ) : (
+          <span className="text-sm text-muted-foreground">{nombreJefe}</span>
         )}
       </td>
       <td className="px-5 py-3.5 text-right">
@@ -167,12 +184,15 @@ export default function DirectionsPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 
-  const { data: directions = [], isLoading } = useQuery<Direction[]>({
+  const { data: users = [] } = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
+  const { data: directions = [], isLoading, isError, error, refetch } = useQuery<Direction[]>({
     queryKey: ['directions'],
     queryFn: getDirections,
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['directions'] })
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="las direcciones" />
 
   return (
     <div className="flex flex-col h-full">
@@ -223,6 +243,7 @@ export default function DirectionsPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Jefe</th>
                   <th className="px-5 py-3 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -232,6 +253,7 @@ export default function DirectionsPage() {
                     <DirectionRow
                       key={d.direccion_ID}
                       direction={d}
+                      users={users}
                       onSaved={invalidate}
                       onDeleted={invalidate}
                     />

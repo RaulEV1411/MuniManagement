@@ -70,8 +70,15 @@ class UsersPermission(BasePermission):
             return True
         if es_self:
             # Self solo puede editar campos no críticos.
-            campos = set(request.data.keys() if hasattr(request.data, 'keys') else [])
-            invalidos = campos & CAMPOS_PROTEGIDOS_AUTO_EDIT
+            datos = request.data if hasattr(request.data, 'keys') else {}
+            actuales = {
+                'role': obj.role_id, 'departamento_ID': obj.departamento_ID_id,
+                'cedula': obj.cedula, 'email': obj.email, 'is_active': obj.is_active,
+            }
+            invalidos = {
+                campo for campo in CAMPOS_PROTEGIDOS_AUTO_EDIT & set(datos.keys())
+                if str(datos[campo]).strip().lower() != str(actuales[campo]).strip().lower()
+            }
             if invalidos:
                 self.message = (
                     f"No puedes modificar tus propios campos: {', '.join(sorted(invalidos))}. "

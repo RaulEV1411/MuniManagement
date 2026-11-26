@@ -1,6 +1,7 @@
 import uuid
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 from Departments.models import Departamentos
 from Users.models import Users
 
@@ -44,8 +45,10 @@ class Proyectos(models.Model):
     fecha_entrega = models.DateField()
     costo = models.IntegerField()
     es_publico = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
+        ordering = ['-created_at']
         indexes = [
             models.Index(fields=['fecha_entrega']),
             models.Index(fields=['user_ID', 'fecha_entrega']),
