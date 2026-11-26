@@ -189,7 +189,14 @@ export default function LoginPage() {
               {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
           </form>
-          <p className="mt-8 text-center text-xs text-muted-foreground">
+          {/* La ciudadanía llega por acá: el portal no pide sesión. */}
+          <Link
+            to="/publico"
+            className="mt-6 flex items-center justify-center gap-2 w-full py-2.5 text-sm font-semibold rounded-xl border border-border text-foreground hover:bg-accent transition-colors"
+          >
+            Ver el portal de proyectos
+          </Link>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
             <Link to="/accesibilidad" className="underline-offset-2 hover:underline hover:text-foreground">Accesibilidad</Link>
           </p>
         </motion.div>

@@ -46,10 +46,13 @@ class ProyectoPublicoSerializer(ModelSerializer):
         ]
 
     def get_avance(self, obj):
-        tareas = list(getattr(obj, 'tareas_set').all()) if hasattr(obj, 'tareas_set') else []
+        # Un proyecto completado está al 100 % aunque no tenga tareas; las canceladas no cuentan.
+        if obj.estado_ID and obj.estado_ID.name == 'Completado':
+            return 100
+        tareas = [t for t in obj.tareas_set.all() if t.estado_ID.name != 'Cancelado']
         if not tareas:
             return 0
-        completadas = sum(1 for t in tareas if 'Completad' in (t.estado_ID.name or ''))
+        completadas = sum(1 for t in tareas if t.estado_ID.name == 'Completado')
         return round((completadas / len(tareas)) * 100)
 
 

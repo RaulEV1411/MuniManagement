@@ -157,7 +157,3 @@ def send_due_date_warnings():
         for u in destinatarios:
             _enviar(u, f'[Muni] {titulo}', titulo, mensaje, 'vencimiento_tarea', link, dedupe)
 
-
-def send_due_date_reminder():
-    """Alias retro-compatible."""
-    send_due_date_warnings()
