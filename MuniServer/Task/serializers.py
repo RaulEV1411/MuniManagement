@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from .models import Tareas, TaskImage
-from Users.serializers import UsersSerializer
+from Users.serializers import UsuarioResumenSerializer
 
 
 class TaskImageSerializer(ModelSerializer):
@@ -17,7 +17,7 @@ class TareasWriteSerializer(ModelSerializer):
 
 class TareasReadSerializer(ModelSerializer):
     images = TaskImageSerializer(many=True, read_only=True)
-    asignado_a = UsersSerializer(read_only=True)
+    asignado_a = UsuarioResumenSerializer(read_only=True)
 
     class Meta:
         model = Tareas

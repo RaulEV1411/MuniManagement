@@ -1,4 +1,5 @@
 import cloudinary.uploader
+from MuniServer.subidas import error_de_imagen, subir_imagen
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,8 +16,9 @@ from .serializers import (
     ProyectosTiposSerializer, ProyectosReadSerializer, ProyectosWriteSerializer,
     ProjectImageSerializer, DelegacionSupervisionSerializer, AjustePresupuestoSerializer,
 )
-from .permissions import SystemRecordReadOnly
+from .permissions import SystemRecordReadOnly, CatalogoSoloAdministrador
 from . import authz
+from MuniServer.borrado import ProtegidoAlBorrarMixin
 from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
 
@@ -26,35 +28,30 @@ ESTADOS_REQUIEREN_MOTIVO = {'Cancelado', 'Pausado'}
 
 def _proyectos_visibles_qs(user):
     """Proyectos que el usuario puede ver (queryset filtrado, no list)."""
-    qs = Proyectos.objects.select_related(
+    return authz.proyectos_visibles(user).select_related(
         'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID'
     ).prefetch_related('images', 'ajustes_presupuesto')
-    if authz.tiene_vision_global(user):
-        return qs
-    return qs.filter(
-        Q(user_ID=user)
-        | Q(departamento_ID__jefe=user)
-        | Q(departamento_ID__direccion__jefe=user)
-        | Q(delegaciones__supervisor=user, delegaciones__activa=True)
-    ).distinct()
 
 
-class EstadoViewSet(ModelViewSet):
+class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Estado.objects.all()
     serializer_class = EstadoSerializer
-    permission_classes = [IsAuthenticated, SystemRecordReadOnly]
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
+    mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con este estado.'
 
 
-class PrioridadViewSet(ModelViewSet):
+class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Prioridad.objects.all()
     serializer_class = PrioridadSerializer
-    permission_classes = [IsAuthenticated, SystemRecordReadOnly]
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
+    mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con esta prioridad.'
 
 
-class TiposViewSet(ModelViewSet):
+class TiposViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Tipos.objects.all()
     serializer_class = TiposSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
+    mensaje_protegido = 'No se puede borrar: hay proyectos de este tipo.'
 
 
 class ProyectosReadViewSet(ModelViewSet):
@@ -71,9 +68,11 @@ class ProyectosReadViewSet(ModelViewSet):
 
 
 class ProyectosWriteViewSet(ModelViewSet):
-    queryset = Proyectos.objects.all()
     serializer_class = ProyectosWriteSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return authz.proyectos_visibles(self.request.user)
 
     def get_object(self):
         obj = super().get_object()
@@ -89,7 +88,7 @@ class ProyectosWriteViewSet(ModelViewSet):
         serializer.save()
 
     def perform_update(self, serializer):
-        prev = self.get_object()
+        prev = serializer.instance
         anterior = {
             'estado_ID': str(prev.estado_ID_id),
             'fecha_entrega': str(prev.fecha_entrega),
@@ -140,18 +139,36 @@ class ProyectosWriteViewSet(ModelViewSet):
 
 
 class ProyectosTiposViewSet(ModelViewSet):
-    queryset = Proyectos_tipos.objects.all()
     serializer_class = ProyectosTiposSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+    def get_queryset(self):
+        return Proyectos_tipos.objects.filter(
+            proyecto__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
+
+    def perform_create(self, serializer):
+        if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto']):
+            raise PermissionDenied('No tienes permisos para modificar este proyecto.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not authz.puede_editar(self.request.user, instance.proyecto):
+            raise PermissionDenied('No tienes permisos para modificar este proyecto.')
+        instance.delete()
 
 
 class ProjectImageViewSet(ModelViewSet):
     queryset = ProjectImage.objects.all()
     serializer_class = ProjectImageSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(
+            proyecto__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
         proyecto_ID = self.request.query_params.get('proyecto_ID')
         if proyecto_ID:
             queryset = queryset.filter(proyecto_id=proyecto_ID)
@@ -166,14 +183,16 @@ class ProjectImageViewSet(ModelViewSet):
         if not proyecto_id:
             return Response({'error': 'proyecto_ID es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            proyecto = Proyectos.objects.get(pk=proyecto_id)
-        except Proyectos.DoesNotExist:
+        proyecto = authz.proyectos_visibles(request.user).filter(pk=proyecto_id).first()
+        if proyecto is None:
             return Response({'error': 'Proyecto no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         if not authz.puede_editar(request.user, proyecto):
             raise PermissionDenied('No tienes permisos para subir imágenes a este proyecto.')
+        error = error_de_imagen(file)
+        if error:
+            return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
 
-        result = cloudinary.uploader.upload(file, folder='munimanagement/proyectos')
+        result = subir_imagen(file, 'munimanagement/proyectos')
         image = ProjectImage.objects.create(
             proyecto_id=proyecto_id,
             url=result['secure_url'],
@@ -220,6 +239,8 @@ class DelegacionSupervisionViewSet(ModelViewSet):
         proyecto = serializer.validated_data['proyecto']
         supervisor = serializer.validated_data['supervisor']
         self._check_can_manage(proyecto)
+        if supervisor.user_ID == self.request.user.user_ID:
+            raise ValidationError({'supervisor': 'No puedes delegarte la supervisión a ti mismo.'})
         rol = getattr(getattr(supervisor, 'role', None), 'name', '')
         flag_ok = getattr(getattr(supervisor, 'role', None), 'puede_recibir_delegacion', False)
         if not flag_ok and rol not in {'Coordinador', 'Funcionario', 'Jefe de Departamento', 'Jefe de Dirección'}:
@@ -235,8 +256,11 @@ class DelegacionSupervisionViewSet(ModelViewSet):
         )
 
     def perform_update(self, serializer):
-        proyecto = self.get_object().proyecto
-        self._check_can_manage(proyecto)
+        delegacion = serializer.instance
+        self._check_can_manage(delegacion.proyecto)
+        for campo in ('proyecto', 'supervisor'):
+            if campo in serializer.validated_data and serializer.validated_data[campo] != getattr(delegacion, campo):
+                raise ValidationError({campo: 'No se puede cambiar; revoca la delegación y crea otra.'})
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -262,14 +286,8 @@ class AjustePresupuestoViewSet(ModelViewSet):
             qs = qs.filter(tarea_id=tarea_ID)
         if authz.tiene_vision_global(user):
             return qs
-        return qs.filter(
-            Q(proyecto__user_ID=user)
-            | Q(proyecto__departamento_ID__jefe=user)
-            | Q(proyecto__departamento_ID__direccion__jefe=user)
-            | Q(proyecto__delegaciones__supervisor=user, proyecto__delegaciones__activa=True)
-            | Q(tarea__proyecto_ID__user_ID=user)
-            | Q(tarea__asignado_a=user)
-        ).distinct()
+        visibles = authz.proyectos_visibles(user).values('pk')
+        return qs.filter(Q(proyecto__in=visibles) | Q(tarea__proyecto_ID__in=visibles))
 
     def _proyecto_objetivo(self, ajuste):
         return ajuste.proyecto or (ajuste.tarea.proyecto_ID if ajuste.tarea else None)

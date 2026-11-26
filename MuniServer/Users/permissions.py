@@ -14,7 +14,7 @@ def _role_flag(user, flag):
 ROLES_ADMIN = {'Administrador', 'Alcalde', 'Vicealcalde'}
 ROLES_JEFES = {'Jefe de Dirección', 'Jefe de Departamento'}
 
-CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'cedula', 'email'}
+CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'cedula', 'email', 'is_active'}
 
 
 class UsersPermission(BasePermission):

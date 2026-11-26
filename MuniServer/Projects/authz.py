@@ -1,4 +1,5 @@
 """Helpers de autorización a nivel de proyecto."""
+from django.db.models import Q
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from .models import DelegacionSupervision
@@ -25,6 +26,30 @@ def tiene_vision_global(user):
     if _role_flag(user, 'puede_ver_todo'):
         return True
     return _role_name(user) in {'Administrador', 'Alcalde', 'Vicealcalde'}
+
+
+def es_administrador(user):
+    return bool(user and getattr(user, 'is_authenticated', False)) and _role_name(user) == 'Administrador'
+
+
+def proyectos_visibles(user):
+    """Queryset con los proyectos que el usuario puede ver. Es la misma regla que puede_ver()."""
+    from .models import Proyectos
+    qs = Proyectos.objects.all()
+    if tiene_vision_global(user):
+        return qs
+    return qs.filter(
+        Q(user_ID=user)
+        | Q(departamento_ID__jefe=user)
+        | Q(departamento_ID__direccion__jefe=user)
+        | Q(delegaciones__supervisor=user, delegaciones__activa=True)
+        | Q(tareas__asignado_a=user)
+    ).distinct()
+
+
+def es_asignado(user, proyecto):
+    """Tiene al menos una tarea asignada en el proyecto."""
+    return proyecto.tareas_set.filter(asignado_a=user).exists()
 
 
 def es_supervisor_jerarquico(user, proyecto):
@@ -64,6 +89,8 @@ def puede_ver(user, proyecto):
         return True
     if es_delegado(user, proyecto, requiere_edicion=False):
         return True
+    if es_asignado(user, proyecto):
+        return True
     return False
 
 
@@ -80,16 +107,12 @@ def puede_editar(user, proyecto):
 
 
 def puede_delegar(user, proyecto):
-    """Solo alcaldía, jefes (depto/dirección) o quien tiene rol con flag."""
+    """Alcaldía, o el jefe del departamento o de la dirección del proyecto si su rol puede delegar."""
     if not user or not user.is_authenticated:
         return False
     if tiene_vision_global(user):
         return True
-    if es_supervisor_jerarquico(user, proyecto):
-        return True
-    if _role_flag(user, 'puede_delegar'):
-        return True
-    return False
+    return _role_flag(user, 'puede_delegar') and es_supervisor_jerarquico(user, proyecto)
 
 
 class ProyectoVisible(BasePermission):

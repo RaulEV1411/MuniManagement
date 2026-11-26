@@ -36,34 +36,37 @@ def enviar_email_async(asunto, mensaje, html, destinatarios):
 
 
 @shared_task(
-    name='Task.tasks.enviar_credenciales_async',
+    name='Task.tasks.enviar_acceso_async',
     autoretry_for=(Exception,),
     retry_backoff=True,
     retry_backoff_max=300,
     max_retries=3,
 )
-def enviar_credenciales_async(email, password):
-    """Envía las credenciales iniciales a un usuario recién creado. Falla silenciosa
-    desde el flujo de creación: si el correo no se entrega, el admin debe rotar la
-    contraseña manualmente o reenviar."""
-    if not settings.EMAIL_HOST_USER:
-        logger.info('EMAIL_HOST_USER vacío; se omite envío de credenciales.')
-        return
+def enviar_acceso_async(user_id, motivo):
+    """Manda el enlace para definir la contraseña. El token se genera aquí, no viaja por la cola."""
     from django.template.loader import render_to_string
     from django.utils.html import strip_tags
-    try:
-        html = render_to_string('Users/email_card.html', {'username': email, 'password': password})
-    except Exception:
-        html = (
-            f"<p>Hola, te damos la bienvenida a <strong>MuniManagement</strong>.</p>"
-            f"<p>Usuario: <code>{email}</code><br>Contraseña temporal: <code>{password}</code></p>"
-            f"<p>Cámbiala al iniciar sesión.</p>"
-        )
+    from Users.acceso import enlace_de_acceso
+    from Users.models import Users
+
+    user = Users.objects.filter(pk=user_id, is_active=True).first()
+    if user is None:
+        return
+    if not settings.EMAIL_HOST_USER:
+        logger.info('EMAIL_HOST_USER vacío; se omite el correo de acceso.')
+        return
+    html = render_to_string('users/correo_acceso.html', {
+        'motivo': motivo,
+        'nombre': user.first_name,
+        'enlace': enlace_de_acceso(user),
+        'dias': settings.PASSWORD_RESET_TIMEOUT // 86400,
+    })
+    asunto = 'Bienvenida/o a MuniManagement' if motivo == 'bienvenida' else 'Recuperación de contraseña'
     send_mail(
-        'Bienvenida a MuniManagement',
+        asunto,
         strip_tags(html),
         settings.DEFAULT_FROM_EMAIL or 'noreply@muni.local',
-        [email],
+        [user.email],
         html_message=html,
         fail_silently=False,
     )

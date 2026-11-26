@@ -4,7 +4,7 @@ from .models import (
     DelegacionSupervision, AjustePresupuesto,
 )
 from Departments.serializers import DepartamentosSerializer
-from Users.serializers import UsersSerializer
+from Users.serializers import UsuarioResumenSerializer
 
 
 class EstadoSerializer(ModelSerializer):
@@ -43,7 +43,7 @@ class ProyectosReadSerializer(ModelSerializer):
     departamento_ID = DepartamentosSerializer(read_only=True)
     estado_ID = EstadoSerializer(read_only=True)
     prioridad_ID = PrioridadSerializer(read_only=True)
-    user_ID = UsersSerializer(read_only=True)
+    user_ID = UsuarioResumenSerializer(read_only=True)
     images = ProjectImageSerializer(many=True, read_only=True)
     costo_total = SerializerMethodField()
 
@@ -66,8 +66,8 @@ class ProyectosTiposSerializer(ModelSerializer):
 
 
 class DelegacionSupervisionSerializer(ModelSerializer):
-    supervisor_info = UsersSerializer(source='supervisor', read_only=True)
-    otorgado_por_info = UsersSerializer(source='otorgado_por', read_only=True)
+    supervisor_info = UsuarioResumenSerializer(source='supervisor', read_only=True)
+    otorgado_por_info = UsuarioResumenSerializer(source='otorgado_por', read_only=True)
 
     class Meta:
         model = DelegacionSupervision
@@ -80,7 +80,7 @@ class DelegacionSupervisionSerializer(ModelSerializer):
 
 
 class AjustePresupuestoSerializer(ModelSerializer):
-    usuario_info = UsersSerializer(source='usuario', read_only=True)
+    usuario_info = UsuarioResumenSerializer(source='usuario', read_only=True)
 
     class Meta:
         model = AjustePresupuesto
@@ -88,7 +88,7 @@ class AjustePresupuestoSerializer(ModelSerializer):
             'ajuste_ID', 'proyecto', 'tarea', 'tipo', 'monto', 'motivo',
             'usuario', 'aprobado_por', 'fecha', 'usuario_info',
         ]
-        read_only_fields = ['ajuste_ID', 'fecha', 'usuario']
+        read_only_fields = ['ajuste_ID', 'fecha', 'usuario', 'aprobado_por']
 
     def validate_monto(self, value):
         if value is None or value <= 0:

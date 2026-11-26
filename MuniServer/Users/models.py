@@ -16,8 +16,8 @@ class Roles(models.Model):
 
 class Users(AbstractBaseUser):
     user_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    role = models.ForeignKey(Roles, on_delete=models.CASCADE)
-    departamento_ID = models.ForeignKey(Departamentos, on_delete=models.CASCADE)
+    role = models.ForeignKey(Roles, on_delete=models.PROTECT)
+    departamento_ID = models.ForeignKey(Departamentos, on_delete=models.PROTECT)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
     cedula = models.IntegerField(unique=True)
@@ -28,6 +28,8 @@ class Users(AbstractBaseUser):
     puesto = models.CharField(max_length=25)
     user_photo = models.TextField(null=True)
     onboarding_completado = models.BooleanField(default=False)
+    # Baja lógica: un funcionario que se va no se borra, para no perder su historial.
+    is_active = models.BooleanField(default=True)
 
     objects = UserManager()
 

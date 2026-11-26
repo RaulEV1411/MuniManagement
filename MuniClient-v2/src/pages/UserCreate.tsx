@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ArrowLeft, UserPlus, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { createUser, getRoles, getDepartments } from '@/lib/api'
 import { type Role, type Department } from '@/types'
@@ -12,7 +12,6 @@ export default function UserCreatePage() {
   const navigate = useNavigate()
   const qc       = useQueryClient()
   const [loading, setLoading] = useState(false)
-  const [showPass, setShowPass] = useState(false)
 
   const [form, setForm] = useState({
     first_name:      '',
@@ -23,7 +22,6 @@ export default function UserCreatePage() {
     puesto:          '',
     role:            '',
     departamento_ID: '',
-    password:        '',
   })
 
   const { data: roles = [] }       = useQuery<Role[]>({ queryKey: ['roles'], queryFn: getRoles })
@@ -36,8 +34,6 @@ export default function UserCreatePage() {
     if (!form.first_name.trim()) { toast.error('El nombre es requerido'); return }
     if (!form.last_name.trim())  { toast.error('El apellido es requerido'); return }
     if (!form.email.trim())      { toast.error('El email es requerido'); return }
-    if (!form.password.trim())   { toast.error('La contraseña es requerida'); return }
-    if (form.password.length < 8) { toast.error('La contraseña debe tener al menos 8 caracteres'); return }
 
     setLoading(true)
     try {
@@ -50,7 +46,6 @@ export default function UserCreatePage() {
         puesto:          form.puesto || undefined,
         role:            form.role || undefined,
         departamento_ID: form.departamento_ID || undefined,
-        password:        form.password,
       })
       await qc.invalidateQueries({ queryKey: ['users'] })
       toast.success('Usuario creado exitosamente')
@@ -145,27 +140,9 @@ export default function UserCreatePage() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-            <h2 className="text-sm font-bold text-foreground">Contraseña *</h2>
-            <div className="space-y-1.5">
-              <div className="relative">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={e => set('password', e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
-                  className={cn(inputCls, 'pr-10')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-            </div>
-          </div>
+          <p className="text-sm text-muted-foreground bg-card border border-border rounded-2xl p-5">
+            La persona recibirá un correo con un enlace para definir su contraseña. Si no le llega, puede reenviarlo desde su perfil.
+          </p>
 
           <div className="flex justify-end gap-2 pb-4">
             <button
