@@ -1,5 +1,6 @@
 #!/bin/bash
-# Levanta Django para las pruebas e2e: base nueva, catálogos, datos de ejemplo y runserver en :8000.
+# Levanta Django para las pruebas e2e: base nueva, catálogos, datos de ejemplo y runserver en :8000
+# (o en E2E_PUERTO_API).
 # Lo arranca Playwright (MuniClient-v2/playwright.config.ts). PYTHON elige el intérprete.
 set -e
 cd "$(dirname "$0")/.."
@@ -11,4 +12,4 @@ mkdir -p "${E2E_CORREOS:-/tmp/muni-e2e-correos}"
 "$PY" manage.py migrate --noinput > /dev/null
 "$PY" manage.py seed_system > /dev/null
 "$PY" manage.py datos_e2e
-exec "$PY" manage.py runserver localhost:8000 --noreload
+exec "$PY" manage.py runserver "localhost:${E2E_PUERTO_API:-8000}" --noreload

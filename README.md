@@ -61,6 +61,8 @@ npm run lint && npm test && npm run build
 # Punta a punta (Playwright): levanta solo Django con datos de ejemplo y el front
 cd MuniClient-v2
 PYTHON=../.venv/bin/python npm run e2e
+# Si el entorno de desarrollo ya ocupa 8000 y 5173, en otros puertos:
+E2E_PUERTO_API=8002 E2E_PUERTO_WEB=5175 PYTHON=../.venv/bin/python npm run e2e
 ```
 
 El CI de GitHub Actions (`.github/workflows/ci.yml`) corre todo esto en cada PR y además construye las imágenes de Docker.

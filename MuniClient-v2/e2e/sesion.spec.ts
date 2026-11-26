@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { BETO, CLAVE, entrar, ultimoEnlaceDeAcceso } from './ayuda'
 
-const API = 'http://localhost:5173/api/v1'
+const API = `http://localhost:${process.env.E2E_PUERTO_WEB ?? '5173'}/api/v1`
 
 test('login con cookies HttpOnly que JavaScript no ve', async ({ page, context }) => {
   await entrar(page)
