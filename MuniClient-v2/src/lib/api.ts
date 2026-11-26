@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import type {
   ActividadUsuario, AjustePresupuesto, CatalogoAuditoria, CatalogoPermisos, Feedback, MiembroProyecto, RegistroAuditoria, ResumenAuditoria,
   Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User, VerificacionAuditoria,
-  ReglaAprobacion, Solicitud, TipoSolicitud,
+  ReglaAprobacion, Solicitud, TipoSolicitud, ChecklistItem, ComentarioTarea, Recurso, AsignacionRecurso, DocumentoProyecto,
 } from '@/types'
 import type { Marca } from './marca'
 
@@ -280,6 +280,32 @@ export function urlExportarAuditoria(formato: 'csv' | 'json', filtros: Filtros):
   for (const [k, v] of Object.entries(filtros)) if (v !== undefined && v !== '' && k !== 'page') params.set(k, String(v))
   return `${BASE_URL}/auditoria/registros/exportar/?${params}`
 }
+
+// ── Tareas: lista de verificación, comentarios, recursos y documentos ─────
+export const crearItemChecklist = (tarea: string, texto: string) => api.post<ChecklistItem>('/task/checklist/', { tarea, texto }).then(r => r.data)
+export const actualizarItemChecklist = (id: string, datos: Partial<ChecklistItem>) => api.patch<ChecklistItem>(`/task/checklist/${seg(id)}/`, datos).then(r => r.data)
+export const borrarItemChecklist = (id: string) => api.delete(`/task/checklist/${seg(id)}/`).then(r => r.data)
+export const getComentariosTarea = (tarea: string) => api.get<ComentarioTarea[]>('/task/comentarios/', { params: { tarea } }).then(r => r.data)
+export const crearComentarioTarea = (tarea: string, texto: string) => api.post<ComentarioTarea>('/task/comentarios/', { tarea, texto }).then(r => r.data)
+export const borrarComentarioTarea = (id: string) => api.delete(`/task/comentarios/${seg(id)}/`).then(r => r.data)
+export const getRecursos = () => api.get<Recurso[]>('/task/recursos/').then(r => r.data)
+export const crearRecurso = (datos: Partial<Recurso>) => api.post<Recurso>('/task/recursos/', datos).then(r => r.data)
+export const actualizarRecurso = (id: string, datos: Partial<Recurso>) => api.patch<Recurso>(`/task/recursos/${seg(id)}/`, datos).then(r => r.data)
+export const borrarRecurso = (id: string) => api.delete(`/task/recursos/${seg(id)}/`).then(r => r.data)
+export const asignarRecurso = (datos: { tarea: string; recurso: string; cantidad: string; desde?: string | null; hasta?: string | null; nota?: string }) =>
+  api.post<AsignacionRecurso>('/task/asignaciones/', datos).then(r => r.data)
+export const quitarRecurso = (id: string) => api.delete(`/task/asignaciones/${seg(id)}/`).then(r => r.data)
+export const getDocumentos = (params: { proyecto?: string; tarea?: string; solo_proyecto?: string }) =>
+  api.get<DocumentoProyecto[]>('/projects/documentos/', { params }).then(r => r.data)
+export const subirDocumento = (datos: { proyecto?: string; tarea?: string; tipo: string; archivo: File }) => {
+  const fd = new FormData()
+  if (datos.proyecto) fd.append('proyecto', datos.proyecto)
+  if (datos.tarea) fd.append('tarea', datos.tarea)
+  fd.append('tipo', datos.tipo)
+  fd.append('archivo', datos.archivo)
+  return api.post<DocumentoProyecto>('/projects/documentos/', fd).then(r => r.data)
+}
+export const borrarDocumento = (id: string) => api.delete(`/projects/documentos/${seg(id)}/`).then(r => r.data)
 
 // ── Solicitudes ──────────────────────────────────────────────
 export const getSolicitudes = (params: Filtros) =>
