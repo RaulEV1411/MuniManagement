@@ -4,15 +4,15 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, Search, LayoutList, LayoutGrid, RefreshCw,
-  Plus, X, ChevronDown,
+  Plus, X, ChevronDown, Download,
 } from 'lucide-react'
-import { getUsuariosPagina, getDepartments, getRoles, getResumenAuditoria } from '@/lib/api'
+import { getUsuariosPagina, getDepartments, getRoles, getResumenAuditoria, urlExportarUsuarios } from '@/lib/api'
 import { type User, type Department, type Role } from '@/types'
 import { cn, getInitials, fullName, formatearFechaHora } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { useTituloDePagina } from '@/hooks/useMarca'
-import { usePermiso } from '@/hooks/usePermiso'
+import { useAlcance, usePermiso } from '@/hooks/usePermiso'
 
 const ROLE_STYLE: Record<string, string> = {
   'Administrador': 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
@@ -125,6 +125,9 @@ function UserGridCard({ user }: { user: User }) {
 export default function UsersPage() {
   const puedeCrear = usePermiso('usuarios.gestionar')
   const veAuditoria = usePermiso('auditoria.ver')
+  const exportaReportes = usePermiso('reportes.exportar')
+  const veDatosDeTodos = useAlcance('usuarios.ver_datos') === 'todos'
+  const puedeExportar = exportaReportes && veDatosDeTodos
   const { data: resumen } = useQuery({ queryKey: ['auditoria-resumen'], queryFn: getResumenAuditoria, enabled: veAuditoria })
   const avisos = resumen ? [
     resumen.con_intentos_fallidos.length && `${resumen.con_intentos_fallidos.length} con ${resumen.umbral_fallidos} o más intentos fallidos de inicio en 24 h`,
@@ -264,6 +267,11 @@ export default function UsersPage() {
           <RefreshCw size={13} />
         </button>
 
+        {/* Con datos personales: quien exporta reportes y ve los datos de todas las personas. */}
+        <a hidden={!puedeExportar} href={urlExportarUsuarios()}
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold rounded-xl flex-shrink-0">
+          <Download size={13} aria-hidden="true" /> Exportar
+        </a>
         <button hidden={!puedeCrear}
           onClick={() => navigate('/users/new')}
           className="flex items-center gap-1.5 px-4 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98] flex-shrink-0"

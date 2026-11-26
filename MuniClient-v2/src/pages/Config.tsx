@@ -20,8 +20,9 @@ import { CATEGORIAS_DE_ESTADO } from '@/lib/estados'
 import { mensajeDeError } from '@/lib/errores'
 import RolesPermisosPanel from '@/components/config/RolesPermisosPanel'
 import SolicitudesPanel from '@/components/config/SolicitudesPanel'
+import PrivacidadPanel from '@/components/config/PrivacidadPanel'
 
-const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos'] as const
+const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -376,6 +377,7 @@ export default function ConfigPage() {
           >
             {tab === 'Institución' && <InstitucionPanel />}
             {tab === 'Solicitudes' && <SolicitudesPanel />}
+            {tab === 'Privacidad' && <PrivacidadPanel />}
             {tab === 'Estados' && (
               <CrudSection
                 items={estadoItems}

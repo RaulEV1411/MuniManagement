@@ -117,6 +117,8 @@ export default function PublicProjectsPage() {
       <footer className="text-center text-xs text-slate-600 py-6">
         Información pública municipal · Actualizada periódicamente ·{' '}
         <Link to="/accesibilidad" className="underline text-slate-700 hover:text-slate-900">Accesibilidad</Link>
+        {' · '}
+        <Link to="/privacidad" className="underline text-slate-700 hover:text-slate-900">Aviso de privacidad</Link>
       </footer>
     </div>
   )

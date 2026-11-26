@@ -204,6 +204,8 @@ export default function LoginPage() {
           </Link>
           <p className="mt-6 text-center text-xs text-muted-foreground">
             <Link to="/accesibilidad" className="underline-offset-2 hover:underline hover:text-foreground">Accesibilidad</Link>
+            {' · '}
+            <Link to="/privacidad" className="underline-offset-2 hover:underline hover:text-foreground">Aviso de privacidad</Link>
           </p>
         </motion.div>
       </div>

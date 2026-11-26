@@ -8,6 +8,8 @@ import OnboardingTour from './OnboardingTour'
 import Dialogo from '@/components/common/Dialogo'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { useMarca } from '@/hooks/useMarca'
+import { useAppStore } from '@/store/app'
+import AceptarAviso from '@/components/privacidad/AceptarAviso'
 
 export default function AppShell() {
   const marca = useMarca()
@@ -15,6 +17,7 @@ export default function AppShell() {
   // El cajón queda abierto solo en la página donde se abrió: al navegar se cierra solo.
   const [menuEn, setMenuEn] = useState<string | null>(null)
   const menu = menuEn === pathname
+  const avisoPendiente = useAppStore(s => !!s.user?.privacidad_pendiente)
 
   return (
     <div className="flex h-full bg-background">
@@ -57,7 +60,8 @@ export default function AppShell() {
         </main>
       </div>
       <GlobalSearch />
-      <OnboardingTour />
+      {/* Primero el aviso de privacidad; el recorrido inicial, después de aceptarlo. */}
+      {avisoPendiente ? <AceptarAviso /> : <OnboardingTour />}
     </div>
   )
 }

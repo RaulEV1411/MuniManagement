@@ -16,6 +16,10 @@ const FAQS: FAQ[] = [
     a: 'Abra el proyecto, vaya a la pestaña Información y haga clic en cualquiera de las «píldoras» de estado (Pendiente, En progreso, etc.). Si elige Pausado, se le pedirá un motivo, que queda en el historial. Completado y Cancelado abren el cierre del proyecto.',
   },
   {
+    q: '¿Qué datos míos guarda el sistema y cómo los veo?',
+    a: 'El aviso de privacidad (enlace en el ingreso y en el portal) dice qué datos se usan, para qué, quién más los trata y cómo ejercer sus derechos. En su perfil, «Mis datos» descarga todo lo que el sistema guarda de usted, en PDF o JSON. Para corregir la identificación, el correo, el rol o el departamento, pídalo a su jefatura; para dar de baja y anonimizar su cuenta, al Administrador.',
+  },
+  {
     q: '¿Cómo pido más plazo, presupuesto o personal?',
     a: 'En el proyecto, pestaña Solicitudes, «Nueva solicitud»: elija qué pide (prórroga, aumento o rebajo de presupuesto, más personal, cambio de responsable, de alcance u otro) y explique por qué. La aprueban, en orden, las jefaturas que correspondan al monto o a los días; si nadie responde a tiempo, también la puede decidir el nivel siguiente. Mientras tanto el proyecto sigue. Al aprobarse, el cambio se aplica solo y queda en el historial. Las que le toca decidir están en Solicitudes › Por aprobar.',
   },

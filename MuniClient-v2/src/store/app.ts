@@ -13,6 +13,8 @@ export interface SessionUser {
   permisos?: Record<string, string>
   departamento_ID?: string
   onboarding_completado?: boolean
+  // Falta aceptar el aviso de privacidad vigente (o cambió de versión).
+  privacidad_pendiente?: boolean
 }
 
 type DatosDeSesion = SessionUser & { csrf_token?: string }

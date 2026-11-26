@@ -13,7 +13,14 @@ export interface Marca {
   moneda: string
   // Días que se conservan la auditoría y las sesiones cerradas.
   retencion_auditoria_dias: number
+  // Aviso de privacidad (Ley 8968): texto propio, encargados y versión.
+  aviso_privacidad: string
+  encargados: Encargado[]
+  privacidad_version: number
+  privacidad_actualizada: string | null
 }
+
+export interface Encargado { nombre: string; datos: string; finalidad: string; pais: string }
 
 const TONOS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const
 // Cuánto se mezcla con blanco (tonos claros) o con negro (oscuros) respecto del color base (500).
@@ -141,6 +148,7 @@ export function formatearMonto(monto: number, moneda = 'CRC'): string {
 export const MARCA_POR_DEFECTO: Marca = {
   nombre: 'Municipalidad', ubicacion: '', logo: '', color_primario: '#0C3857', color_acento: '#F3951B',
   correo_soporte: '', telefono_soporte: '', horario_soporte: '', moneda: 'CRC', retencion_auditoria_dias: 1825,
+  aviso_privacidad: '', encargados: [], privacidad_version: 1, privacidad_actualizada: null,
 }
 
 export function simboloDe(moneda: string): string {
