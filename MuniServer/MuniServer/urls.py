@@ -20,6 +20,7 @@ api_v1 = [
     path('historial/', include('Historial.urls')),
     path('notifications/', include('Notifications.urls')),
     path('public/', include('Projects.public_urls')),
+    path('configuracion/', include('Configuracion.urls')),
 ]
 
 urlpatterns = [

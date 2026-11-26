@@ -4,6 +4,8 @@
 # ── Dominio ─────────────────────────────────────────────────
 # El nombre con el que se entra al sistema. Tiene que apuntar (registro DNS A/AAAA) a este servidor.
 DOMINIO=proyectos.muni.go.cr
+# Zona horaria de la institución (nombre IANA): fija qué es «hoy» para los avisos de vencimiento.
+ZONA_HORARIA=America/Costa_Rica
 
 # ── Django ──────────────────────────────────────────────────
 # Clave larga y aleatoria. Para generarla:

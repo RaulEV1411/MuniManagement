@@ -65,6 +65,9 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Roles sembrados: {len(ROLES_FIJOS)}"))
 
+        from Configuracion.models import Configuracion
+        Configuracion.actual()
+
         try:
             rol_admin = Roles.objects.get(name='Administrador')
         except Roles.DoesNotExist:
