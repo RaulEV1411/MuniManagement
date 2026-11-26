@@ -4,9 +4,10 @@
 # Guía completa en despliegue/README.md.
 name: munimanagement
 
+# worker y beat usan la misma imagen que construye api (si la construyeran los tres a la vez, chocan).
 x-api: &api
-  build: ./MuniServer
   image: munimanagement-api
+  pull_policy: never
   restart: unless-stopped
   env_file: .env
   environment: &entorno
@@ -52,6 +53,8 @@ services:
 
   api:
     <<: *api
+    build: ./MuniServer
+    pull_policy: build
     command: ["bash", "entrypoint-prod.sh"]
     volumes:
       - estaticos:/app/staticfiles
