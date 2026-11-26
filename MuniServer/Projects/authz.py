@@ -157,7 +157,7 @@ def puede_delegar(user, proyecto):
 class ProyectoVisible(BasePermission):
     """Permiso a nivel objeto: el usuario debe poder ver el proyecto subyacente."""
 
-    message = 'No tienes acceso a este proyecto.'
+    message = 'No tiene acceso a este proyecto.'
 
     def has_object_permission(self, request, view, obj):
         proyecto = getattr(obj, 'proyecto', None) or getattr(obj, 'proyecto_ID', None) or obj

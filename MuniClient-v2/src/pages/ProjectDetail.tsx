@@ -352,7 +352,7 @@ function EditTaskModal({
     if (esCancelacion || esAmpliacion) {
       const title = esCancelacion ? 'Motivo de cancelación' : 'Motivo de ampliación de plazo'
       const description = esCancelacion
-        ? 'Esta tarea se marcará como cancelada. Indica el motivo.'
+        ? 'Esta tarea se marcará como cancelada. Indique el motivo.'
         : `La fecha de entrega se extiende de ${formatDate(task.fecha_entrega)} a ${formatDate(form.fecha_entrega)}.`
       setRazonConfig({ title, description })
     } else {
@@ -668,7 +668,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 <ImageIcon size={20} className="text-muted-foreground/40" />
               </div>
               <p className="text-sm font-medium text-foreground">Sin imágenes</p>
-              <p className="text-xs text-muted-foreground">Arrastra fotos aquí o usa el botón</p>
+              <p className="text-xs text-muted-foreground">Arrastre fotos aquí o use el botón</p>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!!taskUploadProgress}
@@ -695,7 +695,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 </div>
               )}
               {dragOver && !taskUploadProgress && (
-                <p className="text-center text-xs text-ocean-500 dark:text-ocean-200 font-medium mt-3">Suelta para subir</p>
+                <p className="text-center text-xs text-ocean-500 dark:text-ocean-200 font-medium mt-3">Suelte para subir</p>
               )}
             </div>
           )}
@@ -964,9 +964,9 @@ function DropZone({ onFiles, disabled, progress }: {
         ) : (
           <>
             <p className="text-sm font-medium text-foreground">
-              {dragOver ? 'Suelta las imágenes' : 'Arrastra fotos aquí'}
+              {dragOver ? 'Suelte las imágenes' : 'Arrastre fotos aquí'}
             </p>
-            <p className="text-xs text-muted-foreground">o haz clic · puedes seleccionar varias a la vez</p>
+            <p className="text-xs text-muted-foreground">o haga clic · puede seleccionar varias a la vez</p>
           </>
         )}
       </div>
@@ -1288,7 +1288,7 @@ export default function ProjectDetailPage() {
                       <CheckCircle2 size={20} className="text-muted-foreground/40" />
                     </div>
                     <p className="text-sm font-medium text-foreground">Sin tareas</p>
-                    <p className="text-xs text-muted-foreground">Crea la primera tarea para este proyecto</p>
+                    <p className="text-xs text-muted-foreground">Cree la primera tarea de este proyecto</p>
                     <button
                       onClick={() => setShowTaskModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
@@ -1305,7 +1305,7 @@ export default function ProjectDetailPage() {
                 ) : (
                   <>
                     <p className="text-[10px] text-muted-foreground">
-                      {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastra las tarjetas entre grupos para cambiar el estado'}
+                      {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastre las tarjetas entre grupos para cambiar el estado'}
                     </p>
                     {ordenGrupos.map(status => (
                       <TaskGroup
@@ -1401,13 +1401,13 @@ export default function ProjectDetailPage() {
                   <p className="text-xs text-muted-foreground">
                     {projectImages.length === 0
                       ? 'Sin imágenes aún'
-                      : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haz clic para ampliar`}
+                      : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haga clic para ampliar`}
                   </p>
                   {projectImages.length > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                       {uploadProgress
                         ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}...`
-                        : 'Arrastra o selecciona varias fotos en la zona de abajo'}
+                        : 'Arrastre o seleccione varias fotos en la zona de abajo'}
                     </span>
                   )}
                 </div>

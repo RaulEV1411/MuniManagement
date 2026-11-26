@@ -101,7 +101,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               </button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Esta acción quedará registrada en el historial. Por favor indica el motivo.
+              Esta acción queda registrada en el historial. Indique el motivo.
             </p>
             <textarea
               autoFocus

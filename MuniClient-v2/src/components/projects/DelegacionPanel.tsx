@@ -140,7 +140,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
               onChange={e => setSupervisor(e.target.value)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="">Selecciona un usuario…</option>
+              <option value="">Seleccione una persona…</option>
               {candidatos.map(u => (
                 <option key={u.user_ID} value={u.user_ID}>
                   {u.first_name} {u.last_name} · {u.role.name}

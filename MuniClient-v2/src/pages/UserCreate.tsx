@@ -37,12 +37,12 @@ export default function UserCreatePage() {
     e.preventDefault()
     if (!form.first_name.trim()) { toast.error('El nombre es requerido'); return }
     if (!form.last_name.trim())  { toast.error('El apellido es requerido'); return }
-    if (!form.email.trim())      { toast.error('El email es requerido'); return }
+    if (!form.email.trim())      { toast.error('El correo electrónico es obligatorio'); return }
     if (!form.cedula.trim())     { toast.error('La cédula es requerida'); return }
     if (!form.phone_number.trim()) { toast.error('El teléfono es requerido'); return }
     if (!form.puesto.trim())     { toast.error('El puesto es requerido'); return }
-    if (!form.role)              { toast.error('Selecciona un rol'); return }
-    if (!form.departamento_ID)   { toast.error('Selecciona un departamento'); return }
+    if (!form.role)              { toast.error('Seleccione un rol'); return }
+    if (!form.departamento_ID)   { toast.error('Seleccione un departamento'); return }
 
     setLoading(true)
     try {
@@ -117,7 +117,7 @@ export default function UserCreatePage() {
               <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} placeholder="112345678" className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Email *</label>
+              <label className="text-xs font-semibold text-muted-foreground">Correo electrónico *</label>
               <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="usuario@muni.cr" className={inputCls} />
             </div>
             <div className="grid grid-cols-2 gap-3">

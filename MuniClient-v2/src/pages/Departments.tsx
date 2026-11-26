@@ -27,7 +27,7 @@ function CreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) { toast.error('El nombre es requerido'); return }
-    if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
+    if (!dirId) { toast.error('Seleccione la dirección a la que pertenece'); return }
     setLoading(true)
     try {
       await createDepartment({ name: name.trim(), direccion: dirId || undefined })
@@ -118,7 +118,7 @@ function DepartmentRow({
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
-    if (!dirId) { toast.error('Selecciona la dirección a la que pertenece'); return }
+    if (!dirId) { toast.error('Seleccione la dirección a la que pertenece'); return }
     setSaving(true)
     try {
       await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined, jefe: jefeId || null })
@@ -283,7 +283,7 @@ export default function DepartmentsPage() {
               <Building2 size={20} className="text-muted-foreground/40" />
             </div>
             <p className="text-sm font-medium text-foreground">Sin departamentos</p>
-            <p className="text-xs text-muted-foreground">Crea el primer departamento para comenzar</p>
+            <p className="text-xs text-muted-foreground">Cree el primer departamento para comenzar</p>
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"

@@ -231,7 +231,7 @@ export default function DirectionsPage() {
               <GitBranch size={20} className="text-muted-foreground/40" />
             </div>
             <p className="text-sm font-medium text-foreground">Sin direcciones</p>
-            <p className="text-xs text-muted-foreground">Crea la primera dirección para comenzar</p>
+            <p className="text-xs text-muted-foreground">Cree la primera dirección para comenzar</p>
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"

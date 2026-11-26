@@ -26,7 +26,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: 'Principal',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard',     path: '/dashboard',   match: (p: string) => p === '/dashboard' || p.startsWith('/projects'), showOverdue: true },
+      { icon: LayoutDashboard, label: 'Proyectos',     path: '/dashboard',   match: (p: string) => p === '/dashboard' || p.startsWith('/projects'), showOverdue: true },
     ],
   },
   {
@@ -40,7 +40,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: 'Herramientas',
     items: [
-      { icon: GanttChartSquare, label: 'Timeline', path: '/timeline', match: (p: string) => p === '/timeline' },
+      { icon: GanttChartSquare, label: 'Cronograma', path: '/timeline', match: (p: string) => p === '/timeline' },
       { icon: FileDown,         label: 'Reportes', path: '/reports',  match: (p: string) => p === '/reports' },
     ],
   },

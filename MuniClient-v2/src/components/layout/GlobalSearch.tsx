@@ -185,7 +185,7 @@ export default function GlobalSearch() {
               )
             ) : (
               <div className="px-4 py-8 text-center space-y-3">
-                <p className="text-xs text-muted-foreground">Escribe para buscar proyectos y usuarios</p>
+                <p className="text-xs text-muted-foreground">Escriba para buscar proyectos y usuarios</p>
                 <div className="flex items-center justify-center gap-4">
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <kbd className="bg-muted border border-border rounded px-1.5 py-0.5">↑↓</kbd> navegar

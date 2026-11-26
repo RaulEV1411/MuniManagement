@@ -134,7 +134,7 @@ function EditModal({
             <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Email</label>
+            <label className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
             <input type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -194,7 +194,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
       toast.success('Contraseña actualizada')
       onClose()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'Error al cambiar contraseña — verifica la contraseña actual'))
+      toast.error(mensajeDeError(err, 'No se pudo cambiar la contraseña. Revise la contraseña actual.'))
     } finally {
       setLoading(false)
     }
@@ -471,7 +471,7 @@ export default function UserProfilePage() {
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Contacto</h3>
-                  <InfoRow icon={Mail}       label="Email"    value={user.email} />
+                  <InfoRow icon={Mail}       label="Correo electrónico" value={user.email} />
                   {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />}
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>

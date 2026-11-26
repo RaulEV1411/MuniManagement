@@ -15,7 +15,7 @@ import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 
 const schema = z.object({
   email:    z.string().email('Correo inválido'),
-  password: z.string().min(1, 'Ingresa tu contraseña'),
+  password: z.string().min(1, 'Ingrese su contraseña'),
 })
 type Form = z.infer<typeof schema>
 
@@ -41,11 +41,11 @@ export default function LoginPage() {
             (resumen?.tareas_por_vencer?.length ?? 0)
           if (total > 0) {
             toast.warning(
-              `Tienes ${total} pendiente(s) próximos a vencer en los siguientes 4 días.`,
+              total === 1 ? 'Tiene 1 pendiente por vencer en los próximos 4 días.' : `Tiene ${total} pendientes por vencer en los próximos 4 días.`,
               { duration: 6000 },
             )
           } else if (resumen?.no_leidas > 0) {
-            toast.info(`Tienes ${resumen.no_leidas} notificación(es) sin leer.`)
+            toast.info(resumen.no_leidas === 1 ? 'Tiene 1 aviso sin leer.' : `Tiene ${resumen.no_leidas} avisos sin leer.`)
           }
         })
         .catch(() => {})
@@ -88,7 +88,7 @@ export default function LoginPage() {
               Sistema de<br />Gestión Municipal
             </h1>
             <p className="text-white/70 text-sm leading-relaxed">
-              Administra proyectos, equipos y recursos de forma eficiente desde un solo lugar.
+              Proyectos, equipos y presupuestos de la municipalidad en un solo lugar.
             </p>
           </div>
 
@@ -133,8 +133,8 @@ export default function LoginPage() {
             <span className="font-bold text-ocean-500 dark:text-ocean-200">{marca.nombre}</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-1">Bienvenido</h2>
-          <p className="text-sm text-muted-foreground mb-8">Ingresa tus credenciales para continuar</p>
+          <h2 className="text-2xl font-bold text-foreground mb-1">Le damos la bienvenida</h2>
+          <p className="text-sm text-muted-foreground mb-8">Ingrese su correo y su contraseña para continuar.</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>

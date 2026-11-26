@@ -24,7 +24,7 @@ function diffDays(a: Date, b: Date) {
 }
 
 export default function TimelinePage() {
-  useTituloDePagina('Línea de tiempo')
+  useTituloDePagina('Cronograma')
   const navigate = useNavigate()
   const [deptFilter, setDeptFilter] = useState('')
 
@@ -90,7 +90,7 @@ export default function TimelinePage() {
           <GanttChartSquare size={16} className="text-white" />
         </div>
         <div className="flex-1">
-          <h1 className="text-base font-bold text-foreground">Timeline de proyectos</h1>
+          <h1 className="text-base font-bold text-foreground">Cronograma de proyectos</h1>
           {!isLoading && (
             <p className="text-xs text-muted-foreground">{filtered.length} proyecto{filtered.length !== 1 ? 's' : ''}</p>
           )}

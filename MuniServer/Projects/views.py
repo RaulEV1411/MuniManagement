@@ -86,10 +86,10 @@ class ProyectosWriteViewSet(ModelViewSet):
         obj = super().get_object()
         if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
             if not authz.puede_ver(self.request.user, obj):
-                raise PermissionDenied('No tienes acceso a este proyecto.')
+                raise PermissionDenied('No tiene acceso a este proyecto.')
         else:
             if not authz.puede_editar(self.request.user, obj):
-                raise PermissionDenied('No tienes permisos para modificar este proyecto.')
+                raise PermissionDenied('No tiene permisos para modificar este proyecto.')
         return obj
 
     def perform_create(self, serializer):
@@ -158,7 +158,7 @@ class ProyectosWriteViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         if not authz.puede_editar(self.request.user, instance):
-            raise PermissionDenied('No tienes permisos para eliminar este proyecto.')
+            raise PermissionDenied('No tiene permisos para eliminar este proyecto.')
         datos = {'proyect_ID': str(instance.proyect_ID), 'name': instance.name}
         instance.delete()
         # Queda sin proyecto (ya no existe), pero conserva quién y qué se borró.
@@ -177,12 +177,12 @@ class ProyectosTiposViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto']):
-            raise PermissionDenied('No tienes permisos para modificar este proyecto.')
+            raise PermissionDenied('No tiene permisos para modificar este proyecto.')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not authz.puede_editar(self.request.user, instance.proyecto):
-            raise PermissionDenied('No tienes permisos para modificar este proyecto.')
+            raise PermissionDenied('No tiene permisos para modificar este proyecto.')
         instance.delete()
 
 
@@ -214,7 +214,7 @@ class ProjectImageViewSet(ModelViewSet):
         if proyecto is None:
             return Response({'error': 'Proyecto no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         if not authz.puede_editar(request.user, proyecto):
-            raise PermissionDenied('No tienes permisos para subir imágenes a este proyecto.')
+            raise PermissionDenied('No tiene permisos para subir imágenes a este proyecto.')
         error = error_de_imagen(file)
         if error:
             return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
@@ -230,7 +230,7 @@ class ProjectImageViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if not authz.puede_editar(request.user, instance.proyecto):
-            raise PermissionDenied('No tienes permisos para borrar esta imagen.')
+            raise PermissionDenied('No tiene permisos para borrar esta imagen.')
         borrar_imagen(instance.public_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -260,16 +260,16 @@ class DelegacionSupervisionViewSet(ModelViewSet):
 
     def _check_can_manage(self, proyecto):
         if not authz.puede_delegar(self.request.user, proyecto):
-            raise PermissionDenied('No tienes permisos para gestionar la supervisión de este proyecto.')
+            raise PermissionDenied('No tiene permisos para gestionar la supervisión de este proyecto.')
 
     def perform_create(self, serializer):
         proyecto = serializer.validated_data['proyecto']
         supervisor = serializer.validated_data['supervisor']
         self._check_can_manage(proyecto)
         if supervisor.user_ID == self.request.user.user_ID:
-            raise ValidationError({'supervisor': 'No puedes delegarte la supervisión a ti mismo.'})
+            raise ValidationError({'supervisor': 'No puede delegar la supervisión en su propia cuenta.'})
         if not authz.usuarios_visibles(self.request.user).filter(pk=supervisor.pk).exists():
-            raise ValidationError({'supervisor': 'Solo puedes delegar en personas de tu dirección o departamento.'})
+            raise ValidationError({'supervisor': 'Solo puede delegar en personas de su dirección o departamento.'})
         rol = getattr(getattr(supervisor, 'role', None), 'name', '')
         flag_ok = getattr(getattr(supervisor, 'role', None), 'puede_recibir_delegacion', False)
         if not flag_ok and rol not in {'Coordinador', 'Funcionario', 'Jefe de Departamento', 'Jefe de Dirección'}:
@@ -278,8 +278,8 @@ class DelegacionSupervisionViewSet(ModelViewSet):
         Notificacion.objects.create(
             usuario=instance.supervisor,
             tipo='delegacion',
-            titulo=f'Te delegaron supervisión del proyecto "{proyecto.name}"',
-            mensaje=f'{self.request.user.first_name} {self.request.user.last_name} te asignó como supervisor.',
+            titulo=f'Se le delegó la supervisión del proyecto "{proyecto.name}"',
+            mensaje=f'{self.request.user.first_name} {self.request.user.last_name} le asignó la supervisión.',
             link=f'/projects/{proyecto.proyect_ID}',
             clave_dedupe=f'delegacion-{instance.delegacion_ID}',
         )
@@ -329,7 +329,7 @@ class AjustePresupuestoViewSet(ModelViewSet):
         if not proyecto:
             raise ValidationError('Debe indicar un proyecto o una tarea.')
         if not authz.puede_editar(self.request.user, proyecto):
-            raise PermissionDenied('No tienes permisos para registrar ajustes en este proyecto.')
+            raise PermissionDenied('No tiene permisos para registrar ajustes en este proyecto.')
 
         instance = serializer.save(usuario=self.request.user)
         HistorialCambios.objects.create(
@@ -354,5 +354,5 @@ class AjustePresupuestoViewSet(ModelViewSet):
     def perform_destroy(self, instance):
         proyecto = self._proyecto_objetivo(instance)
         if proyecto and not authz.puede_editar(self.request.user, proyecto):
-            raise PermissionDenied('No puedes borrar ajustes de un proyecto que no gestionas.')
+            raise PermissionDenied('No puede borrar ajustes de un proyecto que no gestiona.')
         instance.delete()

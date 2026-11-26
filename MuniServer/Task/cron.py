@@ -120,7 +120,7 @@ def send_due_date_warnings():
         titulo = f'Proyecto "{p.name[:MAX_NOMBRE]}" — {urgencia}'
         mensaje = (
             f'El proyecto "{p.name[:MAX_NOMBRE]}" tiene fecha de entrega el {p.fecha_entrega} ({urgencia}). '
-            'Revisa el avance y notifica al equipo si requiere ajuste.'
+            'Revise el avance y avise al equipo si requiere ajustes.'
         )
         link = f'/projects/{p.proyect_ID}'
         dedupe = f'venc-proy:{p.proyect_ID}:{hoy.isoformat()}'
