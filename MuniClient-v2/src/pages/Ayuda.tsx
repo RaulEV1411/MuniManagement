@@ -3,6 +3,7 @@ import { HelpCircle, ChevronDown, BookOpen, MessageCircle, Phone, Mail, Sparkles
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store/app'
 import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
+import { Link } from 'react-router-dom'
 
 interface FAQ {
   q: string
@@ -131,6 +132,11 @@ export default function AyudaPage() {
           </div>
         </section>
       )}
+
+      <p className="mt-8 text-xs text-muted-foreground">
+        Si algo no se puede usar con el teclado o con un lector de pantalla, vea la{' '}
+        <Link to="/accesibilidad" className="underline hover:text-foreground">declaración de accesibilidad</Link>.
+      </p>
     </div>
   )
 }

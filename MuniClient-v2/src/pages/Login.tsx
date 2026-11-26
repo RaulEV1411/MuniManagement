@@ -189,6 +189,9 @@ export default function LoginPage() {
               {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
           </form>
+          <p className="mt-8 text-center text-xs text-muted-foreground">
+            <Link to="/accesibilidad" className="underline-offset-2 hover:underline hover:text-foreground">Accesibilidad</Link>
+          </p>
         </motion.div>
       </div>
     </div>

@@ -109,8 +109,10 @@ export default function PublicProjectsPage() {
         )}
       </main>
 
-      <footer className="text-center text-xs text-slate-500 py-6">
-        Información pública municipal · Actualizada periódicamente
+      {/* El portal es siempre claro (fondos slate fijos): el texto usa colores fijos, no los del tema. */}
+      <footer className="text-center text-xs text-slate-600 py-6">
+        Información pública municipal · Actualizada periódicamente ·{' '}
+        <Link to="/accesibilidad" className="underline text-slate-700 hover:text-slate-900">Accesibilidad</Link>
       </footer>
     </div>
   )
