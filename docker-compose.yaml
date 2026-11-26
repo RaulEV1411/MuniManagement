@@ -1,57 +1,125 @@
+# Producción: una instalación por municipalidad en un solo servidor.
+# Las variables van en el archivo .env junto a este archivo (plantilla en despliegue/variables-produccion.ejemplo).
+#   docker compose up -d --build
+# Guía completa en despliegue/README.md.
+name: munimanagement
+
+x-api: &api
+  build: ./MuniServer
+  image: munimanagement-api
+  restart: unless-stopped
+  env_file: .env
+  environment: &entorno
+    DEBUG: "False"
+    DB_HOST: mysql
+    DB_NAME: ${DB_NAME:-MuniManagement}
+    DB_USER: ${DB_USER:-muni}
+    ALLOWED_HOSTS: ${DOMINIO:?Falta DOMINIO en .env}
+    CSRF_TRUSTED_ORIGINS: https://${DOMINIO}
+    FRONTEND_URL: https://${DOMINIO}
+    REDIS_URL: redis://valkey:6379/0
+    # Caddy pasa la IP real del visitante en X-Forwarded-For.
+    RATELIMIT_IP_META_KEY: HTTP_X_FORWARDED_FOR
+
 services:
-  app:
-    container_name: react-production
-    image: react-production:prod
-    build:
-      context: ./MuniClient
-      target: production
-      args:
-        - NODE_ENV=production
-      dockerfile: Dockerfile.prod
-    ports:
-      - 80:80
-
-  django:
-    image: django_app
-    container_name: django_app
-    build:
-      context: ./MuniServer
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./MuniServer:/app
-    env_file:
-      - .env
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=${DEBUG}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=${DB_HOST}
-      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-    command: >
-      bash -c "./wait-for-it.sh -t 30 mysql:3306 --
-               python manage.py migrate &&
-               gunicorn MuniServer.wsgi:application --bind 0.0.0.0:8000 --workers 3"
-    depends_on:
-      - mysql
-
   mysql:
-    image: mysql:latest
-    ports:
-      - "3307:3306"
+    image: mysql:8.4
+    restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME}
+      MYSQL_DATABASE: ${DB_NAME:-MuniManagement}
+      MYSQL_USER: ${DB_USER:-muni}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Falta DB_ROOT_PASSWORD en .env}
     volumes:
-      - django_react_data:/data/db
-      - ./dumps:/docker-entrypoint-initdb.d:ro
+      - mysql_datos:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  # Cola de Celery y caché del límite de intentos de login. Valkey es la versión libre (BSD) de Redis.
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  api:
+    <<: *api
+    command: ["bash", "entrypoint-prod.sh"]
+    volumes:
+      - estaticos:/app/staticfiles
+    depends_on:
+      mysql:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/v1/health/', headers={'Host': os.environ['ALLOWED_HOSTS'].split(',')[0]}), timeout=4)"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    <<: *api
+    command: ["celery", "-A", "MuniServer", "worker", "-l", "info", "--concurrency=2"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  beat:
+    <<: *api
+    command: ["celery", "-A", "MuniServer", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Front, proxy de la API y HTTPS.
+  web:
+    build: ./MuniClient-v2
+    image: munimanagement-web
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - estaticos:/srv/static:ro
+      - caddy_datos:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Respaldo diario de la base en ./respaldos (se conservan RESPALDO_DIAS días).
+  respaldo:
+    image: mysql:8.4
+    restart: unless-stopped
+    entrypoint: ["bash", "/respaldo.sh"]
+    environment:
+      DB_HOST: mysql
+      DB_NAME: ${DB_NAME:-MuniManagement}
+      DB_USER: ${DB_USER:-muni}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RESPALDO_DIAS: ${RESPALDO_DIAS:-14}
+    volumes:
+      - ./respaldos:/respaldos
+      - ./MuniServer/scripts/respaldo.sh:/respaldo.sh:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 volumes:
-  django_react_data:
+  mysql_datos:
+  estaticos:
+  caddy_datos:
+  caddy_config:

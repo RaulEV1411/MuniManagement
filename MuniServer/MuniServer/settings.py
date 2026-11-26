@@ -184,6 +184,8 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
     SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
+    # El chequeo de salud de Docker entra por HTTP dentro de la red interna.
+    SECURE_REDIRECT_EXEMPT = [r'^api/v1/health/$']
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -228,3 +230,39 @@ cloudinary.config(
     api_secret=os.environ.get('CLOUDINARY_API_SECRET', ''),
     secure=True,
 )
+
+
+# ── Logs ────────────────────────────────────────────────────
+# En producción, una línea JSON por evento en la salida estándar (docker logs).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {'()': 'MuniServer.registro.FormatoJSON'},
+        'simple': {'format': '{levelname} {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'consola': {'class': 'logging.StreamHandler', 'formatter': 'simple' if DEBUG else 'json'},
+    },
+    'root': {'handlers': ['consola'], 'level': os.environ.get('LOG_LEVEL', 'INFO')},
+}
+
+# ── Sentry (opcional) ───────────────────────────────────────
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '').strip()
+if SENTRY_DSN:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=os.environ.get('SENTRY_ENVIRONMENT', 'produccion'),
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0')),
+        # Sin datos personales (Ley 8968): ni identidad ni IP, ni cookies, ni headers, ni cuerpos,
+        # ni las variables locales de las trazas (pueden tener cédulas o correos).
+        data_collection={
+            'user_info': False,
+            'cookies': {'mode': 'off'},
+            'http_headers': {'request': {'mode': 'off'}},
+            'http_bodies': [],
+            'url_query_params': {'mode': 'denylist'},
+            'stack_frame_variables': False,
+        },
+    )

@@ -174,4 +174,6 @@ GitHub.sublime-settings
 .venv/
 venv/
 dumps/
+respaldos/
 *.sql
+*.sql.gz

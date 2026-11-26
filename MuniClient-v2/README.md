@@ -1,73 +1,25 @@
-# React + TypeScript + Vite
+# MuniClient-v2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Front de MuniManagement: React 19, TypeScript, Vite, Tailwind CSS, TanStack Query y Zustand.
 
-Currently, two official plugins are available:
+## Comandos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci            # instala las dependencias exactas del lockfile (Node 24, ver .nvmrc)
+npm run dev       # servidor de desarrollo en http://localhost:5173
+npm run build     # chequeo de tipos y compilación a dist/
+npm run lint      # ESLint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Cómo habla con la API
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- La API vive en `/api/v1` del mismo dominio:
+  - **Desarrollo:** el proxy de Vite (`vite.config.ts`) manda `/api` a `http://localhost:8000`. Otro destino se define con `VITE_PROXY_API`.
+  - **Producción:** Caddy (`Caddyfile`) hace lo mismo hacia el contenedor `api`.
+- La sesión viaja en cookies HttpOnly que fija el servidor. El front nunca ve los JWT, solo guarda en memoria el token CSRF que mandan el login y `/users/me/`.
+- `src/lib/api.ts` concentra las llamadas. Los ids que van en la URL pasan por `seg()`, que exige un UUID y lo codifica.
+- `src/lib/errores.ts` convierte los errores de la API en mensajes para la persona.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Imagen de producción
+
+`Dockerfile` compila el front y lo copia a una imagen de Caddy junto con el `Caddyfile`. Ver `../despliegue/README.md`.

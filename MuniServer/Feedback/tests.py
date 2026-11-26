@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 from Feedback.models import Feedback
 from MuniServer.pruebas import Escenario
 
-URL = '/feedback/feedback/'
+URL = '/api/v1/feedback/feedback/'
 
 
 class ComentariosTests(Escenario, APITestCase):

@@ -1,6 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+// Mismo dominio que el front: Caddy en producción y el proxy de Vite en desarrollo mandan /api a Django.
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
 
 // La sesión viaja en cookies HttpOnly que fija el servidor: el front nunca ve los JWT.
 // Lo que sí guarda (en memoria) es el token CSRF, que acompaña a cada petición que modifica datos.

@@ -1,0 +1,40 @@
+# Copie este archivo como .env en la raíz del proyecto (junto a docker-compose.yaml)
+# y complete cada valor. El .env no se sube al repositorio.
+
+# ── Dominio ─────────────────────────────────────────────────
+# El nombre con el que se entra al sistema. Tiene que apuntar (registro DNS A/AAAA) a este servidor.
+DOMINIO=proyectos.muni.go.cr
+
+# ── Django ──────────────────────────────────────────────────
+# Clave larga y aleatoria. Para generarla:
+#   python3 -c "import secrets; print(secrets.token_urlsafe(50))"
+SECRET_KEY=
+
+# ── Base de datos (MySQL 8.4) ───────────────────────────────
+DB_NAME=MuniManagement
+DB_USER=muni
+DB_PASSWORD=
+DB_ROOT_PASSWORD=
+
+# ── Correo ──────────────────────────────────────────────────
+# Recomendado: el SMTP institucional de la municipalidad, con SPF y DKIM configurados para
+# el dominio del remitente (si no, los correos de activación y avisos caen en spam).
+EMAIL_HOST=smtp.muni.go.cr
+EMAIL_PORT=587
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+DEFAULT_FROM_EMAIL=proyectos@muni.go.cr
+# Alternativas en lugar del SMTP: RESEND_API_KEY o SENDGRID_API_KEY.
+
+# ── Fotos (Cloudinary) ──────────────────────────────────────
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# ── Opcional ────────────────────────────────────────────────
+# Errores a Sentry (sin datos personales). Vacío = desactivado.
+SENTRY_DSN=
+# Días de respaldos que se conservan en ./respaldos.
+RESPALDO_DIAS=14
+# Procesos de gunicorn (más o menos 2 por núcleo de CPU).
+GUNICORN_WORKERS=3

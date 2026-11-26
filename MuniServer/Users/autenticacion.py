@@ -1,6 +1,6 @@
 """Sesión con JWT en cookies HttpOnly: JavaScript no puede leer los tokens.
 
-- El access va en una cookie para toda la API; el refresh, en otra limitada a /users/.
+- El access va en una cookie para toda la API; el refresh, en otra limitada a /api/v1/users/.
 - Como el navegador manda las cookies solo, las peticiones que modifican datos exigen el
   token CSRF de Django en el header X-CSRFToken. El front lo recibe en el login y en /users/me/.
 - Se sigue aceptando "Authorization: Bearer" para scripts y pruebas.
@@ -13,7 +13,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 ACCESS = 'muni_access'
 REFRESH = 'muni_refresh'
-RUTA_REFRESH = '/users/'
+RUTA_REFRESH = '/api/v1/users/'
 
 
 class JWTCookieAuthentication(JWTAuthentication):
