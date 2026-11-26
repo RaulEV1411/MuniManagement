@@ -1,13 +1,14 @@
-import { expect, test, type Page } from '@playwright/test'
-import { FABI, entrar } from './ayuda'
+import type { Page } from '@playwright/test'
+import { FABI, entrar, esperarRespuesta, expect, test } from '../fixtures'
 
 async function cambiarCelda(admin: Page, etiqueta: string, valor: string) {
-  const guardado = admin.waitForResponse(r => r.status() !== 401 && r.url().includes('/users/roles/') && r.request().method() === 'PATCH')
+  const guardado = esperarRespuesta(admin, '/users/roles/', 'PATCH')
   await admin.getByLabel(etiqueta).selectOption(valor)
   expect((await guardado).status()).toBe(200)
 }
 
-test('sin permiso no se ofrece «Nuevo proyecto»; la matriz se lo habilita', async ({ page, browser }) => {
+// Cambia la matriz de permisos de toda la institución (y la deja como estaba): corre al final, de a una.
+test('sin permiso no se ofrece «Nuevo proyecto»; la matriz se lo habilita', { tag: ['@global', '@critico'] }, async ({ page, browser }) => {
   await entrar(page, FABI)
   // Por texto y no por rol: getByRole descarta lo que tiene el atributo hidden aunque se vea.
   const nuevo = page.locator('button', { hasText: 'Nuevo proyecto' })
@@ -29,9 +30,9 @@ test('sin permiso no se ofrece «Nuevo proyecto»; la matriz se lo habilita', as
   await cambiarCelda(admin, 'Crear proyectos · Funcionario', '')
 })
 
-test('el equipo de un proyecto: agregar con vencimiento, verlo y quitarlo', async ({ page }) => {
+test('el equipo de un proyecto: agregar con vencimiento, verlo y quitarlo', { tag: ['@muta', '@critico'] }, async ({ page, escenario }) => {
   await entrar(page)
-  await page.getByRole('link', { name: 'Acera central' }).first().click()
+  await page.goto(`/projects/${escenario.proyecto.id}`)
   await page.getByRole('tab', { name: /^Información/ }).click()
   await page.getByRole('button', { name: 'Agregar persona' }).click()
   const dialogo = page.getByRole('dialog', { name: 'Agregar al equipo' })
@@ -40,7 +41,7 @@ test('el equipo de un proyecto: agregar con vencimiento, verlo y quitarlo', asyn
   const enDosDias = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10)
   await dialogo.getByLabel('Hasta (opcional)').fill(enDosDias)
   await dialogo.getByLabel('Motivo (opcional)').fill('Revisión de planos')
-  const creado = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/projects/miembros/') && r.request().method() === 'POST')
+  const creado = esperarRespuesta(page, '/projects/miembros/', 'POST')
   await dialogo.getByRole('button', { name: 'Guardar' }).click()
   expect((await creado).status()).toBe(201)
 
@@ -54,7 +55,7 @@ test('el equipo de un proyecto: agregar con vencimiento, verlo y quitarlo', asyn
   await expect(equipo.getByRole('button', { name: /accesos anteriores \(1\)/ })).toBeVisible()
 })
 
-test('«ver como»: el perfil muestra lo que puede hacer la persona', async ({ page }) => {
+test('«ver como»: el perfil muestra lo que puede hacer la persona', { tag: '@lectura' }, async ({ page }) => {
   await entrar(page)
   await page.goto('/users')
   await page.getByRole('link', { name: 'Fabi Prueba' }).click()

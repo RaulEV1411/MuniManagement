@@ -1,13 +1,13 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../fixtures'
 
-test('el portal muestra solo lo público', async ({ page }) => {
+test('el portal muestra solo lo público', { tag: ['@lectura', '@critico'] }, async ({ page }) => {
   await page.goto('/publico')
   await expect(page.getByRole('heading', { name: 'Portal de proyectos' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Acera central' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Plan interno' })).toHaveCount(0)
 })
 
-test('la búsqueda consulta al dejar de escribir, no por cada tecla', async ({ page }) => {
+test('la búsqueda consulta al dejar de escribir, no por cada tecla', { tag: '@lectura' }, async ({ page }) => {
   await page.goto('/publico')
   await expect(page.getByRole('heading', { name: 'Acera central' })).toBeVisible()
   const busquedas: string[] = []
@@ -18,7 +18,7 @@ test('la búsqueda consulta al dejar de escribir, no por cada tecla', async ({ p
   expect(busquedas.length).toBe(1)
 })
 
-test('el detalle público no expone datos de personas', async ({ page }) => {
+test('el detalle público no expone datos de personas', { tag: ['@lectura', '@critico'] }, async ({ page }) => {
   await page.goto('/publico')
   await page.getByRole('heading', { name: 'Acera central' }).click()
   await expect(page.getByText('Tareas del proyecto')).toBeVisible()

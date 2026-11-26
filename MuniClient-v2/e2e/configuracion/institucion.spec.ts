@@ -1,13 +1,14 @@
-import { expect, test, type Page } from '@playwright/test'
-import { BETO, entrar } from './ayuda'
+import type { Page } from '@playwright/test'
+import { BETO, entrar, esperarRespuesta, expect, test } from '../fixtures'
 
 async function guardar(page: Page) {
-  const respuesta = page.waitForResponse(r => r.status() !== 401 && r.url().endsWith('/api/v1/configuracion/') && r.request().method() === 'PATCH')
+  const respuesta = esperarRespuesta(page, /\/api\/v1\/configuracion\/$/, 'PATCH')
   await page.getByRole('button', { name: 'Guardar' }).click()
   expect((await respuesta).status()).toBe(200)
 }
 
-test('el administrador cambia nombre y color, y se ven en toda la app', async ({ page }) => {
+// Cambia el nombre y el color de toda la institución: corre al final, de a una, y deja todo como estaba.
+test('el administrador cambia nombre y color, y se ven en toda la app', { tag: '@global' }, async ({ page }) => {
   await entrar(page)
   await page.goto('/config')
   const nombreOriginal = await page.locator('#inst-nombre').inputValue()
@@ -37,7 +38,7 @@ test('el administrador cambia nombre y color, y se ven en toda la app', async ({
   await guardar(page)
 })
 
-test('un funcionario ve los datos de la institución, pero no los cambia', async ({ page }) => {
+test('un funcionario ve los datos de la institución, pero no los cambia', { tag: '@lectura' }, async ({ page }) => {
   await entrar(page, BETO)
   await page.goto('/config')
   await expect(page.getByText('Su rol no permite cambiar estos datos.')).toBeVisible()

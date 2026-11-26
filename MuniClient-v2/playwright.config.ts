@@ -22,13 +22,21 @@ const entorno = {
   E2E_PUERTO_PREVIEW: PREVIEW,
   FRONTEND_URL: `http://localhost:${WEB}`,
 } as Record<string, string>
-Object.assign(process.env, { E2E_CORREOS: entorno.E2E_CORREOS })
+// Las fixtures (e2e/fixtures) llaman al endpoint de siembra en este puerto.
+Object.assign(process.env, { E2E_CORREOS: entorno.E2E_CORREOS, E2E_PUERTO_API: API })
 
+const navegador = { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } }
+
+// Estándar: planning/munimanagement-estandar-pruebas.md. Cada prueba que cambia algo trabaja sobre su
+// propio escenario (fixture `escenario`), así que corren en paralelo. Las @global cambian algo que
+// comparten todas (configuración, matriz de permisos, aviso de privacidad, catálogos): van al final, de a una.
 export default defineConfig({
   testDir: 'e2e',
-  // Comparten una base: en serie y en un solo proceso.
-  fullyParallel: false,
-  workers: 1,
+  fullyParallel: true,
+  workers: 2,
+  // Con dos workers en una Mac de 8 GB (y Docker arriba) cada prueba tarda más que de a una.
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
@@ -36,7 +44,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     viewport: { width: 1440, height: 900 },
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
+  projects: [
+    { name: 'modulos', grepInvert: /@global|@a11y/, use: navegador },
+    // Con movimiento reducido, sonner y framer-motion animan menos: axe mide lo que queda quieto.
+    { name: 'a11y', grep: /@a11y/, use: { ...navegador, reducedMotion: 'reduce' } },
+    { name: 'global', grep: /@global/, dependencies: ['modulos', 'a11y'], fullyParallel: false, workers: 1, use: navegador },
+  ],
   webServer: [
     {
       command: 'bash ../MuniServer/scripts/servidor_e2e.sh',

@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:critico": "playwright test --grep @critico",
+    "e2e:estabilidad": "playwright test --repeat-each=3 --retries=0 --fail-on-flaky-tests",
+    "probar:modulo": "node scripts/probar-modulo.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
