@@ -130,7 +130,8 @@ class RolesDeProyectoTests(Escenario, APITestCase):
         self.assertIn('proyectos.editar', detalle['mis_permisos'])
         self.assertNotIn('equipo.gestionar', detalle['mis_permisos'])
         detalle = self.como(self.asignado).get(f'{API}/projects/proyectosRead/{self.proyecto.pk}/').data
-        self.assertEqual(detalle['mis_permisos'], ['proyectos.ver'])
+        # El colaborador ve el proyecto y puede pedir (por ejemplo, más plazo para su tarea).
+        self.assertEqual(detalle['mis_permisos'], ['proyectos.ver', 'solicitudes.crear'])
         # En la lista no se calcula (costaría consultas por fila).
         fila = self.como(self.dueno).get(f'{API}/projects/proyectosRead/').data['results'][0]
         self.assertIsNone(fila['mis_permisos'])

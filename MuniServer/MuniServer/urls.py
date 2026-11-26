@@ -22,6 +22,7 @@ api_v1 = [
     path('public/', include('Projects.public_urls')),
     path('configuracion/', include('Configuracion.urls')),
     path('auditoria/', include('Auditoria.urls')),
+    path('solicitudes/', include('Solicitudes.urls')),
 ]
 
 urlpatterns = [

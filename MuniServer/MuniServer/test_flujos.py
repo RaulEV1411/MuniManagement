@@ -62,11 +62,17 @@ class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
         self.como(self.jefe_a).post(f'{API}/feedback/feedback/', {'proyecto_ID': pid, 'info': 'Revisar el plano'}, format='json')
         self.assertEqual(avisos(self.dueno, 'comentario'), 1)
 
-        # 5. Un aumento de presupuesto suma al costo total.
-        r = self.como(self.dueno).post(f'{API}/projects/ajustes-presupuesto/', {
-            'proyecto': pid, 'tipo': 'aumento', 'monto': 500_000, 'motivo': 'Más metros de acera',
+        # 5. El dueño pide un aumento (ya no lo registra directo); la jefatura lo aprueba y suma al costo total.
+        from Solicitudes.models import TipoSolicitud
+        self.assertEqual(self.como(self.dueno).post(f'{API}/projects/ajustes-presupuesto/', {
+            'proyecto': pid, 'tipo': 'aumento', 'monto': 500_000, 'motivo': 'x'}, format='json').status_code, 403)
+        r = self.como(self.dueno).post(f'{API}/solicitudes/solicitudes/', {
+            'proyecto': pid, 'tipo': TipoSolicitud.objects.get(efecto='aumento').pk, 'monto': 500_000,
+            'justificacion': 'Más metros de acera',
         }, format='json')
         self.assertEqual(r.status_code, 201, r.data)
+        r = self.como(self.jefe_a).post(f'{API}/solicitudes/solicitudes/{r.data["numero"]}/decidir/', {'aprobar': True}, format='json')
+        self.assertEqual(r.data['estado'], 'aprobada', r.data)
         self.assertEqual(self.client.get(f'{API}/projects/proyectosRead/{pid}/').data['costo_total'], 2_500_000)
 
         # 6. El portal lo muestra sin datos de personas; el avance sube al completar la tarea.
@@ -91,7 +97,7 @@ class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
         self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').status_code, 404)
 
         tipos = set(HistorialCambios.objects.filter(proyecto_ID=pid).values_list('tipo', flat=True))
-        self.assertTrue({'creacion', 'cambio_estado_tarea', 'solicitud_presupuesto', 'cierre'} <= tipos, tipos)
+        self.assertTrue({'creacion', 'cambio_estado_tarea', 'orden_cambio', 'cierre'} <= tipos, tipos)
 
 
 class EquipoDePrincipioAFinTests(Escenario, APITestCase):

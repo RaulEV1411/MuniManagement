@@ -174,7 +174,7 @@ def registrar_denegado(request, respuesta):
 _POR_RUTA = {
     'departments': 'estructura', 'users': 'usuarios', 'projects': 'proyectos', 'task': 'tareas',
     'feedback': 'comentarios', 'historial': 'proyectos', 'configuracion': 'configuracion',
-    'auditoria': 'auditoria',
+    'auditoria': 'auditoria', 'solicitudes': 'solicitudes',
 }
 _POR_SUBRUTA = {
     'roles': 'roles', 'miembros': 'equipo', 'roles-proyecto': 'roles', 'ajustes-presupuesto': 'presupuesto',

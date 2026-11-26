@@ -134,6 +134,8 @@ def send_due_date_warnings():
     limite = hoy + timedelta(days=DIAS_AVISO)
     desactivar_delegaciones_vencidas(hoy)
     avisar_accesos_por_vencer(hoy)
+    from Solicitudes.servicios import escalar_vencidas
+    escalar_vencidas(hoy)
 
     proyectos = list(
         Proyectos.objects

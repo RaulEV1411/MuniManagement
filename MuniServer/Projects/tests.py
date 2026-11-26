@@ -90,7 +90,7 @@ class MiembrosTests(Escenario, APITestCase):
 
 class AjustesTests(Escenario, APITestCase):
     def test_aprobado_por_no_lo_pone_el_usuario(self):
-        r = self.como(self.dueno).post('/api/v1/projects/ajustes-presupuesto/', {
+        r = self.como(self.jefe_a).post('/api/v1/projects/ajustes-presupuesto/', {
             'proyecto': str(self.proyecto.proyect_ID), 'tipo': 'aumento', 'monto': 500,
             'motivo': 'Materiales', 'aprobado_por': str(self.alcalde.user_ID),
         }, format='json')

@@ -12,6 +12,7 @@ class Notificacion(models.Model):
         ('delegacion', 'Delegación de supervisión'),
         ('ajuste_presupuesto', 'Ajuste de presupuesto'),
         ('comentario', 'Nuevo comentario'),
+        ('solicitud', 'Solicitud'),
         ('general', 'General'),
     ]
     notificacion_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

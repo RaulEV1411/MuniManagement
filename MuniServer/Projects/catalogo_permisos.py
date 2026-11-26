@@ -29,6 +29,7 @@ MODULOS = {
     'configuracion': 'Configuración de la institución',
     'roles': 'Roles y permisos',
     'reportes': 'Reportes',
+    'solicitudes': 'Solicitudes',
     'auditoria': 'Auditoría',
 }
 
@@ -51,6 +52,8 @@ PERMISOS = {
     'configuracion.gestionar': ('Editar los datos de la institución', False, False),
     'roles.gestionar': ('Editar roles y permisos', False, False),
     'reportes.exportar': ('Exportar reportes', True, True),
+    'solicitudes.crear': ('Pedir prórrogas, presupuesto, personal y otros cambios', True, True),
+    'solicitudes.aprobar': ('Aprobar o rechazar solicitudes (según el nivel que pida cada una)', True, False),
     'auditoria.ver': ('Ver la auditoría y la actividad de todas las personas', False, False),
 }
 
@@ -74,13 +77,14 @@ def _jefatura(alcance):
         'proyectos.ver': alcance, 'proyectos.crear': alcance, 'proyectos.editar': alcance,
         'proyectos.reabrir': alcance, 'tareas.gestionar': alcance, 'fotos.subir': alcance,
         'presupuesto.ajustar': alcance, 'equipo.gestionar': alcance, 'equipo.integrar': TODOS,
-        'reportes.exportar': alcance,
+        'reportes.exportar': alcance, 'solicitudes.crear': alcance, 'solicitudes.aprobar': alcance,
     }
 
 
 _BASE = {
+    # El presupuesto ya no se ajusta directo: se pide con una solicitud (tanda S, decisión del 26/11).
     'proyectos.ver': PROPIO, 'proyectos.editar': PROPIO,
-    'tareas.gestionar': PROPIO, 'fotos.subir': PROPIO, 'presupuesto.ajustar': PROPIO,
+    'tareas.gestionar': PROPIO, 'fotos.subir': PROPIO, 'solicitudes.crear': PROPIO,
     'equipo.integrar': TODOS, 'reportes.exportar': PROPIO,
 }
 
@@ -102,11 +106,11 @@ COLABORADOR = 'Colaborador'
 OBSERVADOR = 'Observador'
 ROLES_DE_PROYECTO = [
     {'nombre': RESPONSABLE, 'orden': 1, 'descripcion': 'Dueño del proyecto: lo gestiona completo.',
-     'permisos': ['proyectos.ver', 'proyectos.editar', 'tareas.gestionar', 'fotos.subir', 'presupuesto.ajustar', 'reportes.exportar']},
+     'permisos': ['proyectos.ver', 'proyectos.editar', 'tareas.gestionar', 'fotos.subir', 'solicitudes.crear', 'reportes.exportar']},
     {'nombre': SUPERVISOR, 'orden': 2, 'descripcion': 'Supervisa y edita: reemplaza a la delegación con edición.',
-     'permisos': ['proyectos.ver', 'proyectos.editar', 'tareas.gestionar', 'fotos.subir', 'presupuesto.ajustar', 'reportes.exportar']},
+     'permisos': ['proyectos.ver', 'proyectos.editar', 'tareas.gestionar', 'fotos.subir', 'solicitudes.crear', 'reportes.exportar']},
     {'nombre': COLABORADOR, 'orden': 3, 'descripcion': 'Trabaja en sus tareas y ve el proyecto.',
-     'permisos': ['proyectos.ver']},
+     'permisos': ['proyectos.ver', 'solicitudes.crear']},
     {'nombre': OBSERVADOR, 'orden': 4, 'descripcion': 'Solo ve el proyecto.',
      'permisos': ['proyectos.ver']},
 ]

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'Notifications.apps.NotificationsConfig',
     'Configuracion.apps.ConfiguracionConfig',
     'Auditoria.apps.AuditoriaConfig',
+    'Solicitudes.apps.SolicitudesConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt.token_blacklist',

@@ -30,6 +30,10 @@ AUDITADOS = {
     'Departments.Departamentos': 'estructura',
     'Configuracion.Configuracion': 'configuracion',
     'Feedback.Feedback': 'comentarios',
+    'Solicitudes.Solicitud': 'solicitudes',
+    'Solicitudes.PasoAprobacion': 'solicitudes',
+    'Solicitudes.TipoSolicitud': 'catalogos',
+    'Solicitudes.ReglaAprobacion': 'catalogos',
 }
 SECRETOS = {'password'}
 OCULTO = '•••'
@@ -71,6 +75,12 @@ def representar(obj):
         return f'{representar(obj.usuario)} en «{obj.proyecto.name}»'
     if tipo == 'Projects.AjustePresupuesto':
         return f'{obj.get_tipo_display()} de {obj.monto} en «{obj.proyecto.name}»'
+    if tipo == 'Solicitudes.Solicitud':
+        return f'N.º {obj.numero} · {obj.tipo.nombre} («{obj.proyecto.name}»)'
+    if tipo == 'Solicitudes.PasoAprobacion':
+        return f'Paso {obj.orden} ({obj.get_nivel_display()}) de la solicitud N.º {obj.solicitud_id}'
+    if tipo == 'Solicitudes.ReglaAprobacion':
+        return f'{obj.tipo.nombre}: {obj.get_nivel_display()} desde {obj.desde}'
     if tipo == 'Projects.CierreProyecto':
         return f'Cierre de «{obj.proyecto.name}»'
     if tipo == 'Projects.DocumentoProyecto':
