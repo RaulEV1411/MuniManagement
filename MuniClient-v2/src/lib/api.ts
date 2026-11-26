@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import type {
   ActividadUsuario, AjustePresupuesto, CatalogoAuditoria, CatalogoPermisos, Feedback, MiembroProyecto, RegistroAuditoria, ResumenAuditoria,
   Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User, VerificacionAuditoria,
+  ReglaAprobacion, Solicitud, TipoSolicitud,
 } from '@/types'
 import type { Marca } from './marca'
 
@@ -275,6 +276,29 @@ export function urlExportarAuditoria(formato: 'csv' | 'json', filtros: Filtros):
   for (const [k, v] of Object.entries(filtros)) if (v !== undefined && v !== '' && k !== 'page') params.set(k, String(v))
   return `${BASE_URL}/auditoria/registros/exportar/?${params}`
 }
+
+// ── Solicitudes ──────────────────────────────────────────────
+export const getSolicitudes = (params: Filtros) =>
+  api.get<Pagina<Solicitud>>('/solicitudes/solicitudes/', { params }).then(r => r.data)
+export const getSolicitud = (numero: number) => api.get<Solicitud>(`/solicitudes/solicitudes/${Number(numero)}/`).then(r => r.data)
+export const crearSolicitud = (datos: Record<string, string | number | null>) =>
+  api.post<Solicitud>('/solicitudes/solicitudes/', datos).then(r => r.data)
+export const decidirSolicitud = (numero: number, aprobar: boolean, comentario: string) =>
+  api.post<Solicitud>(`/solicitudes/solicitudes/${Number(numero)}/decidir/`, { aprobar, comentario }).then(r => r.data)
+export const retirarSolicitud = (numero: number) =>
+  api.post<Solicitud>(`/solicitudes/solicitudes/${Number(numero)}/retirar/`).then(r => r.data)
+export const getConteoSolicitudes = () => api.get<{ por_aprobar: number }>('/solicitudes/solicitudes/conteo/').then(r => r.data)
+export const getTiposSolicitud = () => api.get<TipoSolicitud[]>('/solicitudes/tipos/').then(r => r.data)
+export const updateTipoSolicitud = (id: number, datos: Partial<TipoSolicitud>) =>
+  api.patch<TipoSolicitud>(`/solicitudes/tipos/${Number(id)}/`, datos).then(r => r.data)
+export const createTipoSolicitud = (datos: Partial<TipoSolicitud>) =>
+  api.post<TipoSolicitud>('/solicitudes/tipos/', datos).then(r => r.data)
+export const getReglasAprobacion = () => api.get<ReglaAprobacion[]>('/solicitudes/reglas/').then(r => r.data)
+export const createReglaAprobacion = (datos: Omit<ReglaAprobacion, 'regla_ID' | 'nivel_display'>) =>
+  api.post<ReglaAprobacion>('/solicitudes/reglas/', datos).then(r => r.data)
+export const updateReglaAprobacion = (id: number, datos: Partial<ReglaAprobacion>) =>
+  api.patch<ReglaAprobacion>(`/solicitudes/reglas/${Number(id)}/`, datos).then(r => r.data)
+export const deleteReglaAprobacion = (id: number) => api.delete(`/solicitudes/reglas/${Number(id)}/`).then(r => r.data)
 
 export const getConfiguracion = () => api.get<Marca>('/configuracion/').then(r => r.data)
 export const updateConfiguracion = (datos: Partial<Marca>) => api.patch<Marca>('/configuracion/', datos).then(r => r.data)

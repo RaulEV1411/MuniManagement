@@ -16,10 +16,12 @@ interface Props {
   compact?: boolean
   /** Registrar ajustes (presupuesto.ajustar); sin él se ve el historial pero no el botón. */
   puedeAjustar?: boolean
+  /** Sin permiso para ajustar directo: pedir el ajuste con una solicitud. */
+  onSolicitar?: () => void
 }
 
 
-export default function BudgetSection({ proyectoId, tareaId, costoBase, compact, puedeAjustar = true }: Props) {
+export default function BudgetSection({ proyectoId, tareaId, costoBase, compact, puedeAjustar = true, onSolicitar }: Props) {
   const { formatear, simbolo } = useMoneda()
   const qc = useQueryClient()
   const queryKey = ['ajustes', proyectoId ?? '', tareaId ?? '']
@@ -75,6 +77,12 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact,
         >
           <Plus className="h-3.5 w-3.5" /> Ajuste
         </button>
+        {!puedeAjustar && onSolicitar && (
+          <button onClick={onSolicitar}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
+            <Plus className="h-3.5 w-3.5" /> Solicitar ajuste
+          </button>
+        )}
       </header>
 
       {ajustes.length === 0 ? (

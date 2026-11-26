@@ -4,11 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  Sliders, GanttChartSquare, FileDown, HelpCircle, ShieldCheck,
+  Sliders, GanttChartSquare, FileDown, HelpCircle, ShieldCheck, Inbox,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getResumenProyectos } from '@/lib/api'
+import { getConteoSolicitudes, getResumenProyectos } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
@@ -21,6 +21,8 @@ interface NavItem {
   path: string
   match: (p: string) => boolean
   showOverdue?: boolean
+  // Muestra cuántas solicitudes esperan una decisión de la persona.
+  showPorAprobar?: boolean
   // Solo se muestra a quien tiene este permiso.
   permiso?: string
 }
@@ -30,6 +32,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: 'Principal',
     items: [
       { icon: LayoutDashboard, label: 'Proyectos',     path: '/dashboard',   match: (p: string) => p === '/dashboard' || p.startsWith('/projects'), showOverdue: true },
+      { icon: Inbox,           label: 'Solicitudes',   path: '/solicitudes', match: (p: string) => p === '/solicitudes', showPorAprobar: true },
     ],
   },
   {
@@ -74,6 +77,8 @@ export default function Sidebar({ enCajon = false }: { enCajon?: boolean }) {
     staleTime: 60_000,
   })
   const overdueCount = resumen?.vencidos ?? 0
+  const { data: conteoSolicitudes } = useQuery({ queryKey: ['solicitudes', 'conteo'], queryFn: getConteoSolicitudes, refetchInterval: 120_000 })
+  const porAprobar = conteoSolicitudes?.por_aprobar ?? 0
 
   const W = enCajon ? 280 : expanded ? 240 : 64
 
@@ -141,9 +146,9 @@ export default function Sidebar({ enCajon = false }: { enCajon?: boolean }) {
               )}
             </AnimatePresence>
             {!expanded && <div className="h-2" />}
-            {items.filter(i => !i.permiso || tienePermiso(user, i.permiso)).map(({ icon: Icon, label: itemLabel, path, match, showOverdue }) => {
+            {items.filter(i => !i.permiso || tienePermiso(user, i.permiso)).map(({ icon: Icon, label: itemLabel, path, match, showOverdue, showPorAprobar }) => {
               const active = match(location.pathname)
-              const badge = showOverdue && overdueCount > 0 ? overdueCount : 0
+              const badge = showOverdue && overdueCount > 0 ? overdueCount : showPorAprobar ? porAprobar : 0
               return (
                 <Link
                   key={path}
@@ -179,10 +184,10 @@ export default function Sidebar({ enCajon = false }: { enCajon?: boolean }) {
                       </motion.span>
                     )}
                   </AnimatePresence>
-                  {/* El lector oye «Proyectos, 1 vencido»; el número de la burbuja es solo visual. */}
+                  {/* El lector oye «Proyectos, 1 vencido» o «Solicitudes, 2 por aprobar»; el número de la burbuja es solo visual. */}
                   <span className="sr-only">
                     {!expanded && itemLabel}
-                    {badge > 0 && `, ${badge} ${badge === 1 ? 'vencido' : 'vencidos'}`}
+                    {badge > 0 && (showPorAprobar ? `, ${badge} por aprobar` : `, ${badge} ${badge === 1 ? 'vencido' : 'vencidos'}`)}
                   </span>
                   {expanded && badge > 0 && (
                     <span aria-hidden="true" className={cn(

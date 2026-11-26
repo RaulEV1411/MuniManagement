@@ -16,6 +16,10 @@ const FAQS: FAQ[] = [
     a: 'Abra el proyecto, vaya a la pestaña Información y haga clic en cualquiera de las «píldoras» de estado (Pendiente, En progreso, etc.). Si elige Pausado, se le pedirá un motivo, que queda en el historial. Completado y Cancelado abren el cierre del proyecto.',
   },
   {
+    q: '¿Cómo pido más plazo, presupuesto o personal?',
+    a: 'En el proyecto, pestaña Solicitudes, «Nueva solicitud»: elija qué pide (prórroga, aumento o rebajo de presupuesto, más personal, cambio de responsable, de alcance u otro) y explique por qué. La aprueban, en orden, las jefaturas que correspondan al monto o a los días; si nadie responde a tiempo, también la puede decidir el nivel siguiente. Mientras tanto el proyecto sigue. Al aprobarse, el cambio se aplica solo y queda en el historial. Las que le toca decidir están en Solicitudes › Por aprobar.',
+  },
+  {
     q: '¿Cómo cierro un proyecto? ¿Se puede borrar?',
     a: 'Los proyectos no se borran. Con «Cerrar proyecto» se indica cómo terminó (Completado o Cancelado), la fecha y el costo reales, un resumen o motivo, las lecciones aprendidas y, si hay, el acta en PDF. Un proyecto cerrado pasa a la pestaña Finalizados y no se edita: para cambiarlo, quien tiene permiso lo reabre con un motivo. El Administrador puede archivar los cerrados para sacarlos de las listas sin perder su historial.',
   },

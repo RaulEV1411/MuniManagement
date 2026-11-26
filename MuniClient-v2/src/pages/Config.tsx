@@ -19,8 +19,9 @@ import { usePermiso } from '@/hooks/usePermiso'
 import { CATEGORIAS_DE_ESTADO } from '@/lib/estados'
 import { mensajeDeError } from '@/lib/errores'
 import RolesPermisosPanel from '@/components/config/RolesPermisosPanel'
+import SolicitudesPanel from '@/components/config/SolicitudesPanel'
 
-const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Roles y permisos'] as const
+const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -374,6 +375,7 @@ export default function ConfigPage() {
             transition={{ duration: 0.15 }}
           >
             {tab === 'Institución' && <InstitucionPanel />}
+            {tab === 'Solicitudes' && <SolicitudesPanel />}
             {tab === 'Estados' && (
               <CrudSection
                 items={estadoItems}

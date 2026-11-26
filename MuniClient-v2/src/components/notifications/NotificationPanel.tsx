@@ -16,6 +16,7 @@ const TIPO_COLOR: Record<string, string> = {
   asignacion: 'bg-purple-500',
   delegacion: 'bg-emerald-500',
   ajuste_presupuesto: 'bg-amber-500',
+  solicitud: 'bg-indigo-500',
   comentario: 'bg-sky-500',
   general: 'bg-slate-500',
 }
