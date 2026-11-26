@@ -6,6 +6,7 @@ import path from 'path'
 export const CLAVE = 'Clave-E2E-2026'
 export const ANA = 'ana@muni.test'      // Administrador
 export const BETO = 'beto@muni.test'    // Funcionario (se usa para recuperar la contraseña)
+export const FABI = 'fabi@muni.test'    // Funcionaria (sin permiso de crear proyectos por defecto)
 
 export async function entrar(page: Page, email = ANA, clave = CLAVE) {
   await page.goto('/login')

@@ -1,4 +1,10 @@
 @tailwind base;
+
+/* El atributo hidden siempre oculta: sin esto, una clase de display (flex, inline-flex…) le gana al
+   [hidden] del preflight, que tiene la misma especificidad pero va antes. */
+@layer base {
+  [hidden]:where(:not([hidden='until-found'])) { display: none !important; }
+}
 @tailwind components;
 @tailwind utilities;
 

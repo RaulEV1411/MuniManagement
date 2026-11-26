@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import type {
-  AjustePresupuesto, Delegacion, Feedback, HistorialEntry, Notificacion, Project, PublicProject, Task, User,
+  AjustePresupuesto, CatalogoPermisos, Feedback, MiembroProyecto, Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User,
 } from '@/types'
 import type { Marca } from './marca'
 
@@ -154,13 +154,29 @@ export const createDirection  = (data: object) => api.post('/departments/direcci
 export const updateDirection  = (id: string, data: object) => api.put(`/departments/direcciones/${seg(id)}/`, data).then(r => r.data)
 export const deleteDirection  = (id: string)   => api.delete(`/departments/direcciones/${seg(id)}/`).then(r => r.data)
 
-// ── Delegaciones ──────────────────────────────────────────────
-export const getDelegaciones = (projectId: string) =>
-  todasDe<Delegacion>(api, '/projects/delegaciones/', { proyecto_ID: projectId })
-export const createDelegacion = (data: object) =>
-  api.post('/projects/delegaciones/', data).then(r => r.data)
-export const deleteDelegacion = (id: string) =>
-  api.delete(`/projects/delegaciones/${seg(id)}/`).then(r => r.data)
+// ── Equipo del proyecto ───────────────────────────────────────
+export const getMiembros = (projectId: string) =>
+  todasDe<MiembroProyecto>(api, '/projects/miembros/', { proyecto_ID: projectId })
+export const createMiembro = (data: object) => api.post<MiembroProyecto>('/projects/miembros/', data).then(r => r.data)
+export const updateMiembro = (id: string, data: object) => api.patch<MiembroProyecto>(`/projects/miembros/${seg(id)}/`, data).then(r => r.data)
+export const deleteMiembro = (id: string) => api.delete(`/projects/miembros/${seg(id)}/`).then(r => r.data)
+
+// ── Roles y permisos ──────────────────────────────────────────
+export const getCatalogoPermisos = () => api.get<CatalogoPermisos>('/users/roles/catalogo/').then(r => r.data)
+export const getRolesConPermisos = () => api.get<Role[]>('/users/roles/').then(r => r.data)
+export const createRol = (data: Partial<Role>) => api.post<Role>('/users/roles/', data).then(r => r.data)
+export const updateRol = (id: string, data: Partial<Role>) => api.patch<Role>(`/users/roles/${seg(id)}/`, data).then(r => r.data)
+export const deleteRol = (id: string) => api.delete(`/users/roles/${seg(id)}/`).then(r => r.data)
+export const getRolesProyecto = () => api.get<RolProyecto[]>('/projects/roles-proyecto/').then(r => r.data)
+export const createRolProyecto = (data: Partial<RolProyecto>) => api.post<RolProyecto>('/projects/roles-proyecto/', data).then(r => r.data)
+export const updateRolProyecto = (id: string, data: Partial<RolProyecto>) => api.patch<RolProyecto>(`/projects/roles-proyecto/${seg(id)}/`, data).then(r => r.data)
+export const deleteRolProyecto = (id: string) => api.delete(`/projects/roles-proyecto/${seg(id)}/`).then(r => r.data)
+export interface PermisosDeUsuario {
+  rol: string
+  permisos: Record<string, string>
+  equipos: Array<{ proyecto: string; nombre: string; rol: string; hasta: string | null }>
+}
+export const getPermisosDeUsuario = (id: string) => api.get<PermisosDeUsuario>(`/users/users/${seg(id)}/permisos/`).then(r => r.data)
 
 // ── Ajustes de presupuesto ────────────────────────────────────
 export const getAjustes = (params: { proyecto_ID?: string; tarea_ID?: string }) =>

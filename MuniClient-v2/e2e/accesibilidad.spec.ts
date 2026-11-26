@@ -63,7 +63,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await sinFallos(page, 'perfil')
 
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Estados', 'Prioridades', 'Tipos']) {
+      for (const pestana of ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }
@@ -96,6 +96,13 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await expect(page.getByRole('dialog', { name: 'Editar proyecto' })).toBeVisible()
       await sinFallos(page, 'editar proyecto', '[role=dialog]')
       await page.keyboard.press('Escape')
+
+      await page.getByRole('tab', { name: /^Información/ }).click()
+      await page.getByRole('button', { name: 'Agregar persona' }).click()
+      await expect(page.getByRole('dialog', { name: 'Agregar al equipo' })).toBeVisible()
+      await sinFallos(page, 'agregar al equipo', '[role=dialog]')
+      await page.keyboard.press('Escape')
+      await page.getByRole('tab', { name: /^Tareas/ }).click()
 
       // La confirmación de borrado es un diálogo propio (antes window.confirm); Escape cancela.
       await page.getByRole('button', { name: /^Eliminar la tarea/ }).first().click()

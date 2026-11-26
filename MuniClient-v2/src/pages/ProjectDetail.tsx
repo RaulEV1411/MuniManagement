@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { createContext, useContext, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -20,7 +20,7 @@ import {
 } from '@/lib/api'
 import StatusStepper from '@/components/projects/StatusStepper'
 import BudgetSection from '@/components/projects/BudgetSection'
-import DelegacionPanel from '@/components/projects/DelegacionPanel'
+import EquipoPanel from '@/components/projects/EquipoPanel'
 
 import {
   type Project, type Task, type TaskImage, type Feedback,
@@ -40,6 +40,11 @@ import Dialogo from '@/components/common/Dialogo'
 import { pestanas } from '@/lib/pestanas'
 import { confirmar } from '@/lib/confirmar'
 
+// Lo que puede hacer quien mira el proyecto (mis_permisos del servidor) y quién es: los botones que el
+// servidor rechazaría no se muestran. El servidor igual valida cada acción.
+const PermisosDelProyecto = createContext<{ puede: (codigo: string) => boolean; usuarioId: string }>({ puede: () => false, usuarioId: '' })
+const usePermisosDelProyecto = () => useContext(PermisosDelProyecto)
+
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
 function ImageGrid({
@@ -47,7 +52,7 @@ function ImageGrid({
   onDelete,
 }: {
   images: Array<{ url: string; imagen_ID: string }>
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
 }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
 
@@ -73,13 +78,15 @@ function ImageGrid({
               >
                 <ZoomIn size={12} />
               </button>
+              {onDelete && (
               <button
-                onClick={e => { e.stopPropagation(); onDelete(img.imagen_ID) }}
+                onClick={e => { e.stopPropagation(); onDelete?.(img.imagen_ID) }}
                 className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
                 title="Eliminar imagen"
               >
                 <Trash2 size={12} />
               </button>
+              )}
             </div>
           </div>
         ))}
@@ -567,6 +574,8 @@ function TaskModal({
 
 // ── Task photos modal ────────────────────────────────────────────────────────
 function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: string; onClose: () => void }) {
+  const { puede, usuarioId } = usePermisosDelProyecto()
+  const puedeSubir = puede('fotos.subir') || task.asignado_a?.user_ID === usuarioId
   const qc = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [taskUploadProgress, setTaskUploadProgress] = useState<{ current: number; total: number } | null>(null)
@@ -639,7 +648,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
             <p className="text-xs text-muted-foreground truncate">{task.name}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button
+            {puedeSubir && <button
               onClick={() => fileInputRef.current?.click()}
               disabled={taskUploadProgress !== null}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-60"
@@ -648,7 +657,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
               {taskUploadProgress
                 ? `${taskUploadProgress.current}/${taskUploadProgress.total}...`
                 : 'Subir fotos'}
-            </button>
+            </button>}
             <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
               <X size={15} />
             </button>
@@ -674,6 +683,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
               <p className="text-xs text-muted-foreground">Arrastre fotos aquí o use el botón</p>
               <button
                 onClick={() => fileInputRef.current?.click()}
+                hidden={!puedeSubir}
                 disabled={!!taskUploadProgress}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98] disabled:opacity-60"
               >
@@ -682,7 +692,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
             </div>
           ) : (
             <div className={cn('rounded-xl transition-colors p-1 -m-1', dragOver && 'ring-2 ring-ocean-500 bg-ocean-500/5')}>
-              <ImageGrid images={images} onDelete={handleDelete} />
+              <ImageGrid images={images} onDelete={puedeSubir ? handleDelete : undefined} />
               {taskUploadProgress && (
                 <div className="mt-3 space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -718,6 +728,10 @@ function TaskCard({
   onEdit: (task: Task) => void
 }) {
   const qc = useQueryClient()
+  const { puede, usuarioId } = usePermisosDelProyecto()
+  const gestiona = puede('tareas.gestionar')
+  // Quien tiene la tarea asignada puede cambiarle el estado aunque no gestione las tareas.
+  const puedeCambiarEstado = gestiona || task.asignado_a?.user_ID === usuarioId
   const [updating, setUpdating]   = useState(false)
   const [showPhotos, setShowPhotos] = useState(false)
   const imageCount = task.images?.length ?? 0
@@ -749,7 +763,7 @@ function TaskCard({
   return (
     <>
       <div
-        draggable
+        draggable={puedeCambiarEstado}
         onDragStart={e => {
           e.dataTransfer.setData('taskId', task.tareas_ID)
           e.dataTransfer.effectAllowed = 'move'
@@ -809,11 +823,12 @@ function TaskCard({
             aria-label={`Estado de la tarea ${task.name}`}
             value={task.estado_ID?.estado_ID ?? ''}
             onChange={e => handleStatusChange(e.target.value)}
-            disabled={updating}
+            disabled={updating || !puedeCambiarEstado}
             className="text-xs bg-background border border-input rounded-lg px-1.5 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60 cursor-pointer"
           >
             {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
           </select>
+          {gestiona && (<>
           <button aria-label={`Editar la tarea ${task.name}`}
             onClick={() => onEdit(task)}
             className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
@@ -826,6 +841,7 @@ function TaskCard({
           >
             <Trash2 size={12} />
           </button>
+          </>)}
         </div>
       </div>
       <AnimatePresence>
@@ -990,7 +1006,6 @@ export default function ProjectDetailPage() {
   const qc = useQueryClient()
   const { user } = useAppStore()
   // Lo decide el rol que manda el servidor (antes dejaba afuera al Administrador); el alcance lo valida el servidor.
-  const canDelegate = !!(user?.role_flags?.puede_ver_todo || user?.role_flags?.puede_delegar)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
   const tabs = pestanas('proyecto', TABS, tab, setTab)
@@ -1007,6 +1022,12 @@ export default function ProjectDetailPage() {
     enabled: !!id,
   })
   useTituloDePagina(project?.name ?? 'Proyecto')
+  const misPermisos = project?.mis_permisos
+  const permisos = useMemo(() => ({
+    puede: (codigo: string) => !!misPermisos?.includes(codigo),
+    usuarioId: user?.user_ID ?? '',
+  }), [misPermisos, user?.user_ID])
+  const puede = permisos.puede
 
   const { data: tasks = [], isLoading: loadingTasks } = useQuery<Task[]>({
     queryKey: ['tasks', id],
@@ -1156,6 +1177,7 @@ export default function ProjectDetailPage() {
   const projectImages = project.images ?? []
 
   return (
+    <PermisosDelProyecto.Provider value={permisos}>
     <div className="flex flex-col h-full">
 
       {/* ── Header ── */}
@@ -1204,26 +1226,26 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
+            {puede('tareas.gestionar') && <button
               onClick={() => setShowTaskModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
             >
               <Plus size={12} /> Nueva tarea
-            </button>
-            <button
+            </button>}
+            {puede('proyectos.editar') && <button
               onClick={() => setShowEditModal(true)}
               className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
               title="Editar proyecto"
             >
               <Edit2 size={14} />
-            </button>
-            <button
+            </button>}
+            {puede('proyectos.eliminar') && <button
               onClick={handleDeleteProject}
               className="p-1.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-[0.98]"
               title="Eliminar proyecto"
             >
               <Trash2 size={14} />
-            </button>
+            </button>}
           </div>
         </div>
 
@@ -1295,8 +1317,9 @@ export default function ProjectDetailPage() {
                       <CheckCircle2 size={20} className="text-muted-foreground/40" />
                     </div>
                     <p className="text-sm font-medium text-foreground">Sin tareas</p>
-                    <p className="text-xs text-muted-foreground">Cree la primera tarea de este proyecto</p>
+                    <p className="text-xs text-muted-foreground">{puede('tareas.gestionar') ? 'Cree la primera tarea de este proyecto' : 'Todavía no hay tareas'}</p>
                     <button
+                      hidden={!puede('tareas.gestionar')}
                       onClick={() => setShowTaskModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
                     >
@@ -1378,6 +1401,7 @@ export default function ProjectDetailPage() {
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Estado</h3>
                     <StatusStepper
                       estados={estados}
+                      disabled={!puede('proyectos.editar')}
                       currentId={project.estado_ID?.estado_ID ?? ''}
                       onChange={async (nuevoId, motivo) => {
                         await patchProject(project.proyect_ID, { estado_ID: nuevoId, razon: motivo ?? '' })
@@ -1391,11 +1415,14 @@ export default function ProjectDetailPage() {
                   <BudgetSection
                     proyectoId={project.proyect_ID}
                     costoBase={project.costo ?? 0}
+                    puedeAjustar={puede('presupuesto.ajustar')}
                   />
 
-                  <DelegacionPanel
+                  <EquipoPanel
                     proyectoId={project.proyect_ID}
-                    canManage={canDelegate}
+                    responsable={project.user_ID}
+                    conTareas={tasks.map(t => t.asignado_a).filter((u): u is NonNullable<typeof u> => !!u)}
+                    canManage={puede('equipo.gestionar')}
                   />
                 </div>
               </div>
@@ -1420,10 +1447,10 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {projectImages.length > 0 && (
-                  <ImageGrid images={projectImages} onDelete={handleDeleteImage} />
+                  <ImageGrid images={projectImages} onDelete={puede('fotos.subir') ? handleDeleteImage : undefined} />
                 )}
 
-                <DropZone onFiles={uploadProjectFiles} disabled={uploadProgress !== null} progress={uploadProgress} />
+                {puede('fotos.subir') && <DropZone onFiles={uploadProjectFiles} disabled={uploadProgress !== null} progress={uploadProgress} />}
               </div>
             )}
 
@@ -1485,6 +1512,7 @@ export default function ProjectDetailPage() {
                             <p className="text-sm text-foreground leading-snug">{f.info}</p>
                           </div>
                           <button aria-label="Eliminar el comentario"
+                            hidden={!(author?.user_ID === user?.user_ID || puede('comentarios.moderar'))}
                             onClick={() => handleDeleteComment(f.feed_ID)}
                             className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 flex-shrink-0"
                           >
@@ -1671,5 +1699,6 @@ export default function ProjectDetailPage() {
         )}
       </AnimatePresence>
     </div>
+    </PermisosDelProyecto.Provider>
   )
 }

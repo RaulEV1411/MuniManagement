@@ -12,6 +12,7 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
 import { confirmar } from '@/lib/confirmar'
+import { usePermiso } from '@/hooks/usePermiso'
 
 function CreateModal({
   directions,
@@ -106,6 +107,7 @@ function DepartmentRow({
   onSaved: () => void
   onDeleted: () => void
 }) {
+  const puedeEditar = usePermiso('estructura.gestionar')
   const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(dept.name)
   const [dirId, setDirId]     = useState<string>(
@@ -210,13 +212,13 @@ function DepartmentRow({
             </>
           ) : (
             <>
-              <button aria-label={`Editar ${dept.name}`}
+              <button hidden={!puedeEditar} aria-label={`Editar ${dept.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 <Pencil size={13} />
               </button>
-              <button aria-label={`Eliminar ${dept.name}`}
+              <button hidden={!puedeEditar} aria-label={`Eliminar ${dept.name}`}
                 onClick={handleDelete}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
@@ -231,6 +233,7 @@ function DepartmentRow({
 }
 
 export default function DepartmentsPage() {
+  const puedeCrear = usePermiso('estructura.gestionar')
   useTituloDePagina('Departamentos')
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -263,7 +266,7 @@ export default function DepartmentsPage() {
             <p className="text-xs text-muted-foreground">{departments.length} registrado{departments.length !== 1 ? 's' : ''}</p>
           )}
         </div>
-        <button
+        <button hidden={!puedeCrear}
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-1.5 px-4 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
         >
@@ -286,7 +289,7 @@ export default function DepartmentsPage() {
             </div>
             <p className="text-sm font-medium text-foreground">Sin departamentos</p>
             <p className="text-xs text-muted-foreground">Cree el primer departamento para comenzar</p>
-            <button
+            <button hidden={!puedeCrear}
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
             >

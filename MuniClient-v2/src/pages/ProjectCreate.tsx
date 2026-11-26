@@ -13,6 +13,7 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { claseEtiqueta, conColor } from '@/lib/colores'
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import { usePermiso } from '@/hooks/usePermiso'
 
 
 interface FormData {
@@ -82,6 +83,7 @@ function SummaryRow({ label, value, badge, color }: {
 }
 
 export default function ProjectCreatePage() {
+  const puedeCrear = usePermiso('proyectos.crear')
   useTituloDePagina('Nuevo proyecto')
   const { formatear, simbolo } = useMoneda()
   const navigate = useNavigate()
@@ -168,6 +170,16 @@ export default function ProjectCreatePage() {
 
   const errorDatos = errTipos ?? errEstados ?? errPrioridades ?? errDepartments ?? errUsers
   if (errorDatos) return <ErrorDeCarga error={errorDatos} que="los datos del formulario" />
+
+  if (!puedeCrear) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
+        <h1 className="text-base font-bold text-foreground">Nuevo proyecto</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">Su rol no permite crear proyectos. Si lo necesita, pídale a quien administra los roles que lo habilite.</p>
+        <button onClick={() => navigate('/dashboard')} className="px-4 py-2 text-sm font-semibold rounded-xl border border-border hover:bg-accent">Volver a proyectos</button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">

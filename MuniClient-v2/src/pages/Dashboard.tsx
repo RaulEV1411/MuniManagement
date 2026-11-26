@@ -22,6 +22,7 @@ import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
+import { usePermiso } from '@/hooks/usePermiso'
 
 // ── Cambio rápido de estado ───────────────────────────────────────────────────
 function StatusQuickChange({ project }: { project: Project }) {
@@ -506,6 +507,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
 
 // ── Página principal ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const puedeCrear = usePermiso('proyectos.crear')
   useTituloDePagina('Proyectos')
   const marca = useMarca()
   const navigate  = useNavigate()
@@ -741,7 +743,7 @@ export default function DashboardPage() {
           <RefreshCw size={13} />
         </button>
 
-        <button
+        <button hidden={!puedeCrear}
           onClick={() => navigate('/projects/new')}
           className="flex items-center gap-1.5 px-4 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-95 flex-shrink-0"
         >
@@ -848,7 +850,7 @@ export default function DashboardPage() {
             </p>
             {hasFilters
               ? <button onClick={clearFilters} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Ver todos</button>
-              : <button onClick={() => navigate('/projects/new')} className="flex items-center gap-2 px-4 py-2 bg-ocean-500 text-white text-sm font-semibold rounded-xl hover:bg-ocean-600 transition-all"><Plus size={13} /> Crear proyecto</button>
+              : <button hidden={!puedeCrear} onClick={() => navigate('/projects/new')} className="flex items-center gap-2 px-4 py-2 bg-ocean-500 text-white text-sm font-semibold rounded-xl hover:bg-ocean-600 transition-all"><Plus size={13} /> Crear proyecto</button>
             }
           </div>
         )}

@@ -7,9 +7,9 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { mensajeDeError } from '@/lib/errores'
 import { contrasteConBlanco, type Marca } from '@/lib/marca'
 import { useMarca } from '@/hooks/useMarca'
-import { useAppStore } from '@/store/app'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { textoSobre } from '@/lib/colores'
+import { usePermiso } from '@/hooks/usePermiso'
 
 const MONEDAS = [
   ['CRC', 'Colón costarricense'], ['USD', 'Dólar estadounidense'], ['GTQ', 'Quetzal'], ['HNL', 'Lempira'],
@@ -34,7 +34,7 @@ export default function InstitucionPanel() {
 function FormularioInstitucion({ inicial }: { inicial: Marca }) {
   const qc = useQueryClient()
   const marca = useMarca()
-  const esAdmin = useAppStore(s => s.user?.role) === 'Administrador'
+  const esAdmin = usePermiso('configuracion.gestionar')
   const [form, setForm] = useState<Campos>(() => ({ ...inicial }))
   const [guardando, setGuardando] = useState(false)
   const archivo = useRef<HTMLInputElement>(null)
@@ -83,7 +83,7 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
   return (
     <form onSubmit={guardar} className="max-w-3xl space-y-5">
       {!esAdmin && (
-        <p className="text-xs text-muted-foreground bg-muted rounded-xl px-3 py-2">Solo un administrador puede cambiar estos datos.</p>
+        <p className="text-xs text-muted-foreground bg-muted rounded-xl px-3 py-2">Su rol no permite cambiar estos datos.</p>
       )}
 
       <section className="bg-card border border-border rounded-2xl p-5 space-y-4">
