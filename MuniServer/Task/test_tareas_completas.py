@@ -5,7 +5,7 @@ import zipfile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 
-from MuniServer.pruebas import Escenario, crear_tarea
+from MuniServer.pruebas import Escenario, crear_proyecto, crear_tarea
 from Notifications.models import Notificacion
 from Projects.models import Estado
 
@@ -99,6 +99,12 @@ class TareasCompletasTests(Escenario, APITestCase):
         self.assertEqual((r.status_code, r.data['cruces']), (201, []))
         r = self.como(self.dueno).post(f'{API}/task/asignaciones/', {'tarea': str(self.tarea.pk), 'recurso': vagoneta}, format='json')
         self.assertEqual(r.data['cruces'], ['«Bacheo» (Proyecto P)'])
+        # De un proyecto que no ve, el aviso no dice el nombre.
+        ajeno = crear_tarea(crear_proyecto(self.jefe_b, self.depto_b, name='Proyecto B'), name='Secreta')
+        self.como(self.jefe_b).post(f'{API}/task/asignaciones/', {'tarea': str(ajeno.pk), 'recurso': vagoneta}, format='json')
+        r = self.como(self.dueno).post(f'{API}/task/asignaciones/', {'tarea': str(otra.pk), 'recurso': vagoneta}, format='json')
+        self.assertIn('otra tarea de un proyecto que usted no ve', r.data['cruces'])
+        self.assertNotIn('Secreta', str(r.data['cruces']))
         self.como(self.dueno).post(f'{API}/task/asignaciones/', {'tarea': str(otra.pk), 'recurso': str(cemento.pk), 'cantidad': 10}, format='json')
         r = self.como(self.dueno).post(f'{API}/task/asignaciones/', {'tarea': str(self.tarea.pk), 'recurso': str(cemento.pk), 'cantidad': 5}, format='json')
         self.assertEqual(r.data['cruces'], [])  # los materiales se consumen: no se cruzan

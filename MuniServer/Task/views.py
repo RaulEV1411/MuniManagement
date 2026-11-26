@@ -331,15 +331,18 @@ class AsignacionRecursoViewSet(ModelViewSet):
             raise PermissionDenied('No tiene permisos para asignar recursos en este proyecto.')
 
     @staticmethod
-    def cruces(asignacion):
+    def cruces(asignacion, user):
+        """Dónde más está el recurso en esas fechas. De los proyectos que la persona no ve, no se dice el nombre."""
         if asignacion.recurso.tipo in Recurso.TIPOS_SIN_CRUCE:
             return []
         tarea = asignacion.tarea
         desde = asignacion.desde or tarea.fecha_inicio
         hasta = asignacion.hasta or tarea.fecha_entrega
         otras = AsignacionRecurso.objects.filter(recurso=asignacion.recurso).exclude(pk=asignacion.pk).select_related('tarea__proyecto_ID')
+        visibles = set(authz.proyectos_visibles(user).values_list('pk', flat=True))
         return [
-            f'«{o.tarea.name}» ({o.tarea.proyecto_ID.name})' for o in otras
+            f'«{o.tarea.name}» ({o.tarea.proyecto_ID.name})' if o.tarea.proyecto_ID_id in visibles else 'otra tarea de un proyecto que usted no ve'
+            for o in otras
             if (o.desde or o.tarea.fecha_inicio) <= hasta and desde <= (o.hasta or o.tarea.fecha_entrega)
         ]
 
@@ -349,7 +352,7 @@ class AsignacionRecursoViewSet(ModelViewSet):
         tarea = _tarea_visible(request.user, serializer.validated_data['tarea'].pk)
         self._exigir(tarea)
         asignacion = serializer.save()
-        return Response({**self.get_serializer(asignacion).data, 'cruces': self.cruces(asignacion)}, status=status.HTTP_201_CREATED)
+        return Response({**self.get_serializer(asignacion).data, 'cruces': self.cruces(asignacion, request.user)}, status=status.HTTP_201_CREATED)
 
     def perform_update(self, serializer):
         self._exigir(serializer.instance.tarea)
