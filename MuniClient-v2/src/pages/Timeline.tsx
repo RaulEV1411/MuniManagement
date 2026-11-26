@@ -84,7 +84,7 @@ export default function TimelinePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="w-9 h-9 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
           <GanttChartSquare size={16} className="text-white" />
         </div>
@@ -111,7 +111,7 @@ export default function TimelinePage() {
       </div>
 
       {/* Gantt */}
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(6)].map((_, i) => (
@@ -127,12 +127,12 @@ export default function TimelinePage() {
         ) : (
           <div className="min-w-[700px]">
             {/* Encabezado de meses */}
-            <div className="flex h-7 mb-1 ml-48">
+            <div className="flex h-7 mb-1 ml-32 sm:ml-48">
               {months.map((m, i) => (
                 <div
                   key={i}
                   style={{ width: `${m.pct}%` }}
-                  className="flex-shrink-0 text-[10px] font-semibold text-muted-foreground border-l border-border first:border-l-0 px-1.5 flex items-center"
+                  className="flex-shrink-0 text-xs font-semibold text-muted-foreground border-l border-border first:border-l-0 px-1.5 flex items-center"
                 >
                   {m.label}
                 </div>
@@ -142,9 +142,9 @@ export default function TimelinePage() {
             {/* Filas de proyectos */}
             <div className="space-y-1.5 relative">
               {/* Línea de hoy */}
-              {/* Se ubica sobre la zona de barras (sin la columna de nombres de 12rem). */}
+              {/* Se ubica sobre la zona de barras, sin la columna de nombres (8rem en celular, 12rem desde sm). */}
               {hasToday && (
-                <div className="absolute inset-y-0 left-48 right-0 pointer-events-none z-10">
+                <div className="absolute inset-y-0 left-32 sm:left-48 right-0 pointer-events-none z-10">
                   <div className="absolute top-0 bottom-0 w-px bg-red-400/70" style={{ left: `${todayOffset}%` }} />
                 </div>
               )}
@@ -172,7 +172,7 @@ export default function TimelinePage() {
                     className="relative flex items-center gap-0 h-10 group cursor-pointer rounded-lg focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
                   >
                     {/* Nombre */}
-                    <div className="w-48 flex-shrink-0 pr-3 flex items-center">
+                    <div className="w-32 sm:w-48 flex-shrink-0 pr-3 flex items-center">
                       <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
                         <Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link>
                       </p>
@@ -195,7 +195,7 @@ export default function TimelinePage() {
                           }}
                           title={`${p.name} · ${od ? 'Vencido' : p.estado_ID?.name ?? ''} · prioridad ${p.prioridad_ID?.name ?? '—'}`}
                         >
-                          <span className="text-[9px] font-semibold truncate hidden sm:block">
+                          <span className="text-xs font-semibold truncate hidden sm:block">
                             {p.departamento_ID?.name}
                           </span>
                         </div>
@@ -211,13 +211,13 @@ export default function TimelinePage() {
               {[...estados.map(e => ({ name: e.name, color: e.color })), { name: 'Vencido', color: COLOR_VENCIDO }].map(s => (
                 <div key={s.name} className="flex items-center gap-1.5">
                   <div className={cn('w-3 h-3 rounded-sm', claseRelleno)} style={conColor(s.color)} />
-                  <span className="text-[10px] text-muted-foreground">{s.name}</span>
+                  <span className="text-xs text-muted-foreground">{s.name}</span>
                 </div>
               ))}
               {hasToday && (
                 <div className="flex items-center gap-1.5">
                   <div className="w-px h-3 bg-red-400" />
-                  <span className="text-[10px] text-muted-foreground">Hoy</span>
+                  <span className="text-xs text-muted-foreground">Hoy</span>
                 </div>
               )}
             </div>

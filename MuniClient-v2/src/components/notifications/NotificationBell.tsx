@@ -22,7 +22,7 @@ export default function NotificationBell() {
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 grid min-w-[20px] h-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white"
+            className="absolute -top-1 -right-1 grid min-w-[20px] h-5 place-items-center rounded-full bg-red-600 px-1 text-xs font-bold text-white"
           >
             {noLeidas > 99 ? '99+' : noLeidas}
           </motion.span>

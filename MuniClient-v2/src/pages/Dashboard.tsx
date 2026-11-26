@@ -52,7 +52,7 @@ function StatusQuickChange({ project }: { project: Project }) {
         onClick={() => setOpen(v => !v)}
         disabled={isPending}
         className={cn(
-          'flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all',
+          'flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full transition-all',
           claseEtiqueta,
           'hover:ring-2 hover:ring-offset-1 hover:ring-current/30 cursor-pointer',
         )}
@@ -83,7 +83,7 @@ function StatusQuickChange({ project }: { project: Project }) {
                   }
                 }}
                 className={cn(
-                  'flex items-center gap-2 w-full px-3 py-2 text-[11px] font-medium text-left hover:bg-accent transition-colors',
+                  'flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-left hover:bg-accent transition-colors',
                   e.estado_ID === project.estado_ID?.estado_ID && 'bg-accent',
                 )}
               >
@@ -118,7 +118,7 @@ function StatCard({ icon: Icon, value, label, color, alert }: {
     )}>
       <Icon size={12} className={alert ? '' : color} />
       <span className={alert ? '' : 'text-foreground font-bold'}>{value}</span>
-      <span className="hidden xl:inline font-normal">{label}</span>
+      <span className="font-normal lg:max-xl:sr-only">{label}</span>
     </div>
   )
 }
@@ -170,13 +170,13 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
           <>
             <button aria-label="Foto anterior"
               onClick={prev}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronLeft size={12} />
             </button>
             <button aria-label="Foto siguiente"
               onClick={next}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronRight size={12} />
             </button>
@@ -185,7 +185,7 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
 
         {/* Contador */}
         {images.length > 1 && (
-          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity pointer-events-none">
+          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity pointer-events-none">
             {idx + 1}/{images.length}
           </div>
         )}
@@ -209,7 +209,7 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
         )}
 
         {/* Zoom hint */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity pointer-events-none">
           <div className="bg-black/30 rounded-full p-2">
             <ImageIcon size={14} className="text-white" />
           </div>
@@ -256,7 +256,7 @@ function ProjectListRow({ project }: { project: Project }) {
               className="w-11 h-11 rounded-xl object-cover border border-border"
             />
             {imgCount > 1 && (
-              <span className="absolute -bottom-1 -right-1 bg-ocean-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -bottom-1.5 -right-1.5 bg-ocean-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center">
                 {imgCount > 9 ? '9+' : imgCount}
               </span>
             )}
@@ -272,7 +272,7 @@ function ProjectListRow({ project }: { project: Project }) {
             </Link>
             <StatusQuickChange project={project} />
             {project.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
+              <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                 {project.prioridad_ID.name}
               </span>
             )}
@@ -285,7 +285,7 @@ function ProjectListRow({ project }: { project: Project }) {
         <div className="flex items-center gap-3 flex-shrink-0 text-xs text-muted-foreground">
           {days !== null && status !== 'Completado' && status !== 'Cancelado' && (
             <span className={cn(
-              'hidden md:block px-2 py-0.5 rounded-full text-[10px] font-medium',
+              'hidden md:block px-2 py-0.5 rounded-full text-xs font-medium',
               overdue ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
               days <= 3 ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400' :
               'bg-muted text-muted-foreground',
@@ -366,7 +366,7 @@ function ProjectGridCard({ project }: { project: Project }) {
             onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
             disabled={!!uploadProgress}
             title="Subir más fotos"
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity hover:bg-black/70 disabled:opacity-40 z-10"
+            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity hover:bg-black/70 disabled:opacity-40 z-10"
           >
             {uploadProgress
               ? <RefreshCw size={11} className="animate-spin" />
@@ -384,12 +384,12 @@ function ProjectGridCard({ project }: { project: Project }) {
           {uploadProgress ? (
             <div className="flex items-center gap-1.5 text-ocean-500 dark:text-ocean-200">
               <RefreshCw size={13} className="animate-spin" />
-              <span className="text-[10px] font-medium">{uploadProgress.current}/{uploadProgress.total}</span>
+              <span className="text-xs font-medium">{uploadProgress.current}/{uploadProgress.total}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-muted-foreground group-hover/empty:text-ocean-500 dark:group-hover/empty:text-ocean-200 transition-colors">
               <ImageIcon size={14} />
-              <span className="text-[10px] font-medium">Agregar foto</span>
+              <span className="text-xs font-medium">Agregar foto</span>
             </div>
           )}
         </button>
@@ -404,10 +404,10 @@ function ProjectGridCard({ project }: { project: Project }) {
         </div>
 
         {project.descripcion && (
-          <p className="text-[11px] text-muted-foreground mb-3 line-clamp-2">{project.descripcion}</p>
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{project.descripcion}</p>
         )}
 
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
           <span className="truncate">{project.departamento_ID?.name}</span>
           {project.fecha_entrega && (
             <span className={cn('font-medium flex-shrink-0', overdue ? 'text-red-700 dark:text-red-400' : '')}>
@@ -419,12 +419,12 @@ function ProjectGridCard({ project }: { project: Project }) {
         {(project.prioridad_ID?.name || images.length > 0) && (
           <div className="mt-2.5 pt-2.5 border-t border-border flex items-center justify-between">
             {project.prioridad_ID?.name ? (
-              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
+              <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                 {project.prioridad_ID.name}
               </span>
             ) : <span />}
             {images.length > 0 && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <ImageIcon size={9} /> {images.length}
               </span>
             )}
@@ -443,7 +443,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
       <div className="flex items-center gap-2 mb-3 px-1">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', claseRelleno)} style={conColor(estado.color)} />
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{estado.name}</span>
-        <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{projects.length}</span>
+        <span className="text-xs font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{projects.length}</span>
       </div>
       <div className="space-y-2 flex-1">
         {projects.map(p => {
@@ -463,7 +463,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {imgs.length > 1 && (
-                    <span className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+                    <span className="absolute top-1.5 right-1.5 bg-black/50 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">
                       +{imgs.length - 1}
                     </span>
                   )}
@@ -473,12 +473,12 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                 <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 mb-1.5"><Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link></p>
                 <div className="flex items-center justify-between gap-1">
                   {p.prioridad_ID?.name && (
-                    <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
+                    <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
                       {p.prioridad_ID.name}
                     </span>
                   )}
                   {days !== null && estado.name !== 'Completado' && estado.name !== 'Cancelado' && (
-                    <span className={cn('text-[9px] font-medium ml-auto',
+                    <span className={cn('text-xs font-medium ml-auto',
                       od ? 'text-red-700 dark:text-red-400' : days <= 3 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
                     )}>
                       {od ? `+${Math.abs(days)}d` : days === 0 ? 'Hoy' : `${days}d`}
@@ -486,7 +486,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                   )}
                 </div>
                 {(p.user_ID?.first_name || p.departamento_ID?.name) && (
-                  <p className="text-[9px] text-muted-foreground mt-1.5 truncate">
+                  <p className="text-xs text-muted-foreground mt-1.5 truncate">
                     {p.user_ID ? `${p.user_ID.first_name} ${p.user_ID.last_name}` : p.departamento_ID?.name}
                   </p>
                 )}
@@ -496,7 +496,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
         })}
         {projects.length === 0 && (
           <div className="border-2 border-dashed border-border rounded-xl p-4 text-center">
-            <p className="text-[10px] text-muted-foreground">Sin proyectos</p>
+            <p className="text-xs text-muted-foreground">Sin proyectos</p>
           </div>
         )}
       </div>
@@ -604,7 +604,7 @@ export default function DashboardPage() {
     <div className="flex flex-col h-full">
 
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-4 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-4 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="w-10 h-10 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
           <FolderOpen size={18} className="text-white" />
         </div>
@@ -615,14 +615,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">{marca.nombre}</span>
             {stats.pct > 0 && !isLoading && (
-              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">
                 <TrendingUp size={9} /> {stats.pct}% completado
               </span>
             )}
           </div>
         </div>
         {!isLoading && (
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             <StatCard icon={FolderOpen}   value={stats.total}      label="Total"       color="text-ocean-500 dark:text-ocean-200" />
             <StatCard icon={Clock}        value={stats.enProgreso}  label="En progreso" color="text-blue-500" />
             <StatCard icon={CheckCircle2} value={stats.completado}  label="Completados" color="text-emerald-500" />
@@ -646,8 +646,8 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Toolbar ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-2 flex-shrink-0" style={{ height: 52 }}>
-        <div className="relative w-64 flex-shrink-0">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-2 flex flex-wrap items-center gap-2 flex-shrink-0" style={{ minHeight: 52 }}>
+        <div className="relative w-full sm:w-64 sm:flex-shrink-0">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             value={search}
@@ -760,7 +760,7 @@ export default function DashboardPage() {
             className="overflow-hidden border-b border-border bg-card/50"
           >
             <div className="px-6 py-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Proyectos por departamento</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Proyectos por departamento</p>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={2}>
                   <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'currentColor' }} className="text-muted-foreground" axisLine={false} tickLine={false} />
@@ -784,7 +784,7 @@ export default function DashboardPage() {
       </AnimatePresence>
 
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {isLoading ? (
           <div className={view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3' : 'space-y-2'}>
             {[...Array(8)].map((_, i) => (

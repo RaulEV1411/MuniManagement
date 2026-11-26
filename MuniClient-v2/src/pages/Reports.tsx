@@ -128,7 +128,7 @@ export default function ReportsPage() {
     <div className="flex flex-col h-full">
 
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="w-9 h-9 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
           <FileDown size={16} className="text-white" />
         </div>
@@ -157,7 +157,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
 
         {/* Filtros */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -211,17 +211,18 @@ export default function ReportsPage() {
             <p className="text-xs text-muted-foreground">No hay proyectos con los filtros seleccionados</p>
           </div>
         ) : (
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            <table className="w-full">
+          <div className="bg-card border border-border rounded-2xl overflow-x-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0} role="region" aria-label="Tabla de proyectos">
+            {/* En pantallas chicas la tabla se desplaza a lo ancho: enfocable para moverla con el teclado. */}
+            <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="px-4 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider w-8">#</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Proyecto</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Departamento</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Prioridad</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">F. Entrega</th>
-                  <th className="px-4 py-3 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Costo</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider w-8">#</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Proyecto</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Departamento</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Prioridad</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">F. Entrega</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Costo</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,18 +235,18 @@ export default function ReportsPage() {
                       <td className="px-4 py-3">
                         <p className="text-sm font-medium text-foreground">{p.name}</p>
                         {p.user_ID && (
-                          <p className="text-[10px] text-muted-foreground">{p.user_ID.first_name} {p.user_ID.last_name}</p>
+                          <p className="text-xs text-muted-foreground">{p.user_ID.first_name} {p.user_ID.last_name}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{p.departamento_ID?.name ?? '—'}</td>
                       <td className="px-4 py-3">
-                        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(colorDeEstado(od, p.estado_ID))}>
+                        <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(colorDeEstado(od, p.estado_ID))}>
                           {statusName}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         {p.prioridad_ID?.name && (
-                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
+                          <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
                             {p.prioridad_ID.name}
                           </span>
                         )}

@@ -8,6 +8,7 @@ import type { Delegacion, User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import { formatDate } from '@/lib/utils'
 import Dialogo from '@/components/common/Dialogo'
+import { confirmar } from '@/lib/confirmar'
 
 interface Props {
   proyectoId: string
@@ -105,9 +106,9 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
               </div>
               {canManage && (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const nombre = d.supervisor_info ? `${d.supervisor_info.first_name} ${d.supervisor_info.last_name}` : 'esta persona'
-                    if (window.confirm(`¿Revocar la supervisión de ${nombre}? Dejará de ver el proyecto.`)) revocar.mutate(d.delegacion_ID)
+                    if (await confirmar({ titulo: `¿Revocar la supervisión de ${nombre}?`, mensaje: 'Dejará de ver el proyecto.', accion: 'Revocar' })) revocar.mutate(d.delegacion_ID)
                   }}
                   className="text-muted-foreground hover:text-red-600"
                   aria-label="Revocar delegación"

@@ -88,7 +88,7 @@ export default function PublicProjectDetailPage() {
                   </div>
                   {t.estado && (
                     <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                      className="text-xs px-2 py-0.5 rounded-full font-semibold"
                       style={{ backgroundColor: t.estado.color, color: textoSobre(t.estado.color) }}
                     >
                       {t.estado.name}
@@ -109,7 +109,7 @@ function Info({ icon: Icon, label, value }: { icon: LucideIcon; label: string; v
     <div className="flex items-center gap-3 rounded-xl bg-white border border-slate-200 p-3">
       <Icon className="h-4 w-4 text-slate-500" />
       <div>
-        <p className="text-[11px] uppercase text-slate-500">{label}</p>
+        <p className="text-xs uppercase text-slate-500">{label}</p>
         <p className="text-sm font-medium text-slate-900">{value}</p>
       </div>
     </div>

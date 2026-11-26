@@ -100,7 +100,7 @@ export default function LoginPage() {
             ].map(s => (
               <div key={s.label} className="bg-white/10 rounded-xl p-3">
                 <p className="text-white font-bold text-sm">{s.value}</p>
-                <p className="text-white text-[10px] mt-0.5">{s.label}</p>
+                <p className="text-white text-xs mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>

@@ -11,6 +11,7 @@ import '@fontsource-variable/inter'
 import './index.css'
 import AplicarMarca from './components/layout/AplicarMarca'
 import { MotionConfig } from 'framer-motion'
+import Confirmaciones from './components/common/Confirmaciones'
 
 initApp()
 
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
         <AplicarMarca />
         <RouterProvider router={router} />
         <Toaster richColors position="top-right" />
+        <Confirmaciones />
       </MotionConfig>
     </QueryClientProvider>
   </StrictMode>,

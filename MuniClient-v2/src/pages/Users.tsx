@@ -75,7 +75,7 @@ function UserListRow({ user }: { user: User }) {
       </div>
       {user.role?.name && (
         <span className={cn(
-          'flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full hidden sm:block',
+          'flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full hidden sm:block',
           ROLE_STYLE[user.role.name] ?? 'bg-muted text-muted-foreground',
         )}>
           {user.role.name}
@@ -101,12 +101,12 @@ function UserGridCard({ user }: { user: User }) {
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
         {user.departamento_ID?.name && (
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user.departamento_ID.name}</p>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{user.departamento_ID.name}</p>
         )}
       </div>
       {user.role?.name && (
         <span className={cn(
-          'text-[10px] font-semibold px-2.5 py-0.5 rounded-full',
+          'text-xs font-semibold px-2.5 py-0.5 rounded-full',
           ROLE_STYLE[user.role.name] ?? 'bg-muted text-muted-foreground',
         )}>
           {user.role.name}
@@ -158,7 +158,7 @@ export default function UsersPage() {
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-3 flex-shrink-0" style={{ height: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="w-9 h-9 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
           <Users size={16} className="text-white" />
         </div>
@@ -176,8 +176,8 @@ export default function UsersPage() {
       </div>
 
       {/* ── Toolbar ── */}
-      <div className="bg-card border-b border-border px-6 flex items-center gap-2 flex-shrink-0 flex-wrap py-2" style={{ minHeight: 52 }}>
-        <div className="relative w-56 flex-shrink-0">
+      <div className="bg-card border-b border-border px-4 sm:px-6 flex items-center gap-2 flex-shrink-0 flex-wrap py-2" style={{ minHeight: 52 }}>
+        <div className="relative w-full sm:w-56 sm:flex-shrink-0">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             value={search}
@@ -260,7 +260,7 @@ export default function UsersPage() {
       </div>
 
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {isLoading ? (
           <div className={view === 'grid'
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3'

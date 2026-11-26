@@ -38,6 +38,7 @@ import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colo
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
 import { pestanas } from '@/lib/pestanas'
+import { confirmar } from '@/lib/confirmar'
 
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
@@ -67,14 +68,14 @@ function ImageGrid({
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center gap-2">
               <button
                 onClick={e => { e.stopPropagation(); setLightboxIdx(i) }}
-                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
+                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
                 title="Ver imagen"
               >
                 <ZoomIn size={12} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onDelete(img.imagen_ID) }}
-                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
+                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
                 title="Eliminar imagen"
               >
                 <Trash2 size={12} />
@@ -276,7 +277,7 @@ function EditProjectModal({
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
       <span className="text-sm text-foreground">{children}</span>
     </div>
   )
@@ -612,7 +613,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
   }
 
   const handleDelete = async (imageId: string) => {
-    if (!window.confirm('¿Eliminar esta imagen?')) return
+    if (!(await confirmar({ titulo: '¿Eliminar esta imagen?' }))) return
     try {
       await deleteTaskImage(imageId)
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
@@ -735,7 +736,7 @@ function TaskCard({
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`¿Eliminar la tarea "${task.name}"?`)) return
+    if (!(await confirmar({ titulo: `¿Eliminar la tarea «${task.name}»?` }))) return
     try {
       await deleteTask(task.tareas_ID)
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
@@ -762,26 +763,26 @@ function TaskCard({
           )}
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {task.fecha_inicio && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar size={9} /> {formatDate(task.fecha_inicio)}
               </span>
             )}
             {task.fecha_entrega && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock size={9} /> {formatDate(task.fecha_entrega)}
               </span>
             )}
             {task.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(task.prioridad_ID.color)}>
+              <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(task.prioridad_ID.color)}>
                 {task.prioridad_ID.name}
               </span>
             )}
             {task.asignado_a && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground" title={`${task.asignado_a.first_name} ${task.asignado_a.last_name}`}>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground" title={`${task.asignado_a.first_name} ${task.asignado_a.last_name}`}>
                 {task.asignado_a.user_photo ? (
                   <img src={task.asignado_a.user_photo} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full bg-amber-700 flex items-center justify-center text-[8px] font-bold text-white">
+                  <div className="w-[18px] h-[18px] rounded-full bg-amber-700 flex items-center justify-center text-[10px] font-bold text-white">
                     {task.asignado_a.first_name?.[0]}
                   </div>
                 )}
@@ -798,30 +799,30 @@ function TaskCard({
               'flex items-center gap-1 p-1 rounded-lg transition-colors',
               imageCount > 0
                 ? 'text-ocean-500 dark:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
-                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100',
+                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100',
             )}
           >
             <ImageIcon size={12} />
-            {imageCount > 0 && <span className="text-[10px] font-bold">{imageCount}</span>}
+            {imageCount > 0 && <span className="text-xs font-bold">{imageCount}</span>}
           </button>
           <select
             aria-label={`Estado de la tarea ${task.name}`}
             value={task.estado_ID?.estado_ID ?? ''}
             onChange={e => handleStatusChange(e.target.value)}
             disabled={updating}
-            className="text-[11px] bg-background border border-input rounded-lg px-1.5 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60 cursor-pointer"
+            className="text-xs bg-background border border-input rounded-lg px-1.5 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60 cursor-pointer"
           >
             {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
           </select>
           <button aria-label={`Editar la tarea ${task.name}`}
             onClick={() => onEdit(task)}
-            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
           >
             <Edit2 size={12} />
           </button>
           <button aria-label={`Eliminar la tarea ${task.name}`}
             onClick={handleDelete}
-            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
           >
             <Trash2 size={12} />
           </button>
@@ -889,10 +890,10 @@ function TaskGroup({
           : <ChevronRight size={13} className="text-muted-foreground" />
         }
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{status}</span>
-        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(estados.find(es => es.name === status)?.color)}>
+        <span className={cn('text-xs font-bold px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(estados.find(es => es.name === status)?.color)}>
           {tasks.length}
         </span>
-        {dragOver && <span className="text-[10px] text-ocean-500 dark:text-ocean-200 font-medium ml-1">Soltar aquí</span>}
+        {dragOver && <span className="text-xs text-ocean-500 dark:text-ocean-200 font-medium ml-1">Soltar aquí</span>}
       </button>
       <AnimatePresence>
         {open && (
@@ -1033,7 +1034,7 @@ export default function ProjectDetailPage() {
 
   const handleDeleteProject = async () => {
     if (!project) return
-    if (!window.confirm(`¿Eliminar el proyecto "${project.name}"? Esta acción no se puede deshacer.`)) return
+    if (!(await confirmar({ titulo: `¿Eliminar el proyecto «${project.name}»?`, mensaje: 'Esta acción no se puede deshacer.' }))) return
     try {
       await deleteProject(id!)
       toast.success('Proyecto eliminado')
@@ -1087,7 +1088,7 @@ export default function ProjectDetailPage() {
   }
 
   const handleDeleteImage = async (imageId: string) => {
-    if (!window.confirm('¿Eliminar esta imagen?')) return
+    if (!(await confirmar({ titulo: '¿Eliminar esta imagen?' }))) return
     try {
       await deleteProjectImage(imageId)
       await qc.invalidateQueries({ queryKey: ['project', id] })
@@ -1098,7 +1099,7 @@ export default function ProjectDetailPage() {
   }
 
   const handleDeleteComment = async (feedId: string) => {
-    if (!window.confirm('¿Eliminar este comentario?')) return
+    if (!(await confirmar({ titulo: '¿Eliminar este comentario?' }))) return
     try {
       await deleteFeedback(feedId)
       await qc.invalidateQueries({ queryKey: ['feedback', id] })
@@ -1158,7 +1159,7 @@ export default function ProjectDetailPage() {
     <div className="flex flex-col h-full">
 
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-start gap-3 py-4">
           <button aria-label="Volver"
             onClick={() => navigate(-1)}
@@ -1171,18 +1172,18 @@ export default function ProjectDetailPage() {
             <div className="flex items-start gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-foreground leading-tight">{project.name}</h1>
               {project.estado_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
+                <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
                   {project.estado_ID.name}
                 </span>
               )}
               {project.prioridad_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
+                <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                   {project.prioridad_ID.name}
                 </span>
               )}
               {days !== null && project.estado_ID?.name !== 'Completado' && project.estado_ID?.name !== 'Cancelado' && (
                 <span className={cn(
-                  'text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-1',
+                  'text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-1',
                   overdue ? 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400' :
                   days <= 3 ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400' :
                   'bg-muted text-muted-foreground',
@@ -1197,7 +1198,7 @@ export default function ProjectDetailPage() {
                 <div className="flex-1 max-w-48 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-ocean-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
-                <span className="text-[10px] text-muted-foreground">{completedTasks}/{totalTasks} tareas · {progress}%</span>
+                <span className="text-xs text-muted-foreground">{completedTasks}/{totalTasks} tareas · {progress}%</span>
               </div>
             )}
           </div>
@@ -1227,13 +1228,13 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del proyecto">
+        <div className="flex gap-1 overflow-x-auto" {...tabs.lista} aria-label="Secciones del proyecto">
           {TABS.map(t => (
             <button
               key={t}
               {...tabs.pestana(t)}
               className={cn(
-                'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
+                'px-4 py-2 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0',
                 tab === t
                   ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200'
                   : 'border-transparent text-muted-foreground hover:text-foreground',
@@ -1241,13 +1242,13 @@ export default function ProjectDetailPage() {
             >
               {t}
               {t === 'Comentarios' && feedback.length > 0 && (
-                <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{feedback.length}</span>
+                <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{feedback.length}</span>
               )}
               {t === 'Tareas' && totalTasks > 0 && (
-                <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{totalTasks}</span>
+                <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{totalTasks}</span>
               )}
               {t === 'Fotos' && projectImages.length > 0 && (
-                <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{projectImages.length}</span>
+                <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{projectImages.length}</span>
               )}
             </button>
           ))}
@@ -1255,7 +1256,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
@@ -1310,7 +1311,7 @@ export default function ProjectDetailPage() {
                   </div>
                 ) : (
                   <>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastre las tarjetas entre grupos para cambiar el estado'}
                     </p>
                     {ordenGrupos.map(status => (
@@ -1410,7 +1411,7 @@ export default function ProjectDetailPage() {
                       : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haga clic para ampliar`}
                   </p>
                   {projectImages.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {uploadProgress
                         ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}...`
                         : 'Arrastre o seleccione varias fotos en la zona de abajo'}
@@ -1472,11 +1473,11 @@ export default function ProjectDetailPage() {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-[11px] font-semibold text-foreground">
+                              <span className="text-xs font-semibold text-foreground">
                                 {author ? `${author.first_name} ${author.last_name}` : (user ? `${user.first_name} ${user.last_name}` : 'Usuario')}
                               </span>
                               {f.created_at && (
-                                <span className="text-[10px] text-muted-foreground">
+                                <span className="text-xs text-muted-foreground">
                                   {new Date(f.created_at).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               )}
@@ -1485,7 +1486,7 @@ export default function ProjectDetailPage() {
                           </div>
                           <button aria-label="Eliminar el comentario"
                             onClick={() => handleDeleteComment(f.feed_ID)}
-                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex-shrink-0"
+                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 flex-shrink-0"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1511,7 +1512,7 @@ export default function ProjectDetailPage() {
                   ].map(({ label, value, color }) => (
                     <div key={label} className="bg-card border border-border rounded-xl px-4 py-3">
                       <p className={cn('text-2xl font-bold', color)}>{value}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -1536,7 +1537,7 @@ export default function ProjectDetailPage() {
                         (grouped[s]?.length ?? 0) > 0 && (
                           <div key={s} className="flex items-center gap-1.5">
                             <div className={cn('w-2 h-2 rounded-full', claseRelleno)} style={conColor(estados.find(e => e.name === s)?.color)} />
-                            <span className="text-[10px] text-muted-foreground">{s}: {grouped[s].length}</span>
+                            <span className="text-xs text-muted-foreground">{s}: {grouped[s].length}</span>
                           </div>
                         )
                       ))}
@@ -1553,7 +1554,7 @@ export default function ProjectDetailPage() {
                     <div className="flex flex-col items-center justify-center py-12 gap-3 text-center bg-card border border-border rounded-xl">
                       <Activity size={28} className="text-muted-foreground/30" />
                       <p className="text-sm text-muted-foreground">Sin cambios registrados aún</p>
-                      <p className="text-[11px] text-muted-foreground">Los cambios a tareas y al proyecto aparecerán aquí</p>
+                      <p className="text-xs text-muted-foreground">Los cambios a tareas y al proyecto aparecerán aquí</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1600,13 +1601,13 @@ export default function ProjectDetailPage() {
                                 <div>
                                   <span className="text-xs font-semibold text-foreground">{entry.tipo_display}</span>
                                   {entry.tarea_ID && (
-                                    <span className="ml-1.5 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">tarea</span>
+                                    <span className="ml-1.5 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">tarea</span>
                                   )}
                                 </div>
-                                <span className="text-[10px] text-muted-foreground flex-shrink-0">{relTime}</span>
+                                <span className="text-xs text-muted-foreground flex-shrink-0">{relTime}</span>
                               </div>
                               {entry.usuario && (
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                <p className="text-xs text-muted-foreground mt-0.5">
                                   Por {entry.usuario.first_name} {entry.usuario.last_name}
                                 </p>
                               )}
@@ -1614,7 +1615,7 @@ export default function ProjectDetailPage() {
                                 <p className="text-xs text-foreground/80 mt-1 italic">"{entry.razon}"</p>
                               )}
                               {changes.map((c, i) => (
-                                <p key={i} className="text-[10px] text-muted-foreground mt-0.5">{c}</p>
+                                <p key={i} className="text-xs text-muted-foreground mt-0.5">{c}</p>
                               ))}
                             </div>
                           </div>

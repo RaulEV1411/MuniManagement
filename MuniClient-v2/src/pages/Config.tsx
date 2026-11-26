@@ -14,6 +14,7 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import InstitucionPanel from '@/components/config/InstitucionPanel'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import { pestanas } from '@/lib/pestanas'
+import { confirmar } from '@/lib/confirmar'
 
 const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
@@ -89,12 +90,12 @@ function ItemRow({
           {item.isSystem ? (
             <span
               title="Definido por el sistema. No se puede modificar."
-              className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
+              className="text-xs uppercase tracking-wide font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
             >
               Sistema
             </span>
           ) : (
-            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
               <button aria-label={`Editar ${item.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -223,7 +224,7 @@ export default function ConfigPage() {
     toast.success('Estado actualizado')
   }
   const onDeleteEstado = async (id: string, name: string) => {
-    if (!window.confirm(`¿Eliminar el estado "${name}"?`)) return
+    if (!(await confirmar({ titulo: `¿Eliminar el estado «${name}»?` }))) return
     await deleteEstado(id)
     qc.invalidateQueries({ queryKey: ['estados'] })
     toast.success('Estado eliminado')
@@ -247,7 +248,7 @@ export default function ConfigPage() {
     toast.success('Prioridad actualizada')
   }
   const onDeletePrioridad = async (id: string, name: string) => {
-    if (!window.confirm(`¿Eliminar la prioridad "${name}"?`)) return
+    if (!(await confirmar({ titulo: `¿Eliminar la prioridad «${name}»?` }))) return
     await deletePrioridad(id)
     qc.invalidateQueries({ queryKey: ['prioridades'] })
     toast.success('Prioridad eliminada')
@@ -266,7 +267,7 @@ export default function ConfigPage() {
     toast.success('Tipo actualizado')
   }
   const onDeleteTipo = async (id: string, name: string) => {
-    if (!window.confirm(`¿Eliminar el tipo "${name}"?`)) return
+    if (!(await confirmar({ titulo: `¿Eliminar el tipo «${name}»?` }))) return
     await deleteTipo(id)
     qc.invalidateQueries({ queryKey: ['tipos'] })
     toast.success('Tipo eliminado')
@@ -285,7 +286,7 @@ export default function ConfigPage() {
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
-      <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
+      <div className="bg-card border-b border-border px-4 sm:px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-center gap-3 py-4">
           <div className="w-9 h-9 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0">
             <Sliders size={16} className="text-white" />
@@ -297,19 +298,19 @@ export default function ConfigPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones de la configuración">
+        <div className="flex gap-1 overflow-x-auto" {...tabs.lista} aria-label="Secciones de la configuración">
           {TABS.map(t => (
             <button
               key={t}
               {...tabs.pestana(t)}
               className={cn(
-                'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
+                'px-4 py-2 text-xs font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0',
                 tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {t}
               {t !== 'Institución' && (
-                <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
                   {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
                 </span>
               )}
@@ -319,7 +320,7 @@ export default function ConfigPage() {
       </div>
 
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}

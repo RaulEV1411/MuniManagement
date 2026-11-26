@@ -53,9 +53,11 @@ const NAV: { label: string; items: NavItem[] }[] = [
   },
 ]
 
-export default function Sidebar() {
+// En pantallas chicas el menú vive en un cajón (AppShell): ahí va siempre expandido y sin el botón de colapsar.
+export default function Sidebar({ enCajon = false }: { enCajon?: boolean }) {
   const marca = useMarca()
-  const [expanded, setExpanded] = useState(true)
+  const [expandidoElegido, setExpanded] = useState(true)
+  const expanded = enCajon || expandidoElegido
   const { isDark, toggleTheme, user, logout } = useAppStore()
   const navigate = useNavigate()
   const location = useLocation()
@@ -69,13 +71,13 @@ export default function Sidebar() {
   })
   const overdueCount = resumen?.vencidos ?? 0
 
-  const W = expanded ? 240 : 64
+  const W = enCajon ? 280 : expanded ? 240 : 64
 
   return (
     <motion.aside
       animate={{ width: W }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-      className="relative flex flex-col h-full bg-card border-r border-border flex-shrink-0 overflow-hidden"
+      className="relative flex flex-col h-full max-w-[85vw] bg-card border-r border-border flex-shrink-0 overflow-hidden"
     >
       {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 h-14 border-b border-border flex-shrink-0">
@@ -90,7 +92,7 @@ export default function Sidebar() {
               className="min-w-0"
             >
               <p className="text-[13px] font-bold text-ocean-500 dark:text-ocean-200 leading-tight line-clamp-2 w-[164px]" title={marca.nombre}>{marca.nombre}</p>
-              {marca.ubicacion && <p className="text-[10px] text-muted-foreground truncate w-[164px]">{marca.ubicacion}</p>}
+              {marca.ubicacion && <p className="text-xs text-muted-foreground truncate w-[164px]">{marca.ubicacion}</p>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -112,7 +114,7 @@ export default function Sidebar() {
               className="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs text-muted-foreground bg-muted/50 hover:bg-accent rounded-xl transition-colors border border-border/50"
             >
               <span className="flex-1 text-left">Buscar...</span>
-              <kbd className="text-[9px] bg-background border border-border rounded px-1 py-0.5">⌘K</kbd>
+              <kbd className="text-xs bg-background border border-border rounded px-1 py-0.5">⌘K</kbd>
             </button>
           </motion.div>
         )}
@@ -128,7 +130,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 pt-3 pb-1.5 whitespace-nowrap"
+                  className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-2 pt-3 pb-1.5 whitespace-nowrap"
                 >
                   {label}
                 </motion.p>
@@ -156,7 +158,7 @@ export default function Sidebar() {
                   <div className="relative flex-shrink-0">
                     <Icon size={15} />
                     {!expanded && badge > 0 && (
-                      <span aria-hidden="true" className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      <span aria-hidden="true" className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
@@ -180,7 +182,7 @@ export default function Sidebar() {
                   </span>
                   {expanded && badge > 0 && (
                     <span aria-hidden="true" className={cn(
-                      'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center',
+                      'text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center',
                       active ? 'bg-white/20 text-white' : 'bg-red-600 text-white',
                     )}>
                       {badge > 99 ? '99+' : badge}
@@ -266,31 +268,33 @@ export default function Sidebar() {
                     ? `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim()
                     : user?.email ?? 'Usuario'}
                 </p>
-                <p className="text-[10px] text-muted-foreground truncate">{user?.role || 'Ver perfil'}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.role || 'Ver perfil'}</p>
               </motion.div>
             )}
           </AnimatePresence>
         </button>
 
         {/* Colapsar */}
-        <button
-          onClick={() => setExpanded(v => !v)}
-          title={expanded ? 'Colapsar' : 'Expandir'}
-          className={cn(
-            'flex items-center rounded-xl transition-all w-full text-muted-foreground hover:bg-accent hover:text-foreground',
-            expanded ? 'gap-2 px-2.5 py-1.5 justify-between' : 'justify-center',
-          )}
-          style={!expanded ? { height: 32, width: 36, margin: '0 auto' } : undefined}
-        >
-          <AnimatePresence>
-            {expanded && (
-              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] whitespace-nowrap">
-                v2.0 · Muni
-              </motion.span>
+        {!enCajon && (
+          <button
+            onClick={() => setExpanded(v => !v)}
+            title={expanded ? 'Colapsar' : 'Expandir'}
+            className={cn(
+              'flex items-center rounded-xl transition-all w-full text-muted-foreground hover:bg-accent hover:text-foreground',
+              expanded ? 'gap-2 px-2.5 py-1.5 justify-between' : 'justify-center',
             )}
-          </AnimatePresence>
-          {expanded ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
-        </button>
+            style={!expanded ? { height: 32, width: 36, margin: '0 auto' } : undefined}
+          >
+            <AnimatePresence>
+              {expanded && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs whitespace-nowrap">
+                  v2.0 · Muni
+                </motion.span>
+              )}
+            </AnimatePresence>
+            {expanded ? <ChevronLeft size={13} /> : <ChevronRight size={13} />}
+          </button>
+        )}
       </div>
     </motion.aside>
   )
