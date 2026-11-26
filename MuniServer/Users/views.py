@@ -180,7 +180,7 @@ class UsersViewSet(ModelViewSet):
     def enviar_acceso(self, request, pk=None):
         """La alcaldía reenvía el enlace para definir contraseña (cuenta nueva o clave olvidada)."""
         user = self.get_object()
-        if not authz.puede_sobre_usuario(request.user, 'usuarios.gestionar', user):
+        if not authz.puede_gestionar_a(request.user, user):
             return Response({'error': 'No tiene permisos para reenviar el acceso a esta persona.'}, status=403)
         if not user.is_active:
             return Response({'error': 'El usuario está dado de baja.'}, status=400)
@@ -292,7 +292,7 @@ def upload_user_photo(request, user_id):
     except Users.DoesNotExist:
         return Response({'error': 'Usuario no encontrado.'}, status=404)
 
-    if request.user.user_ID != user.user_ID and not authz.puede_sobre_usuario(request.user, 'usuarios.gestionar', user):
+    if request.user.user_ID != user.user_ID and not authz.puede_gestionar_a(request.user, user):
         return Response({'error': 'No tiene permisos para modificar esta foto.'}, status=403)
 
     error = error_de_imagen(file)

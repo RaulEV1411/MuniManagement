@@ -206,6 +206,17 @@ def rol_no_supera(rol, user):
     return True
 
 
+def puede_gestionar_a(user, objetivo):
+    """Editar, dar de baja o reenviar el acceso a otra persona: con usuarios.gestionar sobre su
+    departamento y sin que su rol supere al propio (si no, un jefe tomaría la cuenta de un Alcalde
+    cambiándole el correo y reenviando el enlace)."""
+    if not puede_sobre_usuario(user, 'usuarios.gestionar', objetivo):
+        return False
+    if es_administrador(user):
+        return True
+    return objetivo.role_id is not None and rol_no_supera(objetivo.role, user)
+
+
 # ── Querysets ────────────────────────────────────────────────────────────────
 
 def proyectos_visibles(user):

@@ -97,16 +97,17 @@ class ProyectosWriteViewSet(ModelViewSet):
                 raise PermissionDenied('No tiene permisos para modificar este proyecto.')
         return obj
 
-    def _validar_lugar_y_responsable(self, departamento, responsable):
+    def _validar_lugar_y_responsable(self, departamento, responsable, al_crear=False):
         user = self.request.user
-        if departamento is not None and not authz.puede_crear_proyecto_en(user, departamento):
+        # Al crear se exige siempre (sin departamento, puede_crear_proyecto_en niega); al editar, solo si cambia.
+        if (al_crear or departamento is not None) and not authz.puede_crear_proyecto_en(user, departamento):
             raise PermissionDenied('No tiene permisos para crear proyectos en ese departamento.')
         if responsable is not None and not authz.usuarios_visibles(user).filter(pk=responsable.pk).exists():
             raise ValidationError({'user_ID': 'El responsable tiene que ser una persona de su alcance.'})
 
     def perform_create(self, serializer):
         datos = serializer.validated_data
-        self._validar_lugar_y_responsable(datos.get('departamento_ID'), datos.get('user_ID'))
+        self._validar_lugar_y_responsable(datos.get('departamento_ID'), datos.get('user_ID'), al_crear=True)
         proyecto = serializer.save()
         HistorialCambios.objects.create(
             tipo='creacion', proyecto_ID=proyecto, usuario=self.request.user,

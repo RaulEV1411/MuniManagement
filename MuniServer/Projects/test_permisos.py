@@ -151,12 +151,13 @@ class VerComoTests(Escenario, APITestCase):
 class AsignarRolesTests(Escenario, APITestCase):
     def test_nadie_da_mas_de_lo_que_tiene(self):
         # Un rol que gestiona usuarios de su departamento, pero no roles.
-        gestor_rol = Roles.objects.create(name='Gestor de personal', permisos={'usuarios.gestionar': 'departamento', 'proyectos.ver': 'propio'})
+        base = Roles.objects.get(name='Funcionario').permisos
+        gestor_rol = Roles.objects.create(name='Gestor de personal', permisos={**base, 'usuarios.gestionar': 'departamento'})
         gestor = crear_usuario('Funcionario', self.depto_a)
         gestor.role = gestor_rol
         gestor.save()
         alcalde = Roles.objects.get(name='Alcalde')
-        url = f'{API}/users/users/{self.companero.pk}/'
+        url = f'{API}/users/users/{self.dueno.pk}/'
         self.assertEqual(self.como(gestor).patch(url, {'role': str(alcalde.pk)}, format='json').status_code, 403)
         modesto = Roles.objects.create(name='Consulta', permisos={'proyectos.ver': 'propio'})
         self.assertEqual(self.como(gestor).patch(url, {'role': str(modesto.pk)}, format='json').status_code, 200)
@@ -166,4 +167,30 @@ class AsignarRolesTests(Escenario, APITestCase):
     def test_solo_un_administrador_nombra_administradores(self):
         admin = Roles.objects.get(name='Administrador')
         r = self.como(self.alcalde).patch(f'{API}/users/users/{self.companero.pk}/', {'role': str(admin.pk)}, format='json')
+        self.assertEqual(r.status_code, 403)
+
+
+class GestionarAOtrosTests(Escenario, APITestCase):
+    """Gestionar usuarios de un departamento no alcanza para tomar la cuenta de alguien con más rol."""
+
+    def setUp(self):
+        super().setUp()
+        base = Roles.objects.get(name='Funcionario').permisos
+        rol = Roles.objects.create(name='Gestor de personal', permisos={**base, 'usuarios.gestionar': 'departamento'})
+        self.gestor = crear_usuario('Funcionario', self.depto_a)
+        self.gestor.role = rol
+        self.gestor.save()
+
+    def test_no_edita_ni_da_de_baja_a_quien_tiene_mas_rol(self):
+        c = self.como(self.gestor)
+        for objetivo in (self.alcalde, self.admin):
+            url = f'{API}/users/users/{objetivo.pk}/'
+            self.assertEqual(c.patch(url, {'email': 'tomada@x.cr'}, format='json').status_code, 403, objetivo.email)
+            self.assertEqual(c.delete(url).status_code, 403, objetivo.email)
+            self.assertEqual(c.post(f'{url}enviar-acceso/').status_code, 403, objetivo.email)
+        # A alguien con un rol igual o menor, sí.
+        self.assertEqual(c.patch(f'{API}/users/users/{self.dueno.pk}/', {'puesto': 'Inspector'}, format='json').status_code, 200)
+
+    def test_el_alcalde_no_toca_al_administrador(self):
+        r = self.como(self.alcalde).patch(f'{API}/users/users/{self.admin.pk}/', {'email': 'otra@x.cr'}, format='json')
         self.assertEqual(r.status_code, 403)

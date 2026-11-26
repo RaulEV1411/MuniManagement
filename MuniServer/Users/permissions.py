@@ -40,9 +40,9 @@ class UsersPermission(BasePermission):
             if es_self:
                 self.message = 'No puede eliminar su propia cuenta.'
                 return False
-            return authz.puede_sobre_usuario(user, 'usuarios.gestionar', obj)
+            return authz.puede_gestionar_a(user, obj)
 
-        if authz.puede_sobre_usuario(user, 'usuarios.gestionar', obj):
+        if authz.puede_gestionar_a(user, obj):
             return True
         if es_self:
             # La propia persona solo edita campos no críticos.
