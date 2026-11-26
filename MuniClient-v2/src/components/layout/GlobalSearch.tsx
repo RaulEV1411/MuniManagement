@@ -37,6 +37,8 @@ export default function GlobalSearch() {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
+        setQuery('')
+        setCursor(0)
         setOpen(v => !v)
       }
     }
@@ -45,11 +47,7 @@ export default function GlobalSearch() {
   }, [])
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 60)
-      setQuery('')
-      setCursor(0)
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 60)
   }, [open])
 
   const results: ResultItem[] = (() => {
@@ -84,8 +82,6 @@ export default function GlobalSearch() {
 
     return [...projects, ...users]
   })()
-
-  useEffect(() => { setCursor(0) }, [results.length])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape')    { setOpen(false); return }
@@ -124,7 +120,7 @@ export default function GlobalSearch() {
               <input
                 ref={inputRef}
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={e => { setQuery(e.target.value); setCursor(0) }}
                 onKeyDown={handleKeyDown}
                 placeholder="Buscar proyectos, usuarios..."
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"

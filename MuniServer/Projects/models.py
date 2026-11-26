@@ -110,11 +110,11 @@ class AjustePresupuesto(models.Model):
         ordering = ['-fecha']
         constraints = [
             models.CheckConstraint(
-                check=models.Q(monto__gt=0),
+                condition=models.Q(monto__gt=0),
                 name='ajuste_monto_positivo',
             ),
             models.CheckConstraint(
-                check=models.Q(proyecto__isnull=False) | models.Q(tarea__isnull=False),
+                condition=models.Q(proyecto__isnull=False) | models.Q(tarea__isnull=False),
                 name='ajuste_requiere_proyecto_o_tarea',
             ),
         ]

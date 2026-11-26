@@ -1,5 +1,5 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
-import { getCookie } from '@/lib/utils'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
+import Guard from '@/components/layout/Guard'
 import AppShell from '@/components/layout/AppShell'
 import LoginPage from '@/pages/Login'
 import DashboardPage from '@/pages/Dashboard'
@@ -16,11 +16,6 @@ import ReportsPage from '@/pages/Reports'
 import PublicProjectsPage from '@/pages/PublicProjects'
 import PublicProjectDetailPage from '@/pages/PublicProjectDetail'
 import AyudaPage from '@/pages/Ayuda'
-
-function Guard() {
-  const token = getCookie('accessToken')
-  return token ? <Outlet /> : <Navigate to="/login" replace />
-}
 
 export const router = createBrowserRouter([
   { path: '/',      element: <Navigate to="/login" replace /> },

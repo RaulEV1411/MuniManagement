@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
   MapPin, Sliders, GanttChartSquare, FileDown, HelpCircle,
+  type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getProjects } from '@/lib/api'
@@ -13,7 +14,15 @@ import { type Project } from '@/types'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 
-const NAV = [
+interface NavItem {
+  icon: LucideIcon
+  label: string
+  path: string
+  match: (p: string) => boolean
+  showOverdue?: boolean
+}
+
+const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: 'Principal',
     items: [

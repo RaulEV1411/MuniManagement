@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, X, Sparkles, Bell, ListChecks, DollarSign, ShieldCheck, HelpCircle } from 'lucide-react'
+import { ArrowRight, X, Sparkles, Bell, ListChecks, DollarSign, ShieldCheck, HelpCircle, type LucideIcon } from 'lucide-react'
 import { useOnboardingTour } from '@/hooks/useOnboardingTour'
 
 interface Step {
-  icon: any
+  icon: LucideIcon
   title: string
   body: string
 }

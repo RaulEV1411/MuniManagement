@@ -10,6 +10,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('Task', '0004_remove_tareas_task_photo_taskimage'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('Users', '0002_users'),
     ]
 
     operations = [

@@ -7,7 +7,6 @@ import { cn, formatDate, isOverdue } from '@/lib/utils'
 import { toast } from 'sonner'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
 
 const STATUS_BADGE: Record<string, string> = {
   'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
@@ -104,28 +103,26 @@ export default function ReportsPage() {
     }
   }
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     try {
-      const rows = filtered.map((p, i) => ({
-        '#': i + 1,
-        'Proyecto': p.name,
-        'Departamento': p.departamento_ID?.name ?? '',
-        'Estado': isOverdue(p) ? 'Vencido' : (p.estado_ID?.name ?? ''),
-        'Prioridad': p.prioridad_ID?.name ?? '',
-        'Responsable': p.user_ID ? `${p.user_ID.first_name} ${p.user_ID.last_name}` : '',
-        'Fecha Inicio': formatDate(p.fecha_inicio),
-        'Fecha Entrega': formatDate(p.fecha_entrega),
-        'Costo (₡)': p.costo ?? 0,
-      }))
+      const { default: writeExcelFile } = await import('write-excel-file/browser')
+      const encabezados = ['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'Responsable', 'Fecha Inicio', 'Fecha Entrega', 'Costo (₡)']
+      const filas = filtered.map((p, i) => [
+        i + 1,
+        p.name,
+        p.departamento_ID?.name ?? '',
+        isOverdue(p) ? 'Vencido' : (p.estado_ID?.name ?? ''),
+        p.prioridad_ID?.name ?? '',
+        p.user_ID ? `${p.user_ID.first_name} ${p.user_ID.last_name}` : '',
+        formatDate(p.fecha_inicio),
+        formatDate(p.fecha_entrega),
+        p.costo ?? 0,
+      ])
 
-      const ws = XLSX.utils.json_to_sheet(rows)
-      ws['!cols'] = [
-        { wch: 4 }, { wch: 35 }, { wch: 22 }, { wch: 14 },
-        { wch: 10 }, { wch: 25 }, { wch: 14 }, { wch: 14 }, { wch: 16 },
-      ]
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Proyectos')
-      XLSX.writeFile(wb, `proyectos_${new Date().toISOString().slice(0, 10)}.xlsx`)
+      await writeExcelFile([encabezados, ...filas], {
+        sheet: 'Proyectos',
+        columns: [4, 35, 22, 14, 10, 25, 14, 14, 16].map(width => ({ width })),
+      }).toFile(`proyectos_${new Date().toISOString().slice(0, 10)}.xlsx`)
       toast.success('Excel exportado correctamente')
     } catch {
       toast.error('Error al exportar Excel')

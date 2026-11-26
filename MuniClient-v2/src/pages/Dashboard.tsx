@@ -318,7 +318,6 @@ function ProjectGridCard({ project }: { project: Project }) {
   const navigate = useNavigate()
   const qc       = useQueryClient()
   const overdue  = isOverdue(project)
-  const status   = overdue ? 'Vencido' : project.estado_ID?.name
   const images   = project.images ?? []
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -603,7 +602,7 @@ export default function DashboardPage() {
   }, [projects, status, priority, search, sortBy, mineOnly, user?.user_ID])
 
   const hasFilters = search || status !== 'Todos' || priority !== 'Todas' || mineOnly
-  const clearFilters = () => { setSearch(''); setStatus('Todos'); setPriority('Todas'); setMineOnly(false) }
+  const clearFilters = () => { setSearch(''); setStatus('Todos'); setPriority('Todas'); setMineOnly(() => false) }
 
   const kanbanByStatus = useMemo(() => {
     const grouped: Record<string, Project[]> = {}

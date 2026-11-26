@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAppStore } from '@/store/app'
 import { completarOnboarding } from '@/lib/api'
 
@@ -6,26 +6,26 @@ const keyFor = (userId?: string | null) => `muni-onboarding-done:${userId ?? 'an
 
 export function useOnboardingTour() {
   const { user } = useAppStore()
-  const [show, setShow] = useState(false)
+  const userId = user?.user_ID
+  // Lo que el usuario eligió en esta sesión (terminar o volver a ver el tour), por usuario.
+  const [eleccion, setEleccion] = useState<{ userId: string; show: boolean } | null>(null)
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !user?.user_ID) {
-      setShow(false)
-      return
-    }
-    const done = localStorage.getItem(keyFor(user.user_ID))
-    setShow(!done)
-  }, [user?.user_ID])
+  const pendiente = !!userId && typeof window !== 'undefined' && !localStorage.getItem(keyFor(userId))
+  const show = eleccion && eleccion.userId === userId ? eleccion.show : pendiente
 
   const finish = () => {
-    if (user?.user_ID) localStorage.setItem(keyFor(user.user_ID), '1')
-    setShow(false)
+    if (userId) {
+      localStorage.setItem(keyFor(userId), '1')
+      setEleccion({ userId, show: false })
+    }
     completarOnboarding().catch(() => {})
   }
 
   const restart = () => {
-    if (user?.user_ID) localStorage.removeItem(keyFor(user.user_ID))
-    setShow(true)
+    if (userId) {
+      localStorage.removeItem(keyFor(userId))
+      setEleccion({ userId, show: true })
+    }
   }
 
   return { show, finish, restart }
