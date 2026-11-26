@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import InstitucionPanel from '@/components/config/InstitucionPanel'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import { pestanas } from '@/lib/pestanas'
 
 const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
@@ -93,7 +94,7 @@ function ItemRow({
               Sistema
             </span>
           ) : (
-            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity">
               <button aria-label={`Editar ${item.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -203,6 +204,7 @@ export default function ConfigPage() {
   useTituloDePagina('Configuración')
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('Institución')
+  const tabs = pestanas('configuracion', TABS, tab, setTab)
 
   const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
   const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
@@ -295,11 +297,11 @@ export default function ConfigPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones de la configuración">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
@@ -321,6 +323,7 @@ export default function ConfigPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}

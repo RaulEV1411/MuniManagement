@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -47,7 +47,7 @@ function StatusQuickChange({ project }: { project: Project }) {
   const currentStatus = isOverdue(project) ? 'Vencido' : (project.estado_ID?.name ?? '')
 
   return (
-    <div ref={ref} className="relative inline-flex" onClick={e => e.stopPropagation()}>
+    <div ref={ref} className="relative z-10 inline-flex" onClick={e => e.stopPropagation()}>
       <button
         onClick={() => setOpen(v => !v)}
         disabled={isPending}
@@ -170,13 +170,13 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
           <>
             <button aria-label="Foto anterior"
               onClick={prev}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronLeft size={12} />
             </button>
             <button aria-label="Foto siguiente"
               onClick={next}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronRight size={12} />
             </button>
@@ -185,7 +185,7 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
 
         {/* Contador */}
         {images.length > 1 && (
-          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full opacity-0 group-hover/car:opacity-100 transition-opacity pointer-events-none">
+          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity pointer-events-none">
             {idx + 1}/{images.length}
           </div>
         )}
@@ -196,6 +196,8 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
             {images.map((_, i) => (
               <button
                 key={i}
+                aria-label={`Foto ${i + 1}`}
+                aria-current={i === idx}
                 onClick={e => { e.stopPropagation(); setIdx(i) }}
                 className={cn(
                   'w-1.5 h-1.5 rounded-full transition-all',
@@ -207,7 +209,7 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
         )}
 
         {/* Zoom hint */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/car:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity pointer-events-none">
           <div className="bg-black/30 rounded-full p-2">
             <ImageIcon size={14} className="text-white" />
           </div>
@@ -229,7 +231,6 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
 
 // ── Vista lista ──────────────────────────────────────────────────────────────
 function ProjectListRow({ project }: { project: Project }) {
-  const navigate  = useNavigate()
   const overdue   = isOverdue(project)
   const status    = overdue ? 'Vencido' : project.estado_ID?.name
   const days      = project.fecha_entrega ? daysUntil(project.fecha_entrega) : null
@@ -244,33 +245,31 @@ function ProjectListRow({ project }: { project: Project }) {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
-        onClick={() => navigate(`/projects/${project.proyect_ID}`)}
-        className="flex items-center gap-4 px-5 py-3 hover:bg-accent/50 transition-colors cursor-pointer group border-b border-border last:border-0"
+        className="relative flex items-center gap-4 px-5 py-3 hover:bg-accent/50 transition-colors cursor-pointer group border-b border-border last:border-0 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
       >
         {/* Thumbnail o barra de color */}
         {thumbnail ? (
-          <div className="relative flex-shrink-0">
+          <button type="button" aria-label={`Ver las fotos de ${project.name}`} onClick={() => setLightbox(0)} className="relative z-10 flex-shrink-0 rounded-xl">
             <img
               src={thumbnail}
               alt=""
               className="w-11 h-11 rounded-xl object-cover border border-border"
-              onClick={e => { e.stopPropagation(); setLightbox(0) }}
             />
             {imgCount > 1 && (
               <span className="absolute -bottom-1 -right-1 bg-ocean-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {imgCount > 9 ? '9+' : imgCount}
               </span>
             )}
-          </div>
+          </button>
         ) : (
           <div className={cn('w-1 h-9 rounded-full flex-shrink-0', claseRelleno)} style={conColor(colorDeEstado(overdue, project.estado_ID))} />
         )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
+            <Link to={`/projects/${project.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
               {project.name}
-            </span>
+            </Link>
             <StatusQuickChange project={project} />
             {project.prioridad_ID?.name && (
               <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
@@ -313,7 +312,6 @@ function ProjectListRow({ project }: { project: Project }) {
 
 // ── Vista grid ───────────────────────────────────────────────────────────────
 function ProjectGridCard({ project }: { project: Project }) {
-  const navigate = useNavigate()
   const qc       = useQueryClient()
   const overdue  = isOverdue(project)
   const images   = project.images ?? []
@@ -348,8 +346,7 @@ function ProjectGridCard({ project }: { project: Project }) {
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={() => navigate(`/projects/${project.proyect_ID}`)}
-      className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group relative"
+      className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
     >
       <input
         ref={fileInputRef}
@@ -362,14 +359,14 @@ function ProjectGridCard({ project }: { project: Project }) {
 
       {/* Imagen / zona vacía */}
       {images.length > 0 ? (
-        <div className="relative">
+        <div className="relative z-10">
           <ImageCarousel images={images} />
           {/* Botón subir más fotos */}
           <button
             onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
             disabled={!!uploadProgress}
             title="Subir más fotos"
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 disabled:opacity-40 z-10"
+            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity hover:bg-black/70 disabled:opacity-40 z-10"
           >
             {uploadProgress
               ? <RefreshCw size={11} className="animate-spin" />
@@ -378,9 +375,11 @@ function ProjectGridCard({ project }: { project: Project }) {
           </button>
         </div>
       ) : (
-        <div
-          className="h-20 bg-gradient-to-br from-ocean-500/10 via-ocean-500/5 to-transparent flex items-center justify-center border-b border-border/50 group/empty"
-          onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+        <button
+          type="button"
+          className="relative z-10 w-full h-20 bg-gradient-to-br from-ocean-500/10 via-ocean-500/5 to-transparent flex items-center justify-center border-b border-border/50 group/empty"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!!uploadProgress}
         >
           {uploadProgress ? (
             <div className="flex items-center gap-1.5 text-ocean-500 dark:text-ocean-200">
@@ -388,18 +387,18 @@ function ProjectGridCard({ project }: { project: Project }) {
               <span className="text-[10px] font-medium">{uploadProgress.current}/{uploadProgress.total}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-muted-foreground/40 group-hover/empty:text-ocean-500 dark:group-hover/empty:text-ocean-200 transition-colors">
+            <div className="flex items-center gap-1.5 text-muted-foreground group-hover/empty:text-ocean-500 dark:group-hover/empty:text-ocean-200 transition-colors">
               <ImageIcon size={14} />
               <span className="text-[10px] font-medium">Agregar foto</span>
             </div>
           )}
-        </div>
+        </button>
       )}
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <h3 className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 flex-1">
-            {project.name}
+            <Link to={`/projects/${project.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{project.name}</Link>
           </h3>
           <StatusQuickChange project={project} />
         </div>
@@ -411,7 +410,7 @@ function ProjectGridCard({ project }: { project: Project }) {
         <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-2">
           <span className="truncate">{project.departamento_ID?.name}</span>
           {project.fecha_entrega && (
-            <span className={cn('font-medium flex-shrink-0', overdue ? 'text-red-500' : '')}>
+            <span className={cn('font-medium flex-shrink-0', overdue ? 'text-red-700 dark:text-red-400' : '')}>
               {formatDate(project.fecha_entrega)}
             </span>
           )}
@@ -438,7 +437,6 @@ function ProjectGridCard({ project }: { project: Project }) {
 
 // ── Vista kanban ─────────────────────────────────────────────────────────────
 function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }) {
-  const navigate = useNavigate()
 
   return (
     <div className="flex flex-col min-w-[240px] max-w-[280px] flex-1">
@@ -455,8 +453,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
           return (
             <div
               key={p.proyect_ID}
-              onClick={() => navigate(`/projects/${p.proyect_ID}`)}
-              className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:border-ocean-300 dark:hover:border-ocean-500/40 hover:shadow-sm transition-all group"
+              className="relative bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:border-ocean-300 dark:hover:border-ocean-500/40 hover:shadow-sm transition-all group focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
             >
               {imgs.length > 0 ? (
                 <div className="h-24 overflow-hidden relative bg-muted">
@@ -464,7 +461,6 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                     src={imgs[0].url}
                     alt=""
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onClick={e => e.stopPropagation()}
                   />
                   {imgs.length > 1 && (
                     <span className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
@@ -474,7 +470,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                 </div>
               ) : null}
               <div className="p-3">
-                <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 mb-1.5">{p.name}</p>
+                <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 mb-1.5"><Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link></p>
                 <div className="flex items-center justify-between gap-1">
                   {p.prioridad_ID?.name && (
                     <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
@@ -483,7 +479,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
                   )}
                   {days !== null && estado.name !== 'Completado' && estado.name !== 'Cancelado' && (
                     <span className={cn('text-[9px] font-medium ml-auto',
-                      od ? 'text-red-500' : days <= 3 ? 'text-amber-500' : 'text-muted-foreground',
+                      od ? 'text-red-700 dark:text-red-400' : days <= 3 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
                     )}>
                       {od ? `+${Math.abs(days)}d` : days === 0 ? 'Hoy' : `${days}d`}
                     </span>
@@ -500,7 +496,7 @@ function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }
         })}
         {projects.length === 0 && (
           <div className="border-2 border-dashed border-border rounded-xl p-4 text-center">
-            <p className="text-[10px] text-muted-foreground/50">Sin proyectos</p>
+            <p className="text-[10px] text-muted-foreground">Sin proyectos</p>
           </div>
         )}
       </div>

@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { GanttChartSquare, ChevronDown } from 'lucide-react'
 import { getProjects, getDepartments, getEstados } from '@/lib/api'
 import { type Project, type Department, type Estado } from '@/types'
 import { cn, isOverdue } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
-import { COLOR_VENCIDO, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { COLOR_VENCIDO, claseRelleno, colorDeEstado, conColor, textoSobre } from '@/lib/colores'
 import { useTituloDePagina } from '@/hooks/useMarca'
 
 function toDate(s: string | null | undefined): Date | null {
@@ -25,7 +25,6 @@ function diffDays(a: Date, b: Date) {
 
 export default function TimelinePage() {
   useTituloDePagina('Cronograma')
-  const navigate = useNavigate()
   const [deptFilter, setDeptFilter] = useState('')
 
   const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
@@ -170,13 +169,12 @@ export default function TimelinePage() {
                 return (
                   <div
                     key={p.proyect_ID}
-                    className="flex items-center gap-0 h-10 group cursor-pointer"
-                    onClick={() => navigate(`/projects/${p.proyect_ID}`)}
+                    className="relative flex items-center gap-0 h-10 group cursor-pointer rounded-lg focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
                   >
                     {/* Nombre */}
                     <div className="w-48 flex-shrink-0 pr-3 flex items-center">
                       <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
-                        {p.name}
+                        <Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link>
                       </p>
                     </div>
 
@@ -191,12 +189,13 @@ export default function TimelinePage() {
                           )}
                           style={{
                             ...conColor(colorDeEstado(od, p.estado_ID)),
+                            color: textoSobre(colorDeEstado(od, p.estado_ID) ?? '#64748b'),
                             left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8,
                             borderLeftColor: p.prioridad_ID?.color,
                           }}
                           title={`${p.name} · ${od ? 'Vencido' : p.estado_ID?.name ?? ''} · prioridad ${p.prioridad_ID?.name ?? '—'}`}
                         >
-                          <span className="text-[9px] font-semibold text-white truncate hidden sm:block">
+                          <span className="text-[9px] font-semibold truncate hidden sm:block">
                             {p.departamento_ID?.name}
                           </span>
                         </div>

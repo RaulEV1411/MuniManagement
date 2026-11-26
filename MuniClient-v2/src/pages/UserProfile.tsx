@@ -20,6 +20,8 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { esNoEncontrado } from '@/lib/errores'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
+import { pestanas } from '@/lib/pestanas'
 
 
 const AVATAR_COLORS = [
@@ -105,7 +107,7 @@ function EditModal({
   const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Editar usuario" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -175,7 +177,7 @@ function EditModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -203,7 +205,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
   const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Cambiar contraseña" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -241,7 +243,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -255,6 +257,7 @@ export default function UserProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [tab, setTab]         = useState<Tab>('Información')
+  const tabs = pestanas('perfil', TABS, tab, setTab)
   const [showEdit, setShowEdit]     = useState(false)
   const [showPassword, setPassword] = useState(false)
   const [uploading, setUploading]   = useState(false)
@@ -370,7 +373,7 @@ export default function UserProfilePage() {
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
                 aria-label="Cambiar la foto"
-                className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex items-center justify-center transition-opacity"
               >
                 <Camera size={12} className="text-white" />
               </button>
@@ -430,11 +433,11 @@ export default function UserProfilePage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del perfil">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
@@ -454,6 +457,7 @@ export default function UserProfilePage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}

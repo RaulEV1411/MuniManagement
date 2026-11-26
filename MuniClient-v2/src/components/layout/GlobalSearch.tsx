@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { getProyectosPagina, getUsuariosPagina } from '@/lib/api'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
+import Dialogo from '@/components/common/Dialogo'
 
 type ResultItem =
   | { kind: 'project'; id: string; label: string; sub: string }
@@ -106,10 +107,7 @@ export default function GlobalSearch() {
   return (
     <AnimatePresence>
       {open && (
-        <div
-          className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm px-4"
-          onClick={() => setOpen(false)}
-        >
+        <Dialogo titulo="Buscar proyectos y usuarios" onCerrar={() => setOpen(false)} capa="z-[200]" className="items-start pt-[15vh] px-4" cerrarAlTocarFondo>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -201,7 +199,7 @@ export default function GlobalSearch() {
               </div>
             )}
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </AnimatePresence>
   )

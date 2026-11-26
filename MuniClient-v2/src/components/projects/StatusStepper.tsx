@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Check, Loader2, X } from 'lucide-react'
 import type { Estado } from '@/types'
 import { textoSobre } from '@/lib/colores'
+import Dialogo from '@/components/common/Dialogo'
 
 const STATE_ICON: Record<string, string> = {
   'Pendiente': '📋',
@@ -86,7 +87,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
       </div>
 
       {confirmando && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setConfirmando(null)}>
+        <Dialogo titulo={`Cambiar a «${confirmando.name}»`} onCerrar={() => setConfirmando(null)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -129,7 +130,7 @@ export default function StatusStepper({ estados, currentId, onChange, size = 'md
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </>
   )

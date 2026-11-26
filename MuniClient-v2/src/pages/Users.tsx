@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -55,20 +55,18 @@ function UserAvatar({ user, size = 'md' }: { user: User; size?: 'md' | 'lg' }) {
 }
 
 function UserListRow({ user }: { user: User }) {
-  const navigate = useNavigate()
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      onClick={() => navigate(`/users/${user.user_ID}`)}
-      className="flex items-center gap-4 px-5 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer border-b border-border last:border-0 group"
+      className="relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring flex items-center gap-4 px-5 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer border-b border-border last:border-0 group"
     >
       <UserAvatar user={user} size="md" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
-          {fullName(user)}
+          <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
       </div>
@@ -88,20 +86,18 @@ function UserListRow({ user }: { user: User }) {
 }
 
 function UserGridCard({ user }: { user: User }) {
-  const navigate = useNavigate()
   return (
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={() => navigate(`/users/${user.user_ID}`)}
-      className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
+      className="relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
     >
       <UserAvatar user={user} size="lg" />
       <div className="min-w-0 w-full">
         <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
-          {fullName(user)}
+          <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
         {user.departamento_ID?.name && (

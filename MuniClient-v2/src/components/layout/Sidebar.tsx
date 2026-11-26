@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
@@ -139,9 +139,10 @@ export default function Sidebar() {
               const active = match(location.pathname)
               const badge = showOverdue && overdueCount > 0 ? overdueCount : 0
               return (
-                <button
+                <Link
                   key={path}
-                  onClick={() => navigate(path)}
+                  to={path}
+                  aria-current={active ? 'page' : undefined}
                   title={expanded ? undefined : itemLabel}
                   className={cn(
                     'flex items-center rounded-xl transition-all duration-150 w-full text-left',
@@ -155,7 +156,7 @@ export default function Sidebar() {
                   <div className="relative flex-shrink-0">
                     <Icon size={15} />
                     {!expanded && badge > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      <span aria-hidden="true" className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
@@ -172,8 +173,13 @@ export default function Sidebar() {
                       </motion.span>
                     )}
                   </AnimatePresence>
+                  {/* El lector oye «Proyectos, 1 vencido»; el número de la burbuja es solo visual. */}
+                  <span className="sr-only">
+                    {!expanded && itemLabel}
+                    {badge > 0 && `, ${badge} ${badge === 1 ? 'vencido' : 'vencidos'}`}
+                  </span>
                   {expanded && badge > 0 && (
-                    <span className={cn(
+                    <span aria-hidden="true" className={cn(
                       'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center',
                       active ? 'bg-white/20 text-white' : 'bg-red-600 text-white',
                     )}>
@@ -183,7 +189,7 @@ export default function Sidebar() {
                   {active && expanded && !badge && (
                     <div className="w-1.5 h-1.5 rounded-full bg-white/50 flex-shrink-0" />
                   )}
-                </button>
+                </Link>
               )
             })}
           </div>

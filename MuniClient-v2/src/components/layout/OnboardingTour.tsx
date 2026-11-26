@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, X, Sparkles, Bell, ListChecks, DollarSign, ShieldCheck, HelpCircle, type LucideIcon } from 'lucide-react'
 import { useOnboardingTour } from '@/hooks/useOnboardingTour'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Step {
   icon: LucideIcon
@@ -52,7 +53,7 @@ export default function OnboardingTour() {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4">
+      <Dialogo titulo={step.title} onCerrar={finish} capa="z-[100]" fondo="bg-black/60">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -100,7 +101,7 @@ export default function OnboardingTour() {
             </div>
           </div>
         </motion.div>
-      </div>
+      </Dialogo>
     </AnimatePresence>
   )
 }

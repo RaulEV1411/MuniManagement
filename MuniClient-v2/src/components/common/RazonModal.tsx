@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import Dialogo from '@/components/common/Dialogo'
 
 export default function RazonModal({
   title, description, onConfirm, onClose,
@@ -12,7 +13,7 @@ export default function RazonModal({
 }) {
   const [razon, setRazon] = useState('')
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <Dialogo titulo={title} onCerrar={onClose} capa="z-[60]" fondo="bg-black/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -54,6 +55,6 @@ export default function RazonModal({
           </div>
         </div>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }

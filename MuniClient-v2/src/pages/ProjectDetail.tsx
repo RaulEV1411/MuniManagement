@@ -36,6 +36,8 @@ import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
+import { pestanas } from '@/lib/pestanas'
 
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
@@ -65,14 +67,14 @@ function ImageGrid({
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center gap-2">
               <button
                 onClick={e => { e.stopPropagation(); setLightboxIdx(i) }}
-                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
+                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
                 title="Ver imagen"
               >
                 <ZoomIn size={12} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onDelete(img.imagen_ID) }}
-                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
+                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
                 title="Eliminar imagen"
               >
                 <Trash2 size={12} />
@@ -169,7 +171,7 @@ function EditProjectModal({
   const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Editar proyecto" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -267,7 +269,7 @@ function EditProjectModal({
           onClose={() => setPidiendoMotivo(false)}
         />
       )}
-    </div>
+    </Dialogo>
   )
 }
 
@@ -362,7 +364,7 @@ function EditTaskModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <Dialogo titulo="Editar tarea" onCerrar={onClose}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -428,7 +430,7 @@ function EditTaskModal({
             </div>
           </form>
         </motion.div>
-      </div>
+      </Dialogo>
       <AnimatePresence>
         {razonConfig && (
           <RazonModal
@@ -493,7 +495,7 @@ function TaskModal({
   const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Nueva tarea" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -558,7 +560,7 @@ function TaskModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -623,7 +625,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
   const images: TaskImage[] = task.images ?? []
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Fotos de la tarea" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -701,7 +703,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
           )}
         </div>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -796,7 +798,7 @@ function TaskCard({
               'flex items-center gap-1 p-1 rounded-lg transition-colors',
               imageCount > 0
                 ? 'text-ocean-500 dark:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
-                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100',
+                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100',
             )}
           >
             <ImageIcon size={12} />
@@ -813,13 +815,13 @@ function TaskCard({
           </select>
           <button aria-label={`Editar la tarea ${task.name}`}
             onClick={() => onEdit(task)}
-            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
           >
             <Edit2 size={12} />
           </button>
           <button aria-label={`Eliminar la tarea ${task.name}`}
             onClick={handleDelete}
-            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
           >
             <Trash2 size={12} />
           </button>
@@ -990,6 +992,7 @@ export default function ProjectDetailPage() {
   const canDelegate = !!(user?.role_flags?.puede_ver_todo || user?.role_flags?.puede_delegar)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
+  const tabs = pestanas('proyecto', TABS, tab, setTab)
   const [showTaskModal, setShowTaskModal]       = useState(false)
   const [showEditModal, setShowEditModal]       = useState(false)
   const [editingTask, setEditingTask]           = useState<Task | null>(null)
@@ -1224,11 +1227,11 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del proyecto">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t
@@ -1256,6 +1259,7 @@ export default function ProjectDetailPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -1481,7 +1485,7 @@ export default function ProjectDetailPage() {
                           </div>
                           <button aria-label="Eliminar el comentario"
                             onClick={() => handleDeleteComment(f.feed_ID)}
-                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex-shrink-0"
                           >
                             <Trash2 size={11} />
                           </button>

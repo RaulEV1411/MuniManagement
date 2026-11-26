@@ -10,6 +10,7 @@ import { initApp } from './store/app'
 import '@fontsource-variable/inter'
 import './index.css'
 import AplicarMarca from './components/layout/AplicarMarca'
+import { MotionConfig } from 'framer-motion'
 
 initApp()
 
@@ -22,9 +23,12 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AplicarMarca />
-      <RouterProvider router={router} />
-      <Toaster richColors position="top-right" />
+      {/* Si el sistema pide menos movimiento, las animaciones de desplazamiento y escala se omiten. */}
+      <MotionConfig reducedMotion="user">
+        <AplicarMarca />
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
+      </MotionConfig>
     </QueryClientProvider>
   </StrictMode>,
 )

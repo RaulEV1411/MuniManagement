@@ -10,6 +10,7 @@ import { type Department, type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
 
 function CreateModal({
   directions,
@@ -44,7 +45,7 @@ function CreateModal({
   const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Nuevo departamento" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -87,7 +88,7 @@ function CreateModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 

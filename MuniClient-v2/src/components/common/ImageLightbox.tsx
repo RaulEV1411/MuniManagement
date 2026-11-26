@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Dialogo from '@/components/common/Dialogo'
 
 export interface LightboxImage {
   imagen_ID: string
@@ -30,10 +31,7 @@ export default function ImageLightbox({
   }, [onClose, images.length])
 
   return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/92 flex items-center justify-center"
-      onClick={onClose}
-    >
+    <Dialogo titulo="Fotos" onCerrar={onClose} capa="z-[100]" fondo="bg-black/92" className="p-0" cerrarAlTocarFondo>
       {/* Contador */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/85 text-xs font-medium bg-black/60 px-3 py-1 rounded-full pointer-events-none">
         {idx + 1} / {images.length}
@@ -103,6 +101,6 @@ export default function ImageLightbox({
           ))}
         </div>
       )}
-    </div>
+    </Dialogo>
   )
 }

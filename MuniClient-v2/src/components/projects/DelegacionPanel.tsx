@@ -7,6 +7,7 @@ import { getDelegaciones, createDelegacion, deleteDelegacion, getUsers } from '@
 import type { Delegacion, User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import { formatDate } from '@/lib/utils'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Props {
   proyectoId: string
@@ -120,7 +121,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <Dialogo titulo="Delegar supervisión" onCerrar={() => setOpen(false)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -179,7 +180,7 @@ export default function DelegacionPanel({ proyectoId, canManage }: Props) {
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </section>
   )

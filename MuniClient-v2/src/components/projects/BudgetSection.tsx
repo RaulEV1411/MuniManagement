@@ -7,6 +7,7 @@ import { getAjustes, createAjuste } from '@/lib/api'
 import type { AjustePresupuesto } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import { useMoneda } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Props {
   proyectoId?: string
@@ -102,7 +103,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <Dialogo titulo="Nuevo ajuste de presupuesto" onCerrar={() => setOpen(false)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -169,7 +170,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </section>
   )
