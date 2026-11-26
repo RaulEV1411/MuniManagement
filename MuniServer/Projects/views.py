@@ -21,6 +21,7 @@ from . import authz
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
+from Notifications.servicios import interesados_del_proyecto, nombre, notificar
 
 
 ESTADOS_REQUIEREN_MOTIVO = {'Cancelado', 'Pausado'}
@@ -30,7 +31,7 @@ def _proyectos_visibles_qs(user):
     """Proyectos que el usuario puede ver (queryset filtrado, no list)."""
     return authz.proyectos_visibles(user).select_related(
         'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID'
-    ).prefetch_related('images', 'ajustes_presupuesto')
+    ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo')
 
 
 class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
@@ -85,7 +86,17 @@ class ProyectosWriteViewSet(ModelViewSet):
         return obj
 
     def perform_create(self, serializer):
-        serializer.save()
+        proyecto = serializer.save()
+        HistorialCambios.objects.create(
+            tipo='creacion', proyecto_ID=proyecto, usuario=self.request.user,
+            datos_nuevos={'name': proyecto.name, 'costo': str(proyecto.costo), 'fecha_entrega': str(proyecto.fecha_entrega)},
+        )
+        notificar(
+            [proyecto.user_ID], self.request.user, 'asignacion',
+            f'Le asignaron el proyecto "{nombre(proyecto.name)}"',
+            f'{self.request.user.first_name} {self.request.user.last_name} lo nombró responsable del proyecto.',
+            f'/projects/{proyecto.proyect_ID}',
+        )
 
     def perform_update(self, serializer):
         prev = serializer.instance
@@ -117,6 +128,12 @@ class ProyectosWriteViewSet(ModelViewSet):
         if anterior['estado_ID'] != nuevo['estado_ID']:
             estado_name = instance.estado_ID.name if hasattr(instance, 'estado_ID') else ''
             tipo = 'cancelacion' if 'Cancelad' in estado_name else 'cambio_estado_proyecto'
+            notificar(
+                interesados_del_proyecto(instance), self.request.user, 'cambio_estado',
+                f'"{nombre(instance.name)}" pasó a {estado_name}',
+                f'{self.request.user.first_name} {self.request.user.last_name} cambió el estado del proyecto.',
+                f'/projects/{instance.proyect_ID}',
+            )
         elif anterior['fecha_entrega'] != nuevo['fecha_entrega']:
             tipo = 'ampliacion_plazo' if nuevo['fecha_entrega'] > anterior['fecha_entrega'] else 'reprogramacion'
         elif anterior['costo'] != nuevo['costo']:
@@ -135,7 +152,10 @@ class ProyectosWriteViewSet(ModelViewSet):
     def perform_destroy(self, instance):
         if not authz.puede_editar(self.request.user, instance):
             raise PermissionDenied('No tienes permisos para eliminar este proyecto.')
+        datos = {'proyect_ID': str(instance.proyect_ID), 'name': instance.name}
         instance.delete()
+        # Queda sin proyecto (ya no existe), pero conserva quién y qué se borró.
+        HistorialCambios.objects.create(tipo='eliminacion', usuario=self.request.user, datos_anteriores=datos)
 
 
 class ProyectosTiposViewSet(ModelViewSet):

@@ -1,5 +1,6 @@
 """Helpers de autorización a nivel de proyecto."""
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from .models import DelegacionSupervision
@@ -32,6 +33,14 @@ def es_administrador(user):
     return bool(user and getattr(user, 'is_authenticated', False)) and _role_name(user) == 'Administrador'
 
 
+def delegacion_vigente(prefijo=''):
+    """Activa y sin vencer (expira_en vacío o desde hoy en adelante)."""
+    hoy = timezone.localdate()
+    return Q(**{f'{prefijo}activa': True}) & (
+        Q(**{f'{prefijo}expira_en__isnull': True}) | Q(**{f'{prefijo}expira_en__gte': hoy})
+    )
+
+
 def proyectos_visibles(user):
     """Queryset con los proyectos que el usuario puede ver. Es la misma regla que puede_ver()."""
     from .models import Proyectos
@@ -42,7 +51,7 @@ def proyectos_visibles(user):
         Q(user_ID=user)
         | Q(departamento_ID__jefe=user)
         | Q(departamento_ID__direccion__jefe=user)
-        | Q(delegaciones__supervisor=user, delegaciones__activa=True)
+        | (Q(delegaciones__supervisor=user) & delegacion_vigente('delegaciones__'))
         | Q(tareas__asignado_a=user)
     ).distinct()
 
@@ -67,7 +76,7 @@ def es_dueno(user, proyecto):
 
 
 def delegaciones_activas(proyecto, supervisor=None):
-    qs = DelegacionSupervision.objects.filter(proyecto=proyecto, activa=True)
+    qs = DelegacionSupervision.objects.filter(delegacion_vigente(), proyecto=proyecto)
     if supervisor is not None:
         qs = qs.filter(supervisor=supervisor)
     return qs

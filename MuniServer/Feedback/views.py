@@ -2,6 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from Projects import authz
+from Notifications.servicios import interesados_del_proyecto, nombre, notificar
 from .models import Feedback
 from .serializers import FeedbackReadSerializer, FeedbackWriteSerializer
 
@@ -27,7 +28,14 @@ class FeedbackViewSet(ModelViewSet):
     def perform_create(self, serializer):
         if not authz.puede_ver(self.request.user, serializer.validated_data['proyecto_ID']):
             raise PermissionDenied('No tienes acceso a este proyecto.')
-        serializer.save(user_ID=self.request.user)
+        comentario = serializer.save(user_ID=self.request.user)
+        proyecto = comentario.proyecto_ID
+        notificar(
+            interesados_del_proyecto(proyecto), self.request.user, 'comentario',
+            f'Nuevo comentario en "{nombre(proyecto.name)}"',
+            f'{self.request.user.first_name} {self.request.user.last_name}: {comentario.info[:200]}',
+            f'/projects/{proyecto.proyect_ID}',
+        )
 
     def perform_update(self, serializer):
         comentario = serializer.instance

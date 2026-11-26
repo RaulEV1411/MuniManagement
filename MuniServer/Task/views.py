@@ -9,6 +9,7 @@ from .models import Tareas, TaskImage
 from .serializers import TareasReadSerializer, TareasWriteSerializer, TaskImageSerializer
 from Historial.models import HistorialCambios
 from Projects import authz
+from Notifications.servicios import nombre, notificar
 
 # Quien tiene la tarea asignada pero no puede editar el proyecto solo puede cambiarle el estado.
 CAMPOS_DEL_ASIGNADO = {'estado_ID'}
@@ -39,12 +40,32 @@ class TareasViewSet(ModelViewSet):
     def perform_create(self, serializer):
         if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto_ID']):
             raise PermissionDenied('No tienes permisos para crear tareas en este proyecto.')
-        serializer.save()
+        tarea = serializer.save()
+        HistorialCambios.objects.create(
+            tipo='creacion', proyecto_ID_id=tarea.proyecto_ID_id, tarea_ID=str(tarea.tareas_ID),
+            usuario=self.request.user, datos_nuevos={'name': tarea.name, 'fecha_entrega': str(tarea.fecha_entrega)},
+        )
+        self._avisar_asignacion(tarea)
 
     def perform_destroy(self, instance):
         if not authz.puede_editar(self.request.user, instance.proyecto_ID):
             raise PermissionDenied('No tienes permisos para borrar tareas de este proyecto.')
+        datos = {'name': instance.name, 'tareas_ID': str(instance.tareas_ID)}
+        proyecto_id = instance.proyecto_ID_id
         instance.delete()
+        HistorialCambios.objects.create(
+            tipo='eliminacion', proyecto_ID_id=proyecto_id, tarea_ID=datos['tareas_ID'],
+            usuario=self.request.user, datos_anteriores=datos,
+        )
+
+    def _avisar_asignacion(self, tarea):
+        if tarea.asignado_a_id:
+            notificar(
+                [tarea.asignado_a], self.request.user, 'asignacion',
+                f'Le asignaron la tarea "{nombre(tarea.name)}"',
+                f'En el proyecto "{nombre(tarea.proyecto_ID.name)}".',
+                f'/projects/{tarea.proyecto_ID_id}',
+            )
 
     def perform_update(self, serializer):
         prev = serializer.instance
@@ -78,8 +99,16 @@ class TareasViewSet(ModelViewSet):
             'asignado_a': str(instance.asignado_a_id) if instance.asignado_a_id else '',
             'prioridad_ID': str(instance.prioridad_ID_id),
         }
+        if anterior['asignado_a'] != nuevo['asignado_a']:
+            self._avisar_asignacion(instance)
         if anterior['estado_ID'] != nuevo['estado_ID']:
             tipo = 'cambio_estado_tarea'
+            notificar(
+                [instance.proyecto_ID.user_ID], self.request.user, 'cambio_estado',
+                f'La tarea "{nombre(instance.name)}" pasó a {instance.estado_ID.name}',
+                f'En el proyecto "{nombre(instance.proyecto_ID.name)}".',
+                f'/projects/{instance.proyecto_ID_id}',
+            )
         elif anterior['asignado_a'] != nuevo['asignado_a']:
             tipo = 'asignacion'
         elif anterior['fecha_entrega'] != nuevo['fecha_entrega']:
