@@ -42,7 +42,12 @@ class DelegacionTests(Escenario, APITestCase):
         return {'proyecto': str(self.proyecto.proyect_ID), 'supervisor': str(supervisor.user_ID)}
 
     def test_el_jefe_del_departamento_delega_en_su_alcance(self):
-        self.assertEqual(self.como(self.jefe_a).post(self.URL, self.datos(self.ajeno), format='json').status_code, 201)
+        self.assertEqual(self.como(self.jefe_a).post(self.URL, self.datos(self.companero), format='json').status_code, 201)
+
+    def test_no_delega_en_alguien_de_otro_departamento(self):
+        r = self.como(self.jefe_a).post(self.URL, self.datos(self.ajeno), format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('dirección o departamento', str(r.data))
 
     def test_un_jefe_de_otro_departamento_no_delega(self):
         self.assertEqual(self.como(self.jefe_b).post(self.URL, self.datos(self.jefe_b), format='json').status_code, 403)

@@ -56,6 +56,36 @@ def proyectos_visibles(user):
     ).distinct()
 
 
+def usuarios_visibles(user):
+    """A quién puede ver una persona (decisiones de Raúl del 25/11):
+
+    - por la jerarquía: la alcaldía a todos; el jefe de una dirección, a los departamentos de esa
+      dirección; el jefe de un departamento, a ese departamento; el resto, a su departamento;
+    - por el trabajo: a todo el equipo de los proyectos donde participa (dueño, personas con tareas
+      asignadas y supervisores con delegación vigente), sin importar la jerarquía.
+    Siempre a sí mismo. Ver a alguien no permite editarlo, y los datos personales los filtra el serializer.
+    """
+    from Users.models import Users
+    from .models import Proyectos
+    qs = Users.objects.all()
+    if tiene_vision_global(user):
+        return qs
+    mis_proyectos = Proyectos.objects.filter(
+        Q(user_ID=user)
+        | Q(tareas__asignado_a=user)
+        | (Q(delegaciones__supervisor=user) & delegacion_vigente('delegaciones__'))
+    ).values('pk')
+    return qs.filter(
+        Q(pk=user.pk)
+        | Q(departamento_ID=user.departamento_ID_id)
+        | Q(departamento_ID__jefe=user)
+        | Q(departamento_ID__direccion__jefe=user)
+        | Q(proyectos__in=mis_proyectos)
+        | Q(tareas_asignadas__proyecto_ID__in=mis_proyectos)
+        | (Q(delegaciones_recibidas__proyecto__in=mis_proyectos) & delegacion_vigente('delegaciones_recibidas__'))
+    ).distinct()
+
+
 def es_asignado(user, proyecto):
     """Tiene al menos una tarea asignada en el proyecto."""
     return proyecto.tareas_set.filter(asignado_a=user).exists()

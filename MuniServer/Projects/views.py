@@ -268,6 +268,8 @@ class DelegacionSupervisionViewSet(ModelViewSet):
         self._check_can_manage(proyecto)
         if supervisor.user_ID == self.request.user.user_ID:
             raise ValidationError({'supervisor': 'No puedes delegarte la supervisión a ti mismo.'})
+        if not authz.usuarios_visibles(self.request.user).filter(pk=supervisor.pk).exists():
+            raise ValidationError({'supervisor': 'Solo puedes delegar en personas de tu dirección o departamento.'})
         rol = getattr(getattr(supervisor, 'role', None), 'name', '')
         flag_ok = getattr(getattr(supervisor, 'role', None), 'puede_recibir_delegacion', False)
         if not flag_ok and rol not in {'Coordinador', 'Funcionario', 'Jefe de Departamento', 'Jefe de Dirección'}:

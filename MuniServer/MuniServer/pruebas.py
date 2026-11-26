@@ -81,6 +81,7 @@ class Escenario:
     - dueno: Funcionario de A, dueño de P.
     - ajeno: Funcionario de B, sin relación con P.
     - asignado: Funcionario de B con la tarea T de P asignada.
+    - companero: Coordinador de A, sin relación con P.
     """
 
     def setUp(self):
@@ -102,6 +103,7 @@ class Escenario:
         self.dueno = crear_usuario('Funcionario', self.depto_a)
         self.ajeno = crear_usuario('Funcionario', self.depto_b)
         self.asignado = crear_usuario('Funcionario', self.depto_b)
+        self.companero = crear_usuario('Coordinador', self.depto_a)
         self.proyecto = crear_proyecto(self.dueno, name='Proyecto P')
         self.tarea = crear_tarea(self.proyecto, asignado_a=self.asignado, name='Tarea T')
 

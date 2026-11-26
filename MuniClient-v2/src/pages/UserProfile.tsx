@@ -260,6 +260,8 @@ export default function UserProfilePage() {
   const yo = useAppStore(s => s.user)
   const esPropio = yo?.user_ID === id
   const esAlcaldia = !!yo?.role_flags?.puede_ver_todo
+  // Con el directorio abierto a todos, editar y cambiar la foto quedan para la persona y la alcaldía.
+  const puedeEditar = esPropio || esAlcaldia
 
   const reenviarAcceso = async () => {
     try {
@@ -361,13 +363,16 @@ export default function UserProfilePage() {
                 {initials}
               </div>
             )}
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-            >
-              <Camera size={12} className="text-white" />
-            </button>
+            {puedeEditar && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                aria-label="Cambiar la foto"
+                className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+              >
+                <Camera size={12} className="text-white" />
+              </button>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -391,12 +396,14 @@ export default function UserProfilePage() {
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={() => setShowEdit(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
-            >
-              <Edit2 size={12} /> Editar
-            </button>
+            {puedeEditar && (
+              <button
+                onClick={() => setShowEdit(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+              >
+                <Edit2 size={12} /> Editar
+              </button>
+            )}
             {esPropio && (
               <button
                 onClick={() => setPassword(true)}
@@ -453,16 +460,17 @@ export default function UserProfilePage() {
             {tab === 'Información' && (
               <div className="max-w-xl space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-4">
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Datos personales</h3>
-                  <InfoRow icon={CreditCard} label="Cédula"      value={user.cedula} />
-                  <InfoRow icon={Calendar}   label="Cumpleaños"  value={formatDate(user.birthday)} />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">{puedeEditar ? 'Datos personales' : 'Datos'}</h3>
+                  {/* Cédula, cumpleaños y teléfono solo los ven la persona y la alcaldía (el servidor ni los manda). */}
+                  {puedeEditar && <InfoRow icon={CreditCard} label="Cédula"      value={user.cedula} />}
+                  {puedeEditar && <InfoRow icon={Calendar}   label="Cumpleaños"  value={formatDate(user.birthday)} />}
                   <InfoRow icon={Shield}     label="Rol"         value={user.role?.name} />
                   <InfoRow icon={Building2}  label="Departamento" value={user.departamento_ID?.name} />
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Contacto</h3>
                   <InfoRow icon={Mail}       label="Email"    value={user.email} />
-                  <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />
+                  {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />}
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>
               </div>

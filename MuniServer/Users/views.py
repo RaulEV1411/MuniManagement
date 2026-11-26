@@ -16,6 +16,7 @@ from .models import Roles, Users
 from .serializers import RolesSerializer, UsersSerializer, UsuarioDirectorioSerializer
 from .permissions import UsersPermission, RolesPermission, _role_name, _role_flag, ROLES_ADMIN, ROLES_JEFES
 from Projects.permissions import SystemRecordReadOnly
+from Projects import authz
 from MuniServer.subidas import borrar_imagen_por_url, error_de_imagen, subir_imagen
 from .acceso import encolar_correo_de_acceso, revocar_sesiones, usuario_del_enlace
 from django.conf import settings as django_settings
@@ -59,7 +60,8 @@ class UsersViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, UsersPermission]
 
     def get_serializer_class(self):
-        # La alcaldía y la propia persona ven la ficha completa; los jefes, solo el directorio.
+        # La alcaldía y la propia persona ven la ficha completa; el resto, solo el directorio
+        # (nombre, correo, puesto, foto, rol y departamento; sin cédula, teléfono ni nacimiento).
         user = self.request.user
         if _role_name(user) in ROLES_ADMIN or _role_flag(user, 'puede_ver_todo'):
             return UsersSerializer
@@ -68,30 +70,28 @@ class UsersViewSet(ModelViewSet):
         return UsersSerializer
 
     def get_queryset(self):
+        # Cada quien ve a quienes su lugar en la jerarquía le permite (authz.usuarios_visibles);
+        # qué datos ve de cada uno lo decide get_serializer_class.
         user = self.request.user
-        rol = _role_name(user)
-        ver_todo = _role_flag(user, 'puede_ver_todo')
-        if rol in ROLES_ADMIN or ver_todo or rol in ROLES_JEFES:
-            qs = Users.objects.all().select_related('role', 'departamento_ID')
-            # Los dados de baja no aparecen en las listas, salvo que se pidan.
-            if self.action == 'list':
-                p = self.request.query_params
-                if p.get('incluir_inactivos') not in ('1', 'true'):
-                    qs = qs.filter(is_active=True)
-                if p.get('search', '').strip():
-                    q = p['search'].strip()
-                    qs = qs.filter(
-                        Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
-                        | Q(puesto__icontains=q) | Q(departamento_ID__name__icontains=q)
-                    )
-                if p.get('rol'):
-                    qs = qs.filter(role__name=p['rol'])
-                if p.get('departamento'):
-                    qs = qs.filter(departamento_ID=p['departamento'])
-                qs = qs.order_by('first_name', 'last_name')
-            return qs
-        # Funcionarios solo se ven a sí mismos
-        return Users.objects.filter(user_ID=user.user_ID).select_related('role', 'departamento_ID')
+        gestiona = _role_name(user) in ROLES_ADMIN or _role_flag(user, 'puede_ver_todo') or _role_name(user) in ROLES_JEFES
+        qs = authz.usuarios_visibles(user).select_related('role', 'departamento_ID')
+        # Los dados de baja no aparecen en las listas; la alcaldía y los jefes pueden pedirlos.
+        if self.action == 'list':
+            p = self.request.query_params
+            if not gestiona or p.get('incluir_inactivos') not in ('1', 'true'):
+                qs = qs.filter(is_active=True)
+            if p.get('search', '').strip():
+                q = p['search'].strip()
+                qs = qs.filter(
+                    Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
+                    | Q(puesto__icontains=q) | Q(departamento_ID__name__icontains=q)
+                )
+            if p.get('rol'):
+                qs = qs.filter(role__name=p['rol'])
+            if p.get('departamento'):
+                qs = qs.filter(departamento_ID=p['departamento'])
+            qs = qs.order_by('first_name', 'last_name')
+        return qs
 
     def perform_destroy(self, instance):
         # Dar de baja en lugar de borrar: conserva sus proyectos, ajustes e historial.
