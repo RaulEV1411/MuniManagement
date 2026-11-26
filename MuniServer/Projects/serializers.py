@@ -19,6 +19,12 @@ class EstadoSerializer(ModelSerializer):
         fields = ['estado_ID', 'name', 'color', 'orden', 'is_system', 'categoria']
         read_only_fields = ['is_system']
 
+    def validate_categoria(self, valor):
+        # Cambiarla con proyectos en ese estado los cerraría (o abriría) sin pasar por el cierre.
+        if self.instance is not None and valor != self.instance.categoria and self.instance.proyectos_set.exists():
+            raise ValidationError('Hay proyectos en este estado: no se puede cambiar su categoría.')
+        return valor
+
 
 class PrioridadSerializer(ModelSerializer):
     class Meta:

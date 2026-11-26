@@ -6,6 +6,12 @@ export const pideMotivo = (e: Pick<Estado, 'categoria'> | undefined) => e?.categ
 // A un estado finalizado (Completado, Cancelado…) se llega solo con «Cerrar proyecto».
 export const esFinal = (e: Pick<Estado, 'categoria'> | null | undefined) => e?.categoria === 'finalizado'
 
+export const CATEGORIAS_DE_ESTADO = [
+  { codigo: 'activo', nombre: 'Activo' },
+  { codigo: 'pausado', nombre: 'Pausado' },
+  { codigo: 'finalizado', nombre: 'Finalizado' },
+]
+
 export const PESTANAS_DE_PROYECTOS = [
   { clave: 'activo', nombre: 'Activos' },
   { clave: 'pausado', nombre: 'Pausados' },

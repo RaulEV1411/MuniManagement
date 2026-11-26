@@ -50,3 +50,27 @@ test('cerrar, archivar, devolver y reabrir un proyecto (no se borra)', async ({ 
   await expect(page.getByRole('button', { name: 'Cerrar proyecto' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Cierre del proyecto' })).toHaveCount(0)
 })
+
+test('un estado propio elige su categoría y aparece en su pestaña', async ({ page }) => {
+  await entrar(page)
+  await page.goto('/config')
+  await page.getByRole('tab', { name: /^Estados/ }).click()
+  await page.getByLabel('Nuevo estado...').fill('Suspendido por lluvia')
+  await page.getByLabel('Categoría del estado nuevo').selectOption({ label: 'Pausado' })
+  const creado = page.waitForResponse(r => r.url().includes('/projects/estados/') && r.request().method() === 'POST')
+  await page.getByRole('button', { name: 'Crear' }).click()
+  expect((await creado).status()).toBe(201)
+  const fila = page.locator('div', { hasText: /^Suspendido por lluviaPausado/ }).last()
+  await expect(fila).toBeVisible()
+
+  // En Proyectos, el filtro de estado de la pestaña Pausados lo ofrece.
+  await page.goto('/dashboard?pestana=pausado')
+  await expect(page.getByLabel('Filtrar por estado').locator('option', { hasText: 'Suspendido por lluvia' })).toHaveCount(1)
+
+  await page.goto('/config')
+  await page.getByRole('tab', { name: /^Estados/ }).click()
+  await page.getByRole('button', { name: 'Eliminar Suspendido por lluvia' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Eliminar|Confirmar/ }).click()
+  await expect(page.getByText('Suspendido por lluvia')).toHaveCount(0)
+})
+

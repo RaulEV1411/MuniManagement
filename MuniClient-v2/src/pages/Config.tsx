@@ -16,32 +16,38 @@ import { useTituloDePagina } from '@/hooks/useMarca'
 import { pestanas } from '@/lib/pestanas'
 import { confirmar } from '@/lib/confirmar'
 import { usePermiso } from '@/hooks/usePermiso'
+import { CATEGORIAS_DE_ESTADO } from '@/lib/estados'
+import { mensajeDeError } from '@/lib/errores'
 import RolesPermisosPanel from '@/components/config/RolesPermisosPanel'
 
 const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
-interface GenericItem { id: string; name: string; isSystem?: boolean; color?: string }
+interface GenericItem { id: string; name: string; isSystem?: boolean; color?: string; categoria?: string }
+interface Opcion { codigo: string; nombre: string }
 
 function ItemRow({
   item,
   onSave,
   onDelete,
+  categorias,
 }: {
   item: GenericItem
-  onSave: (id: string, name: string) => Promise<void>
+  onSave: (id: string, name: string, categoria?: string) => Promise<void>
   onDelete: (id: string, name: string) => Promise<void>
+  categorias?: Opcion[]
 }) {
   const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(item.name)
+  const [categoria, setCategoria] = useState(item.categoria ?? 'activo')
   const [saving, setSaving]   = useState(false)
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
     setSaving(true)
     try {
-      await onSave(item.id, name.trim())
+      await onSave(item.id, name.trim(), categorias ? categoria : undefined)
       setEditing(false)
     } finally {
       setSaving(false)
@@ -50,6 +56,7 @@ function ItemRow({
 
   const handleCancel = () => {
     setName(item.name)
+    setCategoria(item.categoria ?? 'activo')
     setEditing(false)
   }
 
@@ -70,6 +77,12 @@ function ItemRow({
             autoFocus
             className="flex-1 px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
+          {categorias && (
+            <select aria-label="Categoría" value={categoria} onChange={e => setCategoria(e.target.value)}
+              className="px-2 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+              {categorias.map(o => <option key={o.codigo} value={o.codigo}>{o.nombre}</option>)}
+            </select>
+          )}
           <button aria-label="Guardar" onClick={handleSave} disabled={saving}
             className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors flex-shrink-0 disabled:opacity-60">
             <Check size={13} />
@@ -89,6 +102,11 @@ function ItemRow({
             />
           )}
           <span className="flex-1 text-sm font-medium text-foreground">{item.name}</span>
+          {categorias && item.categoria && (
+            <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-0.5 rounded-full flex-shrink-0">
+              {categorias.find(o => o.codigo === item.categoria)?.nombre ?? item.categoria}
+            </span>
+          )}
           {item.isSystem ? (
             <span
               title="Definido por el sistema. No se puede modificar."
@@ -129,18 +147,24 @@ function CrudSection({
   onCreate,
   readOnly,
   readOnlyMessage,
+  categorias,
+  nota,
 }: {
   items: GenericItem[]
   isLoading: boolean
   textoNuevo: string
   textoVacio: string
-  onSave: (id: string, name: string) => Promise<void>
+  onSave: (id: string, name: string, categoria?: string) => Promise<void>
   onDelete: (id: string, name: string) => Promise<void>
-  onCreate: (name: string) => Promise<void>
+  onCreate: (name: string, categoria?: string) => Promise<void>
   readOnly?: boolean
   readOnlyMessage?: string
+  /** Para los estados: cada uno cae en una categoría (las pestañas y la regla de cierre). */
+  categorias?: Opcion[]
+  nota?: string
 }) {
   const [newName, setNewName]   = useState('')
+  const [newCategoria, setNewCategoria] = useState('activo')
   const [creating, setCreating] = useState(false)
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -148,7 +172,7 @@ function CrudSection({
     if (!newName.trim()) { toast.error('El nombre es requerido'); return }
     setCreating(true)
     try {
-      await onCreate(newName.trim())
+      await onCreate(newName.trim(), categorias ? newCategoria : undefined)
       setNewName('')
     } finally {
       setCreating(false)
@@ -169,6 +193,12 @@ function CrudSection({
             placeholder={textoNuevo}
             className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
+          {categorias && (
+            <select aria-label="Categoría del estado nuevo" value={newCategoria} onChange={e => setNewCategoria(e.target.value)}
+              className="px-2 py-2 text-sm bg-background border border-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+              {categorias.map(o => <option key={o.codigo} value={o.codigo}>{o.nombre}</option>)}
+            </select>
+          )}
           <button
             type="submit"
             disabled={creating || !newName.trim()}
@@ -178,6 +208,8 @@ function CrudSection({
           </button>
         </form>
       )}
+
+      {nota && <p className="text-xs text-muted-foreground">{nota}</p>}
 
       {/* Lista */}
       {isLoading ? (
@@ -194,7 +226,7 @@ function CrudSection({
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <AnimatePresence>
             {items.map(item => (
-              <ItemRow key={item.id} item={item} onSave={onSave} onDelete={onDelete} />
+              <ItemRow key={item.id} item={item} onSave={onSave} onDelete={onDelete} categorias={categorias} />
             ))}
           </AnimatePresence>
         </div>
@@ -222,9 +254,15 @@ export default function ConfigPage() {
     name: e.name,
     color: e.color,
     isSystem: e.is_system,
+    categoria: e.categoria,
   }))
-  const onSaveEstado  = async (id: string, name: string) => {
-    await updateEstado(id, { name })
+  const onSaveEstado  = async (id: string, name: string, categoria?: string) => {
+    try {
+      await updateEstado(id, { name, categoria })
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'No se pudo guardar el estado.'))
+      throw err
+    }
     qc.invalidateQueries({ queryKey: ['estados'] })
     toast.success('Estado actualizado')
   }
@@ -234,8 +272,8 @@ export default function ConfigPage() {
     qc.invalidateQueries({ queryKey: ['estados'] })
     toast.success('Estado eliminado')
   }
-  const onCreateEstado = async (name: string) => {
-    await createEstado({ name })
+  const onCreateEstado = async (name: string, categoria?: string) => {
+    await createEstado({ name, categoria })
     qc.invalidateQueries({ queryKey: ['estados'] })
     toast.success('Estado creado')
   }
@@ -345,8 +383,10 @@ export default function ConfigPage() {
                 onSave={onSaveEstado}
                 onDelete={onDeleteEstado}
                 onCreate={onCreateEstado}
-                readOnly={!editaCatalogos || estadoItems.every(e => e.isSystem)}
-                readOnlyMessage={editaCatalogos ? 'Los estados de proyectos y tareas son definidos por el sistema.' : 'Su rol no permite editar los catálogos.'}
+                readOnly={!editaCatalogos}
+                readOnlyMessage="Su rol no permite editar los catálogos."
+                categorias={CATEGORIAS_DE_ESTADO}
+                nota="Los estados del sistema no se modifican. Los propios caen en una categoría: Activo y Pausado son las pestañas de trabajo, y a un estado Finalizado se llega solo cerrando el proyecto."
               />
             )}
             {tab === 'Prioridades' && (

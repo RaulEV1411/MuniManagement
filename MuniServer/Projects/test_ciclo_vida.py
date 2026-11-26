@@ -137,3 +137,16 @@ class CicloDeVidaTests(Escenario, APITestCase):
         self.assertEqual(r.data['vencidos'], 1)
         self.como(self.dueno).post(f'{API}/projects/proyectosWrite/{viejo.pk}/cerrar/', self.cierre(), format='multipart')
         self.assertEqual(self.como(self.admin).get(f'{API}/projects/proyectosRead/resumen/').data['vencidos'], 0)
+
+    def test_los_estados_propios_eligen_categoria_y_no_la_cambian_en_uso(self):
+        admin = self.como(self.admin)
+        r = admin.post(f'{API}/projects/estados/', {'name': 'En licitación', 'categoria': 'activo'}, format='json')
+        self.assertEqual(r.status_code, 201, r.data)
+        estado = r.data['estado_ID']
+        self.assertEqual(admin.patch(f'{API}/projects/estados/{estado}/', {'categoria': 'pausado'}, format='json').status_code, 200)
+        self.assertEqual(admin.patch(f'{API}/projects/estados/{estado}/', {'categoria': 'activo'}, format='json').status_code, 200)
+        self.assertEqual(self.como(self.dueno).patch(self.url, {'estado_ID': estado}, format='json').status_code, 200)
+        r = self.como(self.admin).patch(f'{API}/projects/estados/{estado}/', {'categoria': 'finalizado'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('Hay proyectos', str(r.data))
+

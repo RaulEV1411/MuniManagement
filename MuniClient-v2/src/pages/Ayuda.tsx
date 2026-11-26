@@ -37,7 +37,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: '¿Puedo modificar los estados o prioridades?',
-    a: 'No. Los estados (Pendiente, En progreso, En revisión, Completado, Pausado, Cancelado) y las prioridades (Baja, Media, Alta, Urgente) los define el sistema, para que todos los proyectos se lean igual. Los tipos de proyecto sí los administra el Administrador en Configuración.',
+    a: 'Los estados del sistema (Pendiente, En progreso, En revisión, Completado, Pausado, Cancelado) y las prioridades (Baja, Media, Alta, Urgente) no se modifican, para que todos los proyectos se lean igual. El Administrador puede agregar estados propios en Configuración eligiendo su categoría (Activo, Pausado o Finalizado), y también administra los tipos de proyecto.',
   },
 ]
 
