@@ -13,6 +13,11 @@ async function esperarAnimaciones(page: Page) {
     .filter(a => a.effect?.getComputedTiming().endTime !== Infinity)
     .map(a => a.finished.catch(() => undefined))))
   await page.waitForTimeout(500)
+  // Los avisos (sonner) entran y salen con transiciones que pueden empezar después: si axe los
+  // agarra a media opacidad, informa un contraste que en realidad no existe (pasaba en el CI, más lento).
+  await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('[data-sonner-toast]')]
+    .filter(t => t.dataset.visible !== 'false')
+    .every(t => getComputedStyle(t).opacity === '1'))
 }
 
 /** Con un diálogo abierto se analiza solo el diálogo: lo de atrás queda tapado e inactivo. */
