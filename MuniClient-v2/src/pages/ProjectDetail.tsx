@@ -35,27 +35,8 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { esNoEncontrado } from '@/lib/errores'
 import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
-
-const STATUS_DOT: Record<string, string> = {
-  'En progreso': 'bg-blue-500',
-  'Pendiente':   'bg-muted-foreground/40',
-  'Completado':  'bg-emerald-500',
-  'Cancelado':   'bg-red-400',
-}
-
-const TASK_GROUP_ORDER = ['En progreso', 'Pendiente', 'Completado', 'Cancelado']
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
 function ImageGrid({
@@ -788,7 +769,7 @@ function TaskCard({
               </span>
             )}
             {task.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', PRIORITY_STYLE[task.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(task.prioridad_ID.color)}>
                 {task.prioridad_ID.name}
               </span>
             )}
@@ -904,7 +885,7 @@ function TaskGroup({
           : <ChevronRight size={13} className="text-muted-foreground" />
         }
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{status}</span>
-        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', STATUS_STYLE[status] ?? 'bg-muted text-muted-foreground')}>
+        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(estados.find(es => es.name === status)?.color)}>
           {tasks.length}
         </span>
         {dragOver && <span className="text-[10px] text-ocean-500 font-medium ml-1">Soltar aquí</span>}
@@ -1154,11 +1135,13 @@ export default function ProjectDetailPage() {
     ? tasks.filter(t => t.name.toLowerCase().includes(taskSearch.toLowerCase()) || t.descripcion?.toLowerCase().includes(taskSearch.toLowerCase()))
     : tasks
 
-  const grouped: Record<string, Task[]> = { 'En progreso': [], 'Pendiente': [], 'Completado': [], 'Cancelado': [] }
+  // Un grupo por estado de Configuración, en su orden (antes solo había 4 y el resto caía en Pendiente).
+  const ordenGrupos = estados.map(e => e.name)
+  const grouped: Record<string, Task[]> = Object.fromEntries(ordenGrupos.map(n => [n, [] as Task[]]))
   filteredTasks.forEach(t => {
-    const s = t.estado_ID?.name ?? 'Pendiente'
-    if (grouped[s]) grouped[s].push(t)
-    else grouped['Pendiente'].push(t)
+    const s = t.estado_ID?.name ?? ''
+    if (!grouped[s]) { grouped[s] = []; ordenGrupos.push(s) }
+    grouped[s].push(t)
   })
 
   const projectImages = project.images ?? []
@@ -1180,12 +1163,12 @@ export default function ProjectDetailPage() {
             <div className="flex items-start gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-foreground leading-tight">{project.name}</h1>
               {project.estado_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', STATUS_STYLE[project.estado_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
                   {project.estado_ID.name}
                 </span>
               )}
               {project.prioridad_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                   {project.prioridad_ID.name}
                 </span>
               )}
@@ -1320,7 +1303,7 @@ export default function ProjectDetailPage() {
                     <p className="text-[10px] text-muted-foreground">
                       {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastra las tarjetas entre grupos para cambiar el estado'}
                     </p>
-                    {TASK_GROUP_ORDER.map(status => (
+                    {ordenGrupos.map(status => (
                       <TaskGroup
                         key={status}
                         status={status}
@@ -1539,10 +1522,10 @@ export default function ProjectDetailPage() {
                       />
                     </div>
                     <div className="flex gap-3 flex-wrap">
-                      {TASK_GROUP_ORDER.map(s => (
+                      {ordenGrupos.map(s => (
                         (grouped[s]?.length ?? 0) > 0 && (
                           <div key={s} className="flex items-center gap-1.5">
-                            <div className={cn('w-2 h-2 rounded-full', STATUS_DOT[s])} />
+                            <div className={cn('w-2 h-2 rounded-full', claseRelleno)} style={conColor(estados.find(e => e.name === s)?.color)} />
                             <span className="text-[10px] text-muted-foreground">{s}: {grouped[s].length}</span>
                           </div>
                         )

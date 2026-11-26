@@ -20,7 +20,7 @@ def _puede_gestionar_imagenes(user, tarea):
 
 
 class TareasViewSet(ModelViewSet):
-    queryset = Tareas.objects.prefetch_related('images').select_related('asignado_a').all()
+    queryset = Tareas.objects.prefetch_related('images').select_related('asignado_a', 'estado_ID', 'prioridad_ID').all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):

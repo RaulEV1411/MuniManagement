@@ -2,24 +2,11 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { GanttChartSquare, ChevronDown } from 'lucide-react'
-import { getProjects, getDepartments } from '@/lib/api'
-import { type Project, type Department } from '@/types'
+import { getProjects, getDepartments, getEstados } from '@/lib/api'
+import { type Project, type Department, type Estado } from '@/types'
 import { cn, isOverdue } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
-
-const STATUS_COLOR: Record<string, string> = {
-  'Completado':  'bg-emerald-500',
-  'En progreso': 'bg-blue-500',
-  'Pendiente':   'bg-muted-foreground/40',
-  'Cancelado':   'bg-red-400',
-  'Vencido':     'bg-red-500',
-}
-
-const PRIORITY_BORDER: Record<string, string> = {
-  'Alta':  'border-l-4 border-red-400',
-  'Media': 'border-l-4 border-amber-400',
-  'Baja':  'border-l-4 border-emerald-400',
-}
+import { COLOR_VENCIDO, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 
 function toDate(s: string | null | undefined): Date | null {
   if (!s) return null
@@ -43,6 +30,7 @@ export default function TimelinePage() {
     queryKey: ['projects'],
     queryFn: getProjects,
   })
+  const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
@@ -155,18 +143,17 @@ export default function TimelinePage() {
             {/* Filas de proyectos */}
             <div className="space-y-1.5 relative">
               {/* Línea de hoy */}
+              {/* Se ubica sobre la zona de barras (sin la columna de nombres de 12rem). */}
               {hasToday && (
-                <div
-                  className="absolute top-0 bottom-0 w-px bg-red-400/70 z-10 ml-48"
-                  style={{ left: `calc(${todayOffset}% * (100% - 12rem) / 100 + 12rem)` }}
-                />
+                <div className="absolute inset-y-0 left-48 right-0 pointer-events-none z-10">
+                  <div className="absolute top-0 bottom-0 w-px bg-red-400/70" style={{ left: `${todayOffset}%` }} />
+                </div>
               )}
 
               {filtered.map(p => {
                 const s   = toDate(p.fecha_inicio)
                 const e   = toDate(p.fecha_entrega)
                 const od  = isOverdue(p)
-                const statusName = od ? 'Vencido' : p.estado_ID?.name ?? 'Pendiente'
 
                 let leftPct  = 0
                 let widthPct = 5
@@ -199,10 +186,15 @@ export default function TimelinePage() {
                         <div
                           className={cn(
                             'absolute h-full rounded-lg flex items-center px-2 transition-all group-hover:opacity-90 overflow-hidden',
-                            STATUS_COLOR[statusName] ?? 'bg-muted-foreground/30',
-                            p.prioridad_ID?.name ? PRIORITY_BORDER[p.prioridad_ID.name] ?? '' : '',
+                            claseRelleno,
+                            p.prioridad_ID && 'border-l-4',
                           )}
-                          style={{ left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8 }}
+                          style={{
+                            ...conColor(colorDeEstado(od, p.estado_ID)),
+                            left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8,
+                            borderLeftColor: p.prioridad_ID?.color,
+                          }}
+                          title={`${p.name} · ${od ? 'Vencido' : p.estado_ID?.name ?? ''} · prioridad ${p.prioridad_ID?.name ?? '—'}`}
                         >
                           <span className="text-[9px] font-semibold text-white truncate hidden sm:block">
                             {p.departamento_ID?.name}
@@ -217,10 +209,10 @@ export default function TimelinePage() {
 
             {/* Leyenda */}
             <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border flex-wrap">
-              {Object.entries(STATUS_COLOR).map(([s, cls]) => (
-                <div key={s} className="flex items-center gap-1.5">
-                  <div className={cn('w-3 h-3 rounded-sm', cls)} />
-                  <span className="text-[10px] text-muted-foreground">{s}</span>
+              {[...estados.map(e => ({ name: e.name, color: e.color })), { name: 'Vencido', color: COLOR_VENCIDO }].map(s => (
+                <div key={s.name} className="flex items-center gap-1.5">
+                  <div className={cn('w-3 h-3 rounded-sm', claseRelleno)} style={conColor(s.color)} />
+                  <span className="text-[10px] text-muted-foreground">{s.name}</span>
                 </div>
               ))}
               {hasToday && (

@@ -19,22 +19,7 @@ import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import RazonModal from '@/components/common/RazonModal'
 import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
-
-const PRIORITY_ORDER = { Alta: 0, Media: 1, Baja: 2 } as Record<string, number>
-
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Vencido':     'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 
 // ── Cambio rápido de estado ───────────────────────────────────────────────────
 function StatusQuickChange({ project }: { project: Project }) {
@@ -66,9 +51,10 @@ function StatusQuickChange({ project }: { project: Project }) {
         disabled={isPending}
         className={cn(
           'flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all',
-          STATUS_STYLE[currentStatus] ?? 'bg-muted text-muted-foreground',
+          claseEtiqueta,
           'hover:ring-2 hover:ring-offset-1 hover:ring-current/30 cursor-pointer',
         )}
+        style={conColor(colorDeEstado(isOverdue(project), project.estado_ID))}
         title="Cambiar estado"
       >
         {isPending ? <RefreshCw size={9} className="animate-spin" /> : <Zap size={9} />}
@@ -99,12 +85,7 @@ function StatusQuickChange({ project }: { project: Project }) {
                   e.estado_ID === project.estado_ID?.estado_ID && 'bg-accent',
                 )}
               >
-                <span className={cn(
-                  'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                  e.name === 'Completado' ? 'bg-emerald-400' :
-                  e.name === 'En progreso' ? 'bg-blue-400' :
-                  e.name === 'Cancelado' ? 'bg-red-300' : 'bg-muted-foreground/40',
-                )} />
+                <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', claseRelleno)} style={conColor(e.color)} />
                 {e.name}
               </button>
             ))}
@@ -280,13 +261,7 @@ function ProjectListRow({ project }: { project: Project }) {
             )}
           </div>
         ) : (
-          <div className={cn(
-            'w-1 h-9 rounded-full flex-shrink-0',
-            overdue ? 'bg-red-400' :
-            status === 'En progreso' ? 'bg-blue-400' :
-            status === 'Completado'  ? 'bg-emerald-400' :
-            status === 'Cancelado'   ? 'bg-red-300' : 'bg-muted-foreground/30',
-          )} />
+          <div className={cn('w-1 h-9 rounded-full flex-shrink-0', claseRelleno)} style={conColor(colorDeEstado(overdue, project.estado_ID))} />
         )}
 
         <div className="flex-1 min-w-0">
@@ -296,7 +271,7 @@ function ProjectListRow({ project }: { project: Project }) {
             </span>
             <StatusQuickChange project={project} />
             {project.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                 {project.prioridad_ID.name}
               </span>
             )}
@@ -443,7 +418,7 @@ function ProjectGridCard({ project }: { project: Project }) {
         {(project.prioridad_ID?.name || images.length > 0) && (
           <div className="mt-2.5 pt-2.5 border-t border-border flex items-center justify-between">
             {project.prioridad_ID?.name ? (
-              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                 {project.prioridad_ID.name}
               </span>
             ) : <span />}
@@ -460,20 +435,14 @@ function ProjectGridCard({ project }: { project: Project }) {
 }
 
 // ── Vista kanban ─────────────────────────────────────────────────────────────
-const KANBAN_COLS = ['Pendiente', 'En progreso', 'Completado', 'Cancelado'] as const
-
-function KanbanCol({ status, projects }: { status: string; projects: Project[] }) {
+function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }) {
   const navigate = useNavigate()
 
   return (
     <div className="flex flex-col min-w-[240px] max-w-[280px] flex-1">
       <div className="flex items-center gap-2 mb-3 px-1">
-        <span className={cn('w-2 h-2 rounded-full flex-shrink-0',
-          status === 'En progreso' ? 'bg-blue-400' :
-          status === 'Completado'  ? 'bg-emerald-400' :
-          status === 'Cancelado'   ? 'bg-red-300' : 'bg-muted-foreground/40',
-        )} />
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{status}</span>
+        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', claseRelleno)} style={conColor(estado.color)} />
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{estado.name}</span>
         <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{projects.length}</span>
       </div>
       <div className="space-y-2 flex-1">
@@ -506,7 +475,7 @@ function KanbanCol({ status, projects }: { status: string; projects: Project[] }
                 <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 transition-colors line-clamp-2 mb-1.5">{p.name}</p>
                 <div className="flex items-center justify-between gap-1">
                   {p.prioridad_ID?.name && (
-                    <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', PRIORITY_STYLE[p.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                    <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
                       {p.prioridad_ID.name}
                     </span>
                   )}
@@ -618,24 +587,22 @@ export default function DashboardPage() {
     }
     if (sortBy === 'nombre')      r.sort((a, b) => a.name.localeCompare(b.name))
     else if (sortBy === 'entrega')  r.sort((a, b) => { if (!a.fecha_entrega) return 1; if (!b.fecha_entrega) return -1; return new Date(a.fecha_entrega).getTime() - new Date(b.fecha_entrega).getTime() })
-    else if (sortBy === 'prioridad') r.sort((a, b) => (PRIORITY_ORDER[a.prioridad_ID?.name] ?? 9) - (PRIORITY_ORDER[b.prioridad_ID?.name] ?? 9))
-    else r.sort((a, b) => b.proyect_ID.localeCompare(a.proyect_ID))
+    // Más urgente primero, según el orden de prioridades de Configuración.
+    else if (sortBy === 'prioridad') r.sort((a, b) => (b.prioridad_ID?.orden ?? -1) - (a.prioridad_ID?.orden ?? -1))
+    else r.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
     return r
   }, [projects, status, priority, search, sortBy, mineOnly, user?.user_ID])
 
   const hasFilters = search || status !== 'Todos' || priority !== 'Todas' || mineOnly
   const clearFilters = () => { setSearch(''); setStatus('Todos'); setPriority('Todas'); setMineOnly(() => false) }
 
+  // Una columna por estado de Configuración; los vencidos quedan en su estado real, marcados en la tarjeta.
   const kanbanByStatus = useMemo(() => {
     const grouped: Record<string, Project[]> = {}
-    KANBAN_COLS.forEach(col => { grouped[col] = [] })
-    displayed.forEach(p => {
-      const s = isOverdue(p) ? 'Pendiente' : (p.estado_ID?.name ?? 'Pendiente')
-      if (grouped[s]) grouped[s].push(p)
-      else grouped['Pendiente'].push(p)
-    })
+    estados.forEach(e => { grouped[e.estado_ID] = [] })
+    displayed.forEach(p => { grouped[p.estado_ID?.estado_ID ?? '']?.push(p) })
     return grouped
-  }, [displayed])
+  }, [displayed, estados])
 
   const greeting = () => {
     const h = new Date().getHours()
@@ -837,8 +804,8 @@ export default function DashboardPage() {
             <AnimatePresence mode="popLayout">
               {view === 'kanban' ? (
                 <motion.div key="kanban" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]">
-                  {KANBAN_COLS.map(col => (
-                    <KanbanCol key={col} status={col} projects={kanbanByStatus[col] ?? []} />
+                  {estados.map(e => (
+                    <KanbanCol key={e.estado_ID} estado={e} projects={kanbanByStatus[e.estado_ID] ?? []} />
                   ))}
                 </motion.div>
               ) : view === 'grid' ? (

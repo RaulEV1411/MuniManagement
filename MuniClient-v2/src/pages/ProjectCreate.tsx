@@ -11,18 +11,8 @@ import { type Tipo, type Estado, type Prioridad, type Department, type User } fr
 import { cn, formatDate, fullName } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { claseEtiqueta, conColor } from '@/lib/colores'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
 
 interface FormData {
   name: string
@@ -73,14 +63,14 @@ function Field({ label, required, children }: { label: string; required?: boolea
 
 const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all'
 
-function SummaryRow({ label, value, badge, badgeStyle }: {
-  label: string; value: string; badge?: boolean; badgeStyle?: string
+function SummaryRow({ label, value, badge, color }: {
+  label: string; value: string; badge?: boolean; color?: string
 }) {
   return (
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
       {badge ? (
-        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', badgeStyle ?? 'bg-muted text-muted-foreground')}>
+        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(color)}>
           {value}
         </span>
       ) : (
@@ -333,10 +323,10 @@ export default function ProjectCreatePage() {
                     {form.fecha_entrega && <SummaryRow label="Entrega" value={formatDate(form.fecha_entrega)} />}
                     {form.costo && <SummaryRow label="Costo" value={`₡${parseFloat(form.costo).toLocaleString('es-CR')}`} />}
                     {selectedEstado && (
-                      <SummaryRow label="Estado" value={selectedEstado.name} badge badgeStyle={STATUS_STYLE[selectedEstado.name]} />
+                      <SummaryRow label="Estado" value={selectedEstado.name} badge color={selectedEstado.color} />
                     )}
                     {selectedPrioridad && (
-                      <SummaryRow label="Prioridad" value={selectedPrioridad.name} badge badgeStyle={PRIORITY_STYLE[selectedPrioridad.name]} />
+                      <SummaryRow label="Prioridad" value={selectedPrioridad.name} badge color={selectedPrioridad.color} />
                     )}
                     {selectedDept && <SummaryRow label="Departamento" value={selectedDept.name} />}
                     {selectedUser && <SummaryRow label="Responsable" value={fullName(selectedUser)} />}

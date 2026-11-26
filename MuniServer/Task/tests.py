@@ -81,3 +81,11 @@ class ImagenesDeTareasTests(Escenario, APITestCase):
     def test_no_se_puede_cambiar_la_url_de_una_imagen(self):
         r = self.como(self.dueno).patch(f'{self.URL}{self.imagen.imagen_ID}/', {'url': 'https://otro.test/x.jpg'}, format='json')
         self.assertEqual(r.status_code, 405)
+
+
+class LecturaDeTareasTests(Escenario, APITestCase):
+    def test_estado_y_prioridad_salen_como_objetos(self):
+        fila = self.como(self.dueno).get(URL, {'proyecto_ID': self.proyecto.proyect_ID}).data['results'][0]
+        self.assertEqual(fila['estado_ID']['name'], 'Pendiente')
+        self.assertTrue(fila['estado_ID']['color'].startswith('#'))
+        self.assertEqual(fila['prioridad_ID']['name'], 'Media')

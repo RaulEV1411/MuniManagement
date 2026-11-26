@@ -18,13 +18,8 @@ import { cn, formatDate, getInitials, fullName, isOverdue } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { esNoEncontrado } from '@/lib/errores'
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
 
 const AVATAR_COLORS = [
   'bg-ocean-500', 'bg-sunset-500', 'bg-purple-500', 'bg-emerald-500',
@@ -494,19 +489,13 @@ export default function UserProfilePage() {
                         onClick={() => navigate(`/projects/${p.proyect_ID}`)}
                         className="w-full flex items-center gap-4 px-4 py-3.5 bg-card border border-border rounded-xl hover:border-ocean-200 dark:hover:border-ocean-500/30 transition-all text-left group active:scale-[0.99]"
                       >
-                        <div className={cn(
-                          'w-1 h-8 rounded-full flex-shrink-0',
-                          overdue ? 'bg-red-400' :
-                          status === 'En progreso' ? 'bg-blue-400' :
-                          status === 'Completado'  ? 'bg-emerald-400' :
-                          status === 'Cancelado'   ? 'bg-red-300' : 'bg-muted-foreground/30',
-                        )} />
+                        <div className={cn('w-1 h-8 rounded-full flex-shrink-0', claseRelleno)} style={conColor(colorDeEstado(overdue, p.estado_ID))} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">{p.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{p.departamento_ID?.name} · {formatDate(p.fecha_entrega)}</p>
                         </div>
                         {status && (
-                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0', STATUS_STYLE[status] ?? 'bg-muted text-muted-foreground')}>
+                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0', claseEtiqueta)} style={conColor(colorDeEstado(overdue, p.estado_ID))}>
                             {status}
                           </span>
                         )}
