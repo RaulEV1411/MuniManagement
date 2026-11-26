@@ -226,6 +226,13 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# ── Fotos ───────────────────────────────────────────────────
+# 'local' (por defecto): disco del servidor, servido por Caddy en MEDIA_URL y dentro de los respaldos.
+# 'cloudinary': el servicio externo (requiere CLOUDINARY_* y un contrato de encargado de datos).
+ALMACENAMIENTO_FOTOS = os.environ.get('ALMACENAMIENTO_FOTOS', 'local').strip().lower()
+MEDIA_URL = '/api/v1/media/'
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
+
 import cloudinary
 cloudinary.config(
     cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', ''),

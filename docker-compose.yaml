@@ -58,6 +58,7 @@ services:
     command: ["bash", "entrypoint-prod.sh"]
     volumes:
       - estaticos:/app/staticfiles
+      - medios:/app/media
     depends_on:
       mysql:
         condition: service_healthy
@@ -97,6 +98,7 @@ services:
       - "443:443/udp"
     volumes:
       - estaticos:/srv/static:ro
+      - medios:/srv/media:ro
       - caddy_datos:/data
       - caddy_config:/config
     depends_on:
@@ -121,8 +123,26 @@ services:
       mysql:
         condition: service_healthy
 
+  # Respaldo diario de las fotos guardadas en disco, junto a los de la base.
+  respaldo_fotos:
+    image: munimanagement-api
+    pull_policy: never
+    restart: unless-stopped
+    # root, para escribir en ./respaldos (que el servicio respaldo deja en 700).
+    user: "0:0"
+    command: ["python", "scripts/respaldo_fotos.py"]
+    environment:
+      RESPALDO_DIAS: ${RESPALDO_DIAS:-14}
+    volumes:
+      - medios:/medios:ro
+      - ./respaldos:/respaldos
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   mysql_datos:
+  medios:
   estaticos:
   caddy_datos:
   caddy_config:

@@ -123,6 +123,8 @@ export default function GlobalSearch() {
               <Search size={15} className="text-muted-foreground flex-shrink-0" />
               <input
                 ref={inputRef}
+                // Foco apenas se abre: con el setTimeout de antes se perdían las primeras letras.
+                autoFocus
                 value={query}
                 onChange={e => { setQuery(e.target.value); setCursor(0) }}
                 onKeyDown={handleKeyDown}

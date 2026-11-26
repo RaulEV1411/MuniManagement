@@ -8,8 +8,19 @@
 		max_size 12MB
 	}
 
+	# Fotos subidas (ALMACENAMIENTO_FOTOS=local): las sirve Caddy directo desde el volumen.
+	# Django solo deja archivos JPG, PNG o WebP con nombre propio, así que no hay HTML ni SVG.
+	handle_path /api/v1/media/* {
+		root * /srv/media
+		header Cache-Control "public, max-age=2592000"
+		file_server
+	}
+
 	# API de Django.
-	@django path /api/*
+	@django {
+		path /api/*
+		not path /api/v1/media/*
+	}
 	handle @django {
 		reverse_proxy api:8000
 	}

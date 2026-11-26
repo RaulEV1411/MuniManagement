@@ -10,13 +10,14 @@ Una instalación por municipalidad, en un servidor con Docker. Todo corre en con
 | `mysql` | MySQL 8.4 LTS, con los datos en el volumen `mysql_datos` |
 | `valkey` | Cola de Celery y caché del límite de intentos de login |
 | `respaldo` | Un respaldo de la base al arrancar y otro cada 24 horas, en `./respaldos` |
+| `respaldo_fotos` | Lo mismo con las fotos subidas (volumen `medios`) |
 
 ## Requisitos
 
 - Un servidor Linux con Docker Engine y el plugin `docker compose`: 2 CPU, 4 GB de RAM y 20 GB de disco alcanzan para empezar.
 - Un dominio o subdominio (por ejemplo, `proyectos.muni.go.cr`) con un registro DNS que apunte a la IP del servidor.
 - Los puertos 80 y 443 abiertos hacia internet. Caddy los usa para obtener y renovar el certificado de Let's Encrypt.
-- Una cuenta de correo SMTP y una de Cloudinary.
+- Una cuenta de correo SMTP. Cloudinary es opcional: por defecto las fotos se guardan en el servidor (`ALMACENAMIENTO_FOTOS=local`).
 
 ## Instalación
 
@@ -48,18 +49,34 @@ La API aplica las migraciones al arrancar. **Antes de actualizar, conviene un re
 
 ## Respaldos
 
-- El servicio `respaldo` deja un archivo `muni-AAAA-MM-DD-HHMM.sql.gz` por día en `./respaldos` y borra los de más de `RESPALDO_DIAS` días (14 por defecto).
+- El servicio `respaldo` deja un archivo `muni-AAAA-MM-DD-HHMM.sql.gz` por día en `./respaldos`, y `respaldo_fotos` uno `fotos-AAAA-MM-DD-HHMM.tar.gz` con las fotos. Los dos borran los de más de `RESPALDO_DIAS` días (14 por defecto).
 - Los archivos se crean con permiso 600 y la carpeta con 700: solo los lee el usuario dueño, porque tienen datos personales.
 - **Copie esa carpeta fuera del servidor**, por ejemplo con `rsync` a otro equipo o a un almacenamiento de la municipalidad. Un respaldo que vive en el mismo disco no sirve si el disco falla. Si la copia sale de la red municipal, cífrela antes, por ejemplo con `age` o `gpg`.
 - Respaldo manual en cualquier momento:
   ```bash
-  docker compose restart respaldo
+  docker compose restart respaldo respaldo_fotos
   ```
 - **Restaurar** un respaldo (reemplaza los datos actuales):
   ```bash
   gunzip -c respaldos/muni-AAAA-MM-DD-HHMM.sql.gz | docker compose exec -T mysql sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
   ```
+- **Restaurar las fotos** (las agrega al volumen):
+  ```bash
+  docker compose cp respaldos/fotos-AAAA-MM-DD-HHMM.tar.gz api:/tmp/fotos.tar.gz
+  docker compose exec api tar xzf /tmp/fotos.tar.gz -C /app --strip-components=0
+  ```
 - Pruebe una restauración al menos una vez, en otra máquina, antes de confiar en los respaldos.
+
+## Fotos
+
+- **Por defecto (`ALMACENAMIENTO_FOTOS=local`):**
+  - se guardan en el volumen `medios` y Caddy las sirve en `/api/v1/media/`;
+  - quedan en el servidor de la municipalidad y entran en los respaldos;
+  - se aceptan JPG, PNG y WebP de hasta 5 MB; el nombre del archivo lo pone el sistema.
+- **Con `ALMACENAMIENTO_FOTOS=cloudinary`:**
+  - se suben a Cloudinary, en EE. UU., y además se acepta HEIC;
+  - hacen falta las claves `CLOUDINARY_*` y un contrato de encargado de datos, porque hay fotos de funcionarios (Ley 8968).
+- Si una instalación pasa de Cloudinary a disco local, las fotos viejas se siguen viendo desde Cloudinary y las nuevas van al disco.
 
 ## Correo
 

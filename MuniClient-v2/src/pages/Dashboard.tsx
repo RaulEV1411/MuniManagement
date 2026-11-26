@@ -531,7 +531,11 @@ export default function DashboardPage() {
       return next
     }, { replace: true })
   }
-  const setPagina = (n: number) => setParam('pagina', String(n), '1')
+  const setPagina = (n: number) => {
+    setParam('pagina', String(n), '1')
+    // La lista vive en el <main> con scroll propio: al cambiar de página se vuelve arriba.
+    document.querySelector('main')?.scrollTo({ top: 0 })
+  }
   const setSearch   = (v: string) => setParam('q', v, '')
   const setStatus   = (v: string) => setParam('estado', v, 'Todos')
   const setPriority = (v: string) => setParam('prioridad', v, 'Todas')

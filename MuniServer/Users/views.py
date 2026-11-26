@@ -1,4 +1,4 @@
-import cloudinary.uploader
+import logging
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -16,7 +16,7 @@ from .models import Roles, Users
 from .serializers import RolesSerializer, UsersSerializer, UsuarioDirectorioSerializer
 from .permissions import UsersPermission, RolesPermission, _role_name, _role_flag, ROLES_ADMIN, ROLES_JEFES
 from Projects.permissions import SystemRecordReadOnly
-from MuniServer.subidas import error_de_imagen, subir_imagen
+from MuniServer.subidas import borrar_imagen_por_url, error_de_imagen, subir_imagen
 from .acceso import encolar_correo_de_acceso, revocar_sesiones, usuario_del_enlace
 from django.conf import settings as django_settings
 from rest_framework import exceptions
@@ -24,6 +24,8 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from .autenticacion import (
     ACCESS, REFRESH, RUTA_REFRESH, borrar_cookies_de_sesion, datos_de_sesion, fijar_cookie, fijar_cookies_de_sesion,
 )
+
+logger = logging.getLogger(__name__)
 
 DEMASIADOS_INTENTOS = {'error': 'Demasiados intentos. Espere un minuto e inténtelo de nuevo.'}
 
@@ -220,12 +222,10 @@ def upload_user_photo(request, user_id):
     if error:
         return Response({'error': error}, status=400)
 
-    if user.user_photo:
-        old_public_id = user.user_photo.split('/')[-1].split('.')[0]
-        try:
-            cloudinary.uploader.destroy(f'munimanagement/usuarios/{old_public_id}')
-        except Exception:
-            pass
+    try:
+        borrar_imagen_por_url(user.user_photo)
+    except Exception:
+        logger.exception('No se pudo borrar la foto anterior')
 
     result = subir_imagen(file, 'munimanagement/usuarios')
     user.user_photo = result['secure_url']

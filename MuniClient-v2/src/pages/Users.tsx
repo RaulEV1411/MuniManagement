@@ -281,10 +281,10 @@ export default function UsersPage() {
         ) : null}
         {!isLoading && displayed.length > 0 && totalPaginas > 1 && (
           <nav className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground" aria-label="Páginas de usuarios">
-            <button onClick={() => setPagina(pagina - 1)} disabled={pagina <= 1 || isPlaceholderData}
+            <button onClick={() => { setPagina(pagina - 1); document.querySelector('main')?.scrollTo({ top: 0 }) }} disabled={pagina <= 1 || isPlaceholderData}
               className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40">Anterior</button>
             <span aria-current="page">Página {pagina} de {totalPaginas}</span>
-            <button onClick={() => setPagina(pagina + 1)} disabled={pagina >= totalPaginas || isPlaceholderData}
+            <button onClick={() => { setPagina(pagina + 1); document.querySelector('main')?.scrollTo({ top: 0 }) }} disabled={pagina >= totalPaginas || isPlaceholderData}
               className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40">Siguiente</button>
           </nav>
         )}

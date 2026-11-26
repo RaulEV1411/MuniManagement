@@ -13,6 +13,7 @@ DATABASES = {
 }
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = os.environ.get('E2E_CORREOS', '/tmp/muni-e2e-correos')
+MEDIA_ROOT = os.environ.get('E2E_MEDIA', '/tmp/muni-e2e-media')
 FRONTEND_URL = 'http://localhost:5173'
 # La suite entra muchas veces con las mismas cuentas; el límite real se prueba en Users/tests.py.
 LOGIN_LIMITE_POR_CORREO = '1000/m'
