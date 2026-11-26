@@ -1,6 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from Projects import authz
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from .models import Direccion, Departamentos
@@ -19,12 +18,10 @@ class EscrituraSoloAlcaldia(BasePermission):
 class DireccionViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Direccion.objects.all()
     serializer_class = DireccionSerializer
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, EscrituraSoloAlcaldia]
 
 
 class DepartamentosViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Departamentos.objects.all()
     serializer_class = DepartamentosSerializer
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, EscrituraSoloAlcaldia]

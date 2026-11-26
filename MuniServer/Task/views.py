@@ -5,7 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Tareas, TaskImage
 from .serializers import TareasReadSerializer, TareasWriteSerializer, TaskImageSerializer
 from Historial.models import HistorialCambios
@@ -21,7 +20,6 @@ def _puede_gestionar_imagenes(user, tarea):
 
 class TareasViewSet(ModelViewSet):
     queryset = Tareas.objects.prefetch_related('images').select_related('asignado_a').all()
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):

@@ -1,6 +1,5 @@
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from Projects import authz
 from .models import HistorialCambios
 from .serializers import HistorialCambiosSerializer
@@ -11,7 +10,6 @@ class HistorialCambiosViewSet(ReadOnlyModelViewSet):
 
     queryset = HistorialCambios.objects.select_related('usuario').all()
     serializer_class = HistorialCambiosSerializer
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

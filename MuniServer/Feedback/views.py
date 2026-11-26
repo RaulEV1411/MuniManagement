@@ -1,7 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from Projects import authz
 from .models import Feedback
 from .serializers import FeedbackReadSerializer, FeedbackWriteSerializer
@@ -9,7 +8,6 @@ from .serializers import FeedbackReadSerializer, FeedbackWriteSerializer
 
 class FeedbackViewSet(ModelViewSet):
     queryset = Feedback.objects.select_related('user_ID').all()
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):

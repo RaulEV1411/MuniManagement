@@ -10,8 +10,9 @@ import {
 import { toast } from 'sonner'
 import {
   getUserById, getProjectsByUser, updateUser, uploadUserPhoto,
-  changePassword, getRoles, getDepartments,
+  changePassword, getRoles, getDepartments, enviarAcceso,
 } from '@/lib/api'
+import { useAppStore } from '@/store/app'
 import { type User, type Project, type Role, type Department } from '@/types'
 import { cn, formatDate, getInitials, fullName, isOverdue } from '@/lib/utils'
 
@@ -253,6 +254,18 @@ export default function UserProfilePage() {
   const [showEdit, setShowEdit]     = useState(false)
   const [showPassword, setPassword] = useState(false)
   const [uploading, setUploading]   = useState(false)
+  const yo = useAppStore(s => s.user)
+  const esPropio = yo?.user_ID === id
+  const esAlcaldia = !!yo?.role_flags?.puede_ver_todo
+
+  const reenviarAcceso = async () => {
+    try {
+      await enviarAcceso(id!)
+      toast.success('Le enviamos un correo con el enlace para definir su contraseña.')
+    } catch {
+      toast.error('No se pudo reenviar el acceso.')
+    }
+  }
 
   const { data: user, isLoading: loadingUser } = useQuery<User>({
     queryKey: ['user', id],
@@ -377,13 +390,26 @@ export default function UserProfilePage() {
             >
               <Edit2 size={12} /> Editar
             </button>
-            <button
-              onClick={() => setPassword(true)}
-              className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
-              title="Cambiar contraseña"
-            >
-              <Lock size={14} />
-            </button>
+            {esPropio && (
+              <button
+                onClick={() => setPassword(true)}
+                className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
+                title="Cambiar mi contraseña"
+                aria-label="Cambiar mi contraseña"
+              >
+                <Lock size={14} />
+              </button>
+            )}
+            {!esPropio && esAlcaldia && (
+              <button
+                onClick={reenviarAcceso}
+                className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
+                title="Reenviar el enlace de acceso"
+                aria-label="Reenviar el enlace de acceso"
+              >
+                <Mail size={14} />
+              </button>
+            )}
           </div>
         </div>
 

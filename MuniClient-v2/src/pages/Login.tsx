@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import { Eye, EyeOff, MapPin, Loader2 } from 'lucide-react'
 import { login, getResumenLogin } from '@/lib/api'
-import { setCookie } from '@/lib/utils'
+import axios from 'axios'
 import { useAppStore } from '@/store/app'
 
 const schema = z.object({
@@ -19,7 +19,7 @@ type Form = z.infer<typeof schema>
 export default function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const navigate = useNavigate()
-  const { loadUserFromToken, isDark, toggleTheme } = useAppStore()
+  const { iniciarSesion, isDark, toggleTheme } = useAppStore()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
@@ -27,10 +27,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: Form) => {
     try {
-      const res = await login(data.email, data.password)
-      setCookie('accessToken',  res.access,  0.02)
-      setCookie('refreshToken', res.refresh,  7)
-      loadUserFromToken()
+      iniciarSesion(await login(data.email, data.password))
       // Fire-and-forget: no bloquear navegación si el resumen tarda
       getResumenLogin()
         .then(resumen => {
@@ -48,8 +45,12 @@ export default function LoginPage() {
         })
         .catch(() => {})
       navigate('/dashboard')
-    } catch {
-      toast.error('Credenciales incorrectas. Intenta de nuevo.')
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        toast.error(err.response.data?.error ?? 'Demasiados intentos. Espere un minuto.')
+      } else {
+        toast.error('Credenciales incorrectas. Intenta de nuevo.')
+      }
     }
   }
 
@@ -172,6 +173,9 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
+              <Link to="/olvide-clave" className="inline-block text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline mt-2">
+                ¿Olvidó su contraseña?
+              </Link>
             </div>
 
             <button

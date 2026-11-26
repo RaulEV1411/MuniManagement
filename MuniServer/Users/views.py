@@ -17,6 +17,12 @@ from .permissions import UsersPermission, RolesPermission, _role_name, _role_fla
 from Projects.permissions import SystemRecordReadOnly
 from MuniServer.subidas import error_de_imagen, subir_imagen
 from .acceso import encolar_correo_de_acceso, revocar_sesiones, usuario_del_enlace
+from django.conf import settings as django_settings
+from rest_framework import exceptions
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from .autenticacion import (
+    ACCESS, REFRESH, RUTA_REFRESH, borrar_cookies_de_sesion, datos_de_sesion, fijar_cookie, fijar_cookies_de_sesion,
+)
 
 DEMASIADOS_INTENTOS = {'error': 'Demasiados intentos. Espere un minuto e inténtelo de nuevo.'}
 
@@ -97,33 +103,11 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
         user = authenticate(username=email, password=password)
-
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            refresh['role'] = user.role.name if user.role else ''
-            refresh['user_photo'] = user.user_photo or ''
-            refresh['first_name'] = user.first_name
-            refresh['last_name'] = user.last_name
-            refresh['email'] = user.email
-            access = refresh.access_token
-            access['role'] = user.role.name if user.role else ''
-            access['user_photo'] = user.user_photo or ''
-            access['first_name'] = user.first_name
-            access['last_name'] = user.last_name
-            access['email'] = user.email
-
-            return Response({
-                'refresh': str(refresh),
-                'access': str(access),
-                'role': user.role.name if user.role else '',
-                'user_photo': user.user_photo or '',
-                'user_ID': str(user.user_ID),
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'email': user.email,
-                'onboarding_completado': bool(user.onboarding_completado),
-            })
-        return Response({'error': 'Credenciales incorrectas'}, status=400)
+        if user is None:
+            return Response({'error': 'Credenciales incorrectas'}, status=400)
+        respuesta = Response(datos_de_sesion(request, user))
+        fijar_cookies_de_sesion(respuesta, RefreshToken.for_user(user))
+        return respuesta
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
@@ -166,40 +150,26 @@ class OlvideClaveView(APIView):
 
 
 class LogoutView(APIView):
-    """Revoca el refresh token mediante blacklist."""
-    permission_classes = [IsAuthenticated]
+    """Revoca el refresh (cookie o cuerpo) y borra las cookies de sesión. Funciona aunque el access haya vencido."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
-        refresh = request.data.get('refresh')
-        if not refresh:
-            return Response({'error': 'refresh es requerido'}, status=400)
-        try:
-            token = RefreshToken(refresh)
-            token.blacklist()
-        except TokenError:
-            return Response({'error': 'Token inválido o ya revocado'}, status=400)
-        return Response({'ok': True})
+        crudo = request.COOKIES.get(REFRESH) or request.data.get('refresh')
+        if crudo:
+            try:
+                RefreshToken(crudo).blacklist()
+            except TokenError:
+                pass
+        respuesta = Response({'ok': True})
+        borrar_cookies_de_sesion(respuesta)
+        return respuesta
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def me(request):
-    user = request.user
-    return Response({
-        'user_ID': str(user.user_ID),
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'email': user.email,
-        'role': user.role.name if user.role_id else '',
-        'role_flags': {
-            'puede_delegar': bool(getattr(user.role, 'puede_delegar', False)),
-            'puede_recibir_delegacion': bool(getattr(user.role, 'puede_recibir_delegacion', False)),
-            'puede_ver_todo': bool(getattr(user.role, 'puede_ver_todo', False)),
-        },
-        'user_photo': user.user_photo or '',
-        'departamento_ID': str(user.departamento_ID_id) if user.departamento_ID_id else '',
-        'onboarding_completado': bool(user.onboarding_completado),
-    })
+    return Response(datos_de_sesion(request, request.user))
 
 
 @api_view(['POST'])
@@ -260,3 +230,27 @@ def change_password(request):
     user.set_password(new_password)
     user.save(update_fields=['password'])
     return Response({'message': 'Contraseña actualizada correctamente'})
+
+
+class RenovarSesionView(APIView):
+    """Renueva el access con el refresh de la cookie (o del cuerpo, para scripts). Rota el refresh."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        crudo = request.COOKIES.get(REFRESH) or request.data.get('refresh')
+        serializer = TokenRefreshSerializer(data={'refresh': crudo or ''})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except (TokenError, exceptions.ValidationError, exceptions.AuthenticationFailed):
+            # Vencida, revocada, de un usuario dado de baja o ausente: hay que volver a entrar.
+            respuesta = Response({'error': 'La sesión venció. Inicie sesión de nuevo.'}, status=401)
+            borrar_cookies_de_sesion(respuesta)
+            return respuesta
+        datos = serializer.validated_data
+        respuesta = Response({'ok': True})
+        jwt = django_settings.SIMPLE_JWT
+        fijar_cookie(respuesta, ACCESS, datos['access'], int(jwt['ACCESS_TOKEN_LIFETIME'].total_seconds()), '/')
+        if 'refresh' in datos:
+            fijar_cookie(respuesta, REFRESH, datos['refresh'], int(jwt['REFRESH_TOKEN_LIFETIME'].total_seconds()), RUTA_REFRESH)
+        return respuesta

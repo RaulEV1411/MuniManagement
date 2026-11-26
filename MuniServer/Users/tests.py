@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 
 from MuniServer.pruebas import CLAVE, Escenario, crear_usuario, sembrar
 
@@ -13,10 +13,14 @@ class SesionTests(APITestCase):
     def iniciar_sesion(self, clave=CLAVE):
         return self.client.post('/users/login/', {'email': self.usuario.email, 'password': clave}, format='json')
 
-    def test_login_entrega_tokens_que_sirven_para_me(self):
+    def test_login_fija_cookies_httponly_y_no_devuelve_tokens(self):
         r = self.iniciar_sesion()
         self.assertEqual(r.status_code, 200)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {r.data['access']}")
+        self.assertFalse({'access', 'refresh'} & set(r.data))
+        self.assertTrue(r.data['csrf_token'])
+        self.assertTrue(r.cookies['muni_access']['httponly'])
+        self.assertTrue(r.cookies['muni_refresh']['httponly'])
+        self.assertEqual(r.cookies['muni_refresh']['path'], '/users/')
         me = self.client.get('/users/me/')
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.data['email'], self.usuario.email)
@@ -24,23 +28,35 @@ class SesionTests(APITestCase):
     def test_login_con_clave_incorrecta(self):
         self.assertEqual(self.iniciar_sesion('otra-clave').status_code, 400)
 
-    def test_sin_token_no_entra(self):
+    def test_sin_sesion_no_entra(self):
         self.assertEqual(self.client.get('/users/me/').status_code, 401)
 
     def test_refresh_rota_y_el_anterior_queda_revocado(self):
-        refresh = self.iniciar_sesion().data['refresh']
-        r = self.client.post('/users/token/refresh/', {'refresh': refresh}, format='json')
+        self.iniciar_sesion()
+        anterior = self.client.cookies['muni_refresh'].value
+        r = self.client.post('/users/token/refresh/')
         self.assertEqual(r.status_code, 200)
-        self.assertNotEqual(r.data['refresh'], refresh)
-        repetido = self.client.post('/users/token/refresh/', {'refresh': refresh}, format='json')
+        self.assertNotEqual(r.cookies['muni_refresh'].value, anterior)
+        self.client.cookies.clear()
+        repetido = self.client.post('/users/token/refresh/', {'refresh': anterior}, format='json')
         self.assertEqual(repetido.status_code, 401)
 
-    def test_logout_revoca_el_refresh(self):
-        tokens = self.iniciar_sesion().data
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
-        self.assertEqual(self.client.post('/users/logout/', {'refresh': tokens['refresh']}, format='json').status_code, 200)
-        r = self.client.post('/users/token/refresh/', {'refresh': tokens['refresh']}, format='json')
-        self.assertEqual(r.status_code, 401)
+    def test_logout_revoca_el_refresh_y_borra_las_cookies(self):
+        self.iniciar_sesion()
+        refresh = self.client.cookies['muni_refresh'].value
+        r = self.client.post('/users/logout/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.cookies['muni_access'].value, '')
+        self.client.cookies.clear()
+        self.assertEqual(self.client.post('/users/token/refresh/', {'refresh': refresh}, format='json').status_code, 401)
+
+    def test_con_cookie_las_escrituras_exigen_el_token_csrf(self):
+        cliente = APIClient(enforce_csrf_checks=True)
+        csrf = cliente.post('/users/login/', {'email': self.usuario.email, 'password': CLAVE}, format='json').data['csrf_token']
+        datos = {'current_password': CLAVE, 'new_password': 'Palmeras-Cafe-2026'}
+        self.assertEqual(cliente.get('/users/me/').status_code, 200)
+        self.assertEqual(cliente.post('/users/change-password/', datos, format='json').status_code, 403)
+        self.assertEqual(cliente.post('/users/change-password/', datos, format='json', HTTP_X_CSRFTOKEN=csrf).status_code, 200)
 
 
 class BajaDeUsuariosTests(Escenario, APITestCase):
@@ -61,7 +77,8 @@ class BajaDeUsuariosTests(Escenario, APITestCase):
 
     def test_dar_de_baja_revoca_sus_sesiones(self):
         self.client.force_authenticate(None)
-        refresh = self.client.post('/users/login/', {'email': self.ajeno.email, 'password': CLAVE}, format='json').data['refresh']
+        self.client.post('/users/login/', {'email': self.ajeno.email, 'password': CLAVE}, format='json')
+        refresh = self.client.cookies['muni_refresh'].value
         self.como(self.admin).delete(f'/users/users/{self.ajeno.user_ID}/')
         self.client.force_authenticate(None)
         self.assertEqual(self.client.post('/users/token/refresh/', {'refresh': refresh}, format='json').status_code, 401)
