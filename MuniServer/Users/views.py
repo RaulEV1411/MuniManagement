@@ -1,5 +1,8 @@
 import logging
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from datetime import timedelta
+from rest_framework_simplejwt.settings import api_settings as jwt_ajustes
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError, UntypedToken
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -404,6 +407,35 @@ def change_password(request):
     return Response({'message': 'Contraseña actualizada correctamente'})
 
 
+# Un refresh recién rotado sigue valiendo unos segundos. Si la respuesta de la rotación no llega al navegador
+# (se recargó la página en medio, o dos pestañas renovaron a la vez), el refresh viejo no debe cerrar la sesión.
+GRACIA_DE_ROTACION = timedelta(seconds=30)
+
+
+def _renovar_recien_rotado(crudo):
+    """Tokens nuevos para la misma sesión si `crudo` es un refresh rotado hace menos de GRACIA_DE_ROTACION.
+    Solo con la sesión abierta: cerrar sesión, cambiar la clave, dar de baja o cerrarla a distancia la cierran."""
+    if not crudo:
+        return None
+    try:
+        token = UntypedToken(crudo)  # firma y vencimiento, sin mirar la lista negra
+    except TokenError:
+        return None
+    sid = token.get('sid')
+    if token.get('token_type') != 'refresh' or not sid or not sesiones.esta_abierta(sid):
+        return None
+    if not BlacklistedToken.objects.filter(
+        token__jti=token.get(jwt_ajustes.JTI_CLAIM), blacklisted_at__gte=timezone.now() - GRACIA_DE_ROTACION,
+    ).exists():
+        return None
+    user = Users.objects.filter(**{jwt_ajustes.USER_ID_FIELD: token.get(jwt_ajustes.USER_ID_CLAIM)}).first()
+    if user is None or not jwt_ajustes.USER_AUTHENTICATION_RULE(user):
+        return None
+    refresh = RefreshToken.for_user(user)
+    refresh['sid'] = sid
+    return {'access': str(refresh.access_token), 'refresh': str(refresh)}
+
+
 class RenovarSesionView(APIView):
     """Renueva el access con el refresh de la cookie (o del cuerpo, para scripts). Rota el refresh."""
     permission_classes = [AllowAny]
@@ -417,12 +449,14 @@ class RenovarSesionView(APIView):
             if sid and not sesiones.esta_abierta(sid):
                 raise exceptions.AuthenticationFailed('La sesión se cerró.')
             serializer.is_valid(raise_exception=True)
+            datos = serializer.validated_data
         except (TokenError, exceptions.ValidationError, exceptions.AuthenticationFailed):
+            datos = _renovar_recien_rotado(crudo)
+        if datos is None:
             # Vencida, revocada, de un usuario dado de baja o ausente: hay que volver a entrar.
             respuesta = Response({'error': 'La sesión venció. Inicie sesión de nuevo.'}, status=401)
             borrar_cookies_de_sesion(respuesta)
             return respuesta
-        datos = serializer.validated_data
         respuesta = Response({'ok': True})
         jwt = django_settings.SIMPLE_JWT
         fijar_cookie(respuesta, ACCESS, datos['access'], int(jwt['ACCESS_TOKEN_LIFETIME'].total_seconds()), '/')

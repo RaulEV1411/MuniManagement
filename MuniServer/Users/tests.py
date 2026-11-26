@@ -1,7 +1,13 @@
+from datetime import timedelta
+
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework.test import APIClient, APITestCase
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.tokens import AccessToken
 
 from MuniServer.pruebas import CLAVE, Escenario, crear_usuario, sembrar
+from .views import GRACIA_DE_ROTACION
 
 
 class SesionTests(APITestCase):
@@ -31,15 +37,38 @@ class SesionTests(APITestCase):
     def test_sin_sesion_no_entra(self):
         self.assertEqual(self.client.get('/api/v1/users/me/').status_code, 401)
 
-    def test_refresh_rota_y_el_anterior_queda_revocado(self):
+    def test_refresh_rota_y_el_anterior_queda_revocado_tras_la_gracia(self):
         self.iniciar_sesion()
         anterior = self.client.cookies['muni_refresh'].value
         r = self.client.post('/api/v1/users/token/refresh/')
         self.assertEqual(r.status_code, 200)
         self.assertNotEqual(r.cookies['muni_refresh'].value, anterior)
         self.client.cookies.clear()
+        # Si la respuesta de la rotación no llegó (recarga en medio, dos pestañas), el anterior vale unos segundos.
+        en_gracia = self.client.post('/api/v1/users/token/refresh/', {'refresh': anterior}, format='json')
+        self.assertEqual(en_gracia.status_code, 200)
+        self.assertNotIn(en_gracia.cookies['muni_refresh'].value, ('', anterior))
+        self.client.cookies.clear()
+        BlacklistedToken.objects.update(blacklisted_at=timezone.now() - GRACIA_DE_ROTACION - timedelta(seconds=1))
         repetido = self.client.post('/api/v1/users/token/refresh/', {'refresh': anterior}, format='json')
         self.assertEqual(repetido.status_code, 401)
+
+    def test_access_vencido_da_401_y_el_refresh_lo_renueva(self):
+        self.iniciar_sesion()
+        vencido = AccessToken(self.client.cookies['muni_access'].value)
+        vencido.set_exp(lifetime=-timedelta(seconds=1))
+        self.client.cookies['muni_access'] = str(vencido)
+        self.assertEqual(self.client.get('/api/v1/users/me/').status_code, 401)
+        self.assertEqual(self.client.post('/api/v1/users/token/refresh/').status_code, 200)
+        self.assertEqual(self.client.get('/api/v1/users/me/').status_code, 200)
+
+    def test_la_gracia_no_revive_una_sesion_cerrada(self):
+        self.iniciar_sesion()
+        anterior = self.client.cookies['muni_refresh'].value
+        self.client.post('/api/v1/users/token/refresh/')
+        self.assertEqual(self.client.post('/api/v1/users/logout/').status_code, 200)
+        self.client.cookies.clear()
+        self.assertEqual(self.client.post('/api/v1/users/token/refresh/', {'refresh': anterior}, format='json').status_code, 401)
 
     def test_logout_revoca_el_refresh_y_borra_las_cookies(self):
         self.iniciar_sesion()
