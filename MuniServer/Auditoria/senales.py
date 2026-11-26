@@ -24,6 +24,10 @@ AUDITADOS = {
     'Projects.Tipos': 'catalogos',
     'Task.Tareas': 'tareas',
     'Task.TaskImage': 'fotos',
+    'Task.ChecklistItem': 'tareas',
+    'Task.ComentarioTarea': 'comentarios',
+    'Task.Recurso': 'catalogos',
+    'Task.AsignacionRecurso': 'tareas',
     'Users.Users': 'usuarios',
     'Users.Roles': 'roles',
     'Departments.Direccion': 'estructura',
@@ -83,6 +87,12 @@ def representar(obj):
         return f'{obj.tipo.nombre}: {obj.get_nivel_display()} desde {obj.desde}'
     if tipo == 'Projects.CierreProyecto':
         return f'Cierre de «{obj.proyecto.name}»'
+    if tipo == 'Task.ChecklistItem':
+        return f'«{obj.texto[:60]}» en la tarea «{obj.tarea.name}»'
+    if tipo == 'Task.ComentarioTarea':
+        return f'{obj.texto[:60]} (tarea «{obj.tarea.name}»)'
+    if tipo == 'Task.AsignacionRecurso':
+        return f'{obj.recurso.nombre} en la tarea «{obj.tarea.name}»'
     if tipo == 'Projects.DocumentoProyecto':
         return f'{obj.nombre} («{obj.proyecto.name}»)'
     if tipo == 'Projects.ProjectImage':

@@ -178,10 +178,15 @@ class CierreProyecto(models.Model):
 class DocumentoProyecto(models.Model):
     """Documentos del proyecto (PDF o imagen). El acta de cierre va unida a su cierre."""
 
-    TIPOS = [('acta', 'Acta de cierre'), ('otro', 'Otro')]
+    TIPOS = [
+        ('acta', 'Acta'), ('plano', 'Plano'), ('factura', 'Factura'), ('contrato', 'Contrato'),
+        ('informe', 'Informe'), ('foto', 'Foto'), ('otro', 'Otro'),
+    ]
 
     documento_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE, related_name='documentos')
+    # Si es de una tarea; si no, es del proyecto.
+    tarea = models.ForeignKey('Task.Tareas', on_delete=models.CASCADE, null=True, blank=True, related_name='documentos')
     cierre = models.ForeignKey(CierreProyecto, on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos')
     tipo = models.CharField(max_length=10, choices=TIPOS, default='otro')
     nombre = models.CharField(max_length=120)

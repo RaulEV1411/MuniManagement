@@ -74,9 +74,17 @@ class ProyectosWriteSerializer(ModelSerializer):
 
 
 class DocumentoProyectoSerializer(ModelSerializer):
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    subido_por_nombre = SerializerMethodField()
+
     class Meta:
         model = DocumentoProyecto
-        fields = ['documento_ID', 'tipo', 'nombre', 'url', 'creado_en']
+        fields = ['documento_ID', 'proyecto', 'tarea', 'tipo', 'tipo_display', 'nombre', 'url', 'subido_por', 'subido_por_nombre', 'creado_en']
+        read_only_fields = ['url', 'subido_por', 'creado_en']
+
+    def get_subido_por_nombre(self, obj):
+        u = obj.subido_por
+        return f'{u.first_name} {u.last_name}'.strip() if u else ''
 
 
 class CierreProyectoSerializer(ModelSerializer):
@@ -127,6 +135,7 @@ class ProyectosReadSerializer(ModelSerializer):
     mis_permisos = SerializerMethodField()
     cerrado = SerializerMethodField()
     cierre = SerializerMethodField()
+    costo_ejecutado = SerializerMethodField()
 
     class Meta:
         model = Proyectos
@@ -134,6 +143,10 @@ class ProyectosReadSerializer(ModelSerializer):
 
     def get_cerrado(self, obj):
         return authz.esta_cerrado(obj)
+
+    def get_costo_ejecutado(self, obj):
+        # Lo ejecutado del proyecto es la suma de lo ejecutado en sus tareas.
+        return getattr(obj, 'costo_ejecutado_total', None) or 0
 
     def get_cierre(self, obj):
         # Solo en el detalle, como mis_permisos: el cierre vigente (el último sin reabrir).

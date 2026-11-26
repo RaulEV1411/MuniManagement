@@ -3,7 +3,7 @@ from .views import (
     EstadoViewSet, PrioridadViewSet, TiposViewSet,
     ProyectosWriteViewSet, ProyectosReadViewSet,
     ProyectosTiposViewSet, ProjectImageViewSet,
-    MiembroProyectoViewSet, RolProyectoViewSet, AjustePresupuestoViewSet,
+    MiembroProyectoViewSet, RolProyectoViewSet, AjustePresupuestoViewSet, DocumentoProyectoViewSet,
 )
 
 router_projects = DefaultRouter()
@@ -17,3 +17,4 @@ router_projects.register(r'project-images', ProjectImageViewSet, basename='proje
 router_projects.register(r'miembros', MiembroProyectoViewSet, basename='miembros')
 router_projects.register(r'roles-proyecto', RolProyectoViewSet, basename='roles-proyecto')
 router_projects.register(r'ajustes-presupuesto', AjustePresupuestoViewSet, basename='ajustes-presupuesto')
+router_projects.register(r'documentos', DocumentoProyectoViewSet, basename='documentos')
