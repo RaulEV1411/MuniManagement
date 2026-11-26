@@ -11,15 +11,16 @@ TIPO_CHOICES = [
     ('ampliacion_plazo',      'Ampliación de plazo'),
     ('reprogramacion',        'Reprogramación'),
     ('cancelacion',           'Cancelación'),
-    ('solicitud_presupuesto', 'Solicitud de presupuesto adicional'),
+    ('solicitud_presupuesto', 'Ajuste de presupuesto'),
     ('asignacion',            'Asignación de tarea'),
+    ('eliminacion',           'Eliminación'),
 ]
 
 
 class HistorialCambios(models.Model):
     historial_ID     = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tipo             = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    proyecto_ID      = models.ForeignKey('Projects.Proyectos', on_delete=models.CASCADE,
+    proyecto_ID      = models.ForeignKey('Projects.Proyectos', on_delete=models.SET_NULL,
                                          related_name='historial', null=True, blank=True)
     tarea_ID         = models.CharField(max_length=36, blank=True, default='')
     usuario          = models.ForeignKey('Users.Users', on_delete=models.SET_NULL,

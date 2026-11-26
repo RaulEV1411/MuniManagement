@@ -27,3 +27,8 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Pruebas de punta a punta
+e2e/.tmp/
+playwright-report/
+test-results/

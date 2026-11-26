@@ -17,7 +17,7 @@ class Direccion(models.Model):
 class Departamentos(models.Model):
     departamentos_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
-    direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE)
+    direccion = models.ForeignKey(Direccion, on_delete=models.PROTECT)
     jefe = models.ForeignKey(
         'Users.Users',
         on_delete=models.SET_NULL,

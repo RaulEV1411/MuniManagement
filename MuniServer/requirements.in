@@ -12,3 +12,4 @@ PyMySQL[rsa]==1.2.4
 cloudinary==1.47.0
 gunicorn==27.0.1
 tzdata
+sentry-sdk==3.0.1

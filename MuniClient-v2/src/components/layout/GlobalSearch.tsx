@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, FolderOpen, Users } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
-import { type Project, type User } from '@/types'
+import { getProyectosPagina, getUsuariosPagina } from '@/lib/api'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
+import Dialogo from '@/components/common/Dialogo'
 
 type ResultItem =
   | { kind: 'project'; id: string; label: string; sub: string }
@@ -31,7 +33,21 @@ export default function GlobalSearch() {
   const [cursor, setCursor] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-  const qc = useQueryClient()
+
+  // Busca en el servidor (antes buscaba solo en los proyectos ya cargados en el navegador).
+  const termino = useValorDiferido(query.trim(), 250)
+  const buscar = open && termino.length >= 2
+  const { data: proyectos } = useQuery({
+    queryKey: ['projects', 'busqueda', termino],
+    queryFn: () => getProyectosPagina({ search: termino, page_size: 5 }),
+    enabled: buscar,
+  })
+  const { data: personas } = useQuery({
+    queryKey: ['users', 'busqueda', termino],
+    queryFn: () => getUsuariosPagina({ search: termino, page_size: 3 }),
+    enabled: buscar,
+    retry: false,
+  })
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -51,15 +67,9 @@ export default function GlobalSearch() {
   }, [open])
 
   const results: ResultItem[] = (() => {
-    if (!query.trim()) return []
-    const q = query.toLowerCase()
+    if (!buscar) return []
 
-    const projects = (qc.getQueryData<Project[]>(['projects']) ?? [])
-      .filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.departamento_ID?.name ?? '').toLowerCase().includes(q),
-      )
-      .slice(0, 5)
+    const projects = (proyectos?.results ?? [])
       .map<ResultItem>(p => ({
         kind: 'project',
         id: p.proyect_ID,
@@ -67,12 +77,7 @@ export default function GlobalSearch() {
         sub: p.departamento_ID?.name ?? 'Sin departamento',
       }))
 
-    const users = (qc.getQueryData<User[]>(['users']) ?? [])
-      .filter(u =>
-        `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q),
-      )
-      .slice(0, 3)
+    const users = (personas?.results ?? [])
       .map<ResultItem>(u => ({
         kind: 'user',
         id: u.user_ID,
@@ -102,10 +107,7 @@ export default function GlobalSearch() {
   return (
     <AnimatePresence>
       {open && (
-        <div
-          className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm px-4"
-          onClick={() => setOpen(false)}
-        >
+        <Dialogo titulo="Buscar proyectos y usuarios" onCerrar={() => setOpen(false)} capa="z-[200]" className="items-start pt-[15vh] px-4" cerrarAlTocarFondo>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -119,17 +121,20 @@ export default function GlobalSearch() {
               <Search size={15} className="text-muted-foreground flex-shrink-0" />
               <input
                 ref={inputRef}
+                // Foco apenas se abre: con el setTimeout de antes se perdían las primeras letras.
+                autoFocus
                 value={query}
                 onChange={e => { setQuery(e.target.value); setCursor(0) }}
                 onKeyDown={handleKeyDown}
                 placeholder="Buscar proyectos, usuarios..."
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                aria-label="Buscar proyectos y usuarios"
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <kbd className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border hidden sm:block">
                   ESC
                 </kbd>
-                <button
+                <button aria-label="Borrar la búsqueda"
                   onClick={() => setOpen(false)}
                   className="p-1 rounded-lg hover:bg-accent text-muted-foreground transition-colors"
                 >
@@ -159,7 +164,7 @@ export default function GlobalSearch() {
                       <div className={cn(
                         'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
                         r.kind === 'project'
-                          ? 'bg-ocean-500/10 text-ocean-500'
+                          ? 'bg-ocean-500/10 text-ocean-500 dark:text-ocean-200'
                           : 'bg-amber-500/10 text-amber-500',
                       )}>
                         {r.kind === 'project' ? <FolderOpen size={13} /> : <Users size={13} />}
@@ -179,7 +184,7 @@ export default function GlobalSearch() {
               )
             ) : (
               <div className="px-4 py-8 text-center space-y-3">
-                <p className="text-xs text-muted-foreground">Escribe para buscar proyectos y usuarios</p>
+                <p className="text-xs text-muted-foreground">Escriba para buscar proyectos y usuarios</p>
                 <div className="flex items-center justify-center gap-4">
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <kbd className="bg-muted border border-border rounded px-1.5 py-0.5">↑↓</kbd> navegar
@@ -194,7 +199,7 @@ export default function GlobalSearch() {
               </div>
             )}
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </AnimatePresence>
   )

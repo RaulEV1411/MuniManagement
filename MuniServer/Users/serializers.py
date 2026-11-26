@@ -1,15 +1,8 @@
 from rest_framework.serializers import ModelSerializer
-from rest_framework import serializers
-from .models import Roles, Users
 from django.contrib.auth.hashers import make_password
-import random
-import string
-from django.core.mail import send_mail
-from django.contrib.auth.hashers import make_password
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
-from .models import Users
+from .acceso import encolar_correo_de_acceso
+from .models import Roles, Users
 
 class RolesSerializer(ModelSerializer):
     class Meta:
@@ -18,34 +11,53 @@ class RolesSerializer(ModelSerializer):
         read_only_fields = ['is_system', 'puede_delegar', 'puede_recibir_delegacion']
 
 
-class UsersSerializer(ModelSerializer):
-    
-    def generate_random_password(self, length=8):
-        """Genera una contraseña aleatoria de una longitud dada."""
-        characters = string.ascii_letters + string.digits + string.punctuation
-        return ''.join(random.choice(characters) for _ in range(length))
-    
+class RolYDepartamentoAnidados:
+    """Al leer, rol y departamento salen como objetos; al escribir se mandan sus ids."""
+
+    def to_representation(self, instance):
+        datos = super().to_representation(instance)
+        if 'role' in datos:
+            rol = instance.role
+            datos['role'] = rol and {
+                'role_ID': str(rol.role_ID), 'name': rol.name,
+                'puede_delegar': rol.puede_delegar,
+                'puede_recibir_delegacion': rol.puede_recibir_delegacion,
+                'puede_ver_todo': rol.puede_ver_todo,
+            }
+        if 'departamento_ID' in datos:
+            depto = instance.departamento_ID
+            datos['departamento_ID'] = depto and {'departamentos_ID': str(depto.departamentos_ID), 'name': depto.name}
+        return datos
+
+
+class UsersSerializer(RolYDepartamentoAnidados, ModelSerializer):
+
     def create(self, validated_data):
-        # Generar contraseña temporal
-        random_password = self.generate_random_password()
-        email = validated_data.get('email')
-
-        # Hashear y crear el usuario primero (el correo va async, no bloquea creación)
-        validated_data['password'] = make_password(random_password)
-        instance = super(UsersSerializer, self).create(validated_data)
-
-        # Encolar envío de credenciales vía Celery; si el broker no está disponible,
-        # registrar pero no romper la creación.
-        try:
-            from Task.tasks import enviar_credenciales_async
-            enviar_credenciales_async.delay(email, random_password)
-        except Exception:
-            import logging
-            logging.getLogger(__name__).exception('No se pudo encolar enviar_credenciales_async')
-
+        # La cuenta nace sin contraseña usable: la persona la define con el enlace del correo.
+        validated_data['password'] = make_password(None)
+        instance = super().create(validated_data)
+        encolar_correo_de_acceso(instance, 'bienvenida')
         return instance
-    
+
     class Meta:
         model = Users
-        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado']
+        fields = ['user_ID','first_name','last_name','cedula','email','phone_number','puesto','role','departamento_ID','birthday','user_photo','onboarding_completado','is_active']
         read_only_fields = ['user_ID']
+
+class UsuarioResumenSerializer(ModelSerializer):
+    """Lo mínimo para mostrar a una persona dentro de proyectos, tareas, historial y comentarios.
+    Sin cédula, teléfono ni fecha de nacimiento (Ley 8968: solo los datos necesarios)."""
+
+    class Meta:
+        model = Users
+        fields = ['user_ID', 'first_name', 'last_name', 'email', 'puesto', 'user_photo']
+        read_only_fields = fields
+
+
+class UsuarioDirectorioSerializer(RolYDepartamentoAnidados, ModelSerializer):
+    """Lo que un jefe ve de otras personas: el resumen más su rol, departamento y estado."""
+
+    class Meta:
+        model = Users
+        fields = UsuarioResumenSerializer.Meta.fields + ['role', 'departamento_ID', 'is_active']
+        read_only_fields = fields

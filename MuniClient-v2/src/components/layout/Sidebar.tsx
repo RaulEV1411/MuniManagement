@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  MapPin, Sliders, GanttChartSquare, FileDown, HelpCircle,
+  Sliders, GanttChartSquare, FileDown, HelpCircle,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getProjects } from '@/lib/api'
-import { isOverdue } from '@/lib/utils'
-import { type Project } from '@/types'
+import { getResumenProyectos } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
+import LogoInstitucion from '@/components/common/LogoInstitucion'
+import { useMarca } from '@/hooks/useMarca'
 
 interface NavItem {
   icon: LucideIcon
@@ -26,7 +26,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: 'Principal',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard',     path: '/dashboard',   match: (p: string) => p === '/dashboard' || p.startsWith('/projects'), showOverdue: true },
+      { icon: LayoutDashboard, label: 'Proyectos',     path: '/dashboard',   match: (p: string) => p === '/dashboard' || p.startsWith('/projects'), showOverdue: true },
     ],
   },
   {
@@ -40,7 +40,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
   {
     label: 'Herramientas',
     items: [
-      { icon: GanttChartSquare, label: 'Timeline', path: '/timeline', match: (p: string) => p === '/timeline' },
+      { icon: GanttChartSquare, label: 'Cronograma', path: '/timeline', match: (p: string) => p === '/timeline' },
       { icon: FileDown,         label: 'Reportes', path: '/reports',  match: (p: string) => p === '/reports' },
     ],
   },
@@ -54,17 +54,20 @@ const NAV: { label: string; items: NavItem[] }[] = [
 ]
 
 export default function Sidebar() {
+  const marca = useMarca()
   const [expanded, setExpanded] = useState(true)
   const { isDark, toggleTheme, user, logout } = useAppStore()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  // El contador sale del resumen del servidor: con más de una página de proyectos, contar en el
+  // navegador daba un número incompleto.
+  const { data: resumen } = useQuery({
+    queryKey: ['projects', 'resumen'],
+    queryFn: () => getResumenProyectos(),
     staleTime: 60_000,
   })
-  const overdueCount = projects.filter(isOverdue).length
+  const overdueCount = resumen?.vencidos ?? 0
 
   const W = expanded ? 240 : 64
 
@@ -76,9 +79,7 @@ export default function Sidebar() {
     >
       {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 h-14 border-b border-border flex-shrink-0">
-        <div className="w-8 h-8 rounded-xl bg-ocean-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <MapPin size={16} className="text-white" />
-        </div>
+        <LogoInstitucion tamano={32} />
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -88,8 +89,8 @@ export default function Sidebar() {
               transition={{ duration: 0.15 }}
               className="min-w-0"
             >
-              <p className="text-[13px] font-bold text-ocean-500 leading-tight whitespace-nowrap">Municipalidad</p>
-              <p className="text-[10px] text-muted-foreground whitespace-nowrap">Puntarenas, CR</p>
+              <p className="text-[13px] font-bold text-ocean-500 dark:text-ocean-200 leading-tight line-clamp-2 w-[164px]" title={marca.nombre}>{marca.nombre}</p>
+              {marca.ubicacion && <p className="text-[10px] text-muted-foreground truncate w-[164px]">{marca.ubicacion}</p>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -127,7 +128,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest px-2 pt-3 pb-1.5 whitespace-nowrap"
+                  className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 pt-3 pb-1.5 whitespace-nowrap"
                 >
                   {label}
                 </motion.p>
@@ -138,9 +139,10 @@ export default function Sidebar() {
               const active = match(location.pathname)
               const badge = showOverdue && overdueCount > 0 ? overdueCount : 0
               return (
-                <button
+                <Link
                   key={path}
-                  onClick={() => navigate(path)}
+                  to={path}
+                  aria-current={active ? 'page' : undefined}
                   title={expanded ? undefined : itemLabel}
                   className={cn(
                     'flex items-center rounded-xl transition-all duration-150 w-full text-left',
@@ -154,7 +156,7 @@ export default function Sidebar() {
                   <div className="relative flex-shrink-0">
                     <Icon size={15} />
                     {!expanded && badge > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      <span aria-hidden="true" className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
@@ -171,10 +173,15 @@ export default function Sidebar() {
                       </motion.span>
                     )}
                   </AnimatePresence>
+                  {/* El lector oye «Proyectos, 1 vencido»; el número de la burbuja es solo visual. */}
+                  <span className="sr-only">
+                    {!expanded && itemLabel}
+                    {badge > 0 && `, ${badge} ${badge === 1 ? 'vencido' : 'vencidos'}`}
+                  </span>
                   {expanded && badge > 0 && (
-                    <span className={cn(
+                    <span aria-hidden="true" className={cn(
                       'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center',
-                      active ? 'bg-white/20 text-white' : 'bg-red-500 text-white',
+                      active ? 'bg-white/20 text-white' : 'bg-red-600 text-white',
                     )}>
                       {badge > 99 ? '99+' : badge}
                     </span>
@@ -182,7 +189,7 @@ export default function Sidebar() {
                   {active && expanded && !badge && (
                     <div className="w-1.5 h-1.5 rounded-full bg-white/50 flex-shrink-0" />
                   )}
-                </button>
+                </Link>
               )
             })}
           </div>
@@ -247,7 +254,7 @@ export default function Sidebar() {
           {user?.user_photo ? (
             <img src={user.user_photo} alt="" className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
           ) : (
-            <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">
+            <div className="w-8 h-8 rounded-xl bg-amber-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">
               {user ? getInitials(user.first_name, user.last_name) : '?'}
             </div>
           )}
@@ -270,7 +277,7 @@ export default function Sidebar() {
           onClick={() => setExpanded(v => !v)}
           title={expanded ? 'Colapsar' : 'Expandir'}
           className={cn(
-            'flex items-center rounded-xl transition-all w-full text-muted-foreground/50 hover:bg-accent hover:text-muted-foreground',
+            'flex items-center rounded-xl transition-all w-full text-muted-foreground hover:bg-accent hover:text-foreground',
             expanded ? 'gap-2 px-2.5 py-1.5 justify-between' : 'justify-center',
           )}
           style={!expanded ? { height: 32, width: 36, margin: '0 auto' } : undefined}

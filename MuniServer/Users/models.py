@@ -16,23 +16,26 @@ class Roles(models.Model):
 
 class Users(AbstractBaseUser):
     user_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    role = models.ForeignKey(Roles, on_delete=models.CASCADE)
-    departamento_ID = models.ForeignKey(Departamentos, on_delete=models.CASCADE)
+    role = models.ForeignKey(Roles, on_delete=models.PROTECT)
+    departamento_ID = models.ForeignKey(Departamentos, on_delete=models.PROTECT)
     first_name = models.CharField(max_length=25)
     last_name = models.CharField(max_length=25)
     cedula = models.IntegerField(unique=True)
     phone_number = models.IntegerField()
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
-    birthday = models.DateField()
+    # Opcional: solo se piden los datos que el sistema usa (Ley 8968, art. 6).
+    birthday = models.DateField(null=True, blank=True)
     puesto = models.CharField(max_length=25)
     user_photo = models.TextField(null=True)
     onboarding_completado = models.BooleanField(default=False)
+    # Baja lógica: un funcionario que se va no se borra, para no perder su historial.
+    is_active = models.BooleanField(default=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name','last_name', 'role', 'departamento_ID', 'cedula', 'phone_number', 'birthday', 'puesto','user_photo']
+    REQUIRED_FIELDS = ['first_name','last_name', 'role', 'departamento_ID', 'cedula', 'phone_number', 'puesto','user_photo']
 
     def _str_(self):
         return self.email

@@ -16,12 +16,18 @@ import ReportsPage from '@/pages/Reports'
 import PublicProjectsPage from '@/pages/PublicProjects'
 import PublicProjectDetailPage from '@/pages/PublicProjectDetail'
 import AyudaPage from '@/pages/Ayuda'
+import OlvideClavePage from '@/pages/OlvideClave'
+import DefinirClavePage from '@/pages/DefinirClave'
+import AccesibilidadPage from '@/pages/Accesibilidad'
 
 export const router = createBrowserRouter([
   { path: '/',      element: <Navigate to="/login" replace /> },
   { path: '/login', element: <LoginPage /> },
+  { path: '/olvide-clave',             element: <OlvideClavePage /> },
+  { path: '/definir-clave/:uid/:token', element: <DefinirClavePage /> },
   { path: '/publico',                  element: <PublicProjectsPage /> },
   { path: '/publico/proyectos/:id',    element: <PublicProjectDetailPage /> },
+  { path: '/accesibilidad',            element: <AccesibilidadPage /> },
   {
     element: <Guard />,
     children: [{

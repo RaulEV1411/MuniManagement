@@ -22,7 +22,7 @@ class FechaDeCostaRicaTests(APITestCase):
     def test_el_resumen_usa_la_fecha_de_costa_rica(self, _now):
         crear_proyecto(self.usuario, name='Vence hoy', fecha_inicio=date(2026, 11, 1), fecha_entrega=date(2026, 11, 25))
         self.client.force_authenticate(self.usuario)
-        r = self.client.get('/notifications/notificaciones/resumen/')
+        r = self.client.get('/api/v1/notifications/notificaciones/resumen/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data['hoy'], '2026-11-25')
         self.assertEqual([p['name'] for p in r.data['proyectos_por_vencer']], ['Vence hoy'])

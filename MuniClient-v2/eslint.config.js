@@ -18,5 +18,10 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Globales del navegador que se confunden con variables propias: si falta la variable,
+      // TypeScript no avisa porque existen en window (pasó con `status` en el Kanban).
+      'no-restricted-globals': ['error', 'status', 'name', 'event', 'origin', 'length', 'top', 'parent', 'self', 'close', 'open', 'closed', 'history', 'location'],
+    },
   },
 ])

@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, Building2, MapPin, type LucideIcon } from 'lucide-react'
 import { getPublicProject } from '@/lib/api'
 import type { PublicProjectDetail } from '@/types'
+import { useTituloDePagina } from '@/hooks/useMarca'
+import { textoSobre } from '@/lib/colores'
 
 export default function PublicProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -11,6 +13,7 @@ export default function PublicProjectDetailPage() {
     queryFn: () => getPublicProject(id!),
     enabled: !!id,
   })
+  useTituloDePagina(p?.name ?? 'Proyecto')
 
   if (isLoading) return <div className="p-10 text-center text-slate-500">Cargando…</div>
   if (!p) return <div className="p-10 text-center text-slate-500">No encontrado.</div>
@@ -19,18 +22,18 @@ export default function PublicProjectDetailPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-ocean-500 text-white">
         <div className="max-w-4xl mx-auto px-6 py-6">
-          <Link to="/publico" className="inline-flex items-center gap-2 text-white/80 hover:text-white text-sm mb-4">
+          <Link to="/publico" className="inline-flex items-center gap-2 text-white hover:underline text-sm mb-4">
             <ArrowLeft className="h-4 w-4" /> Volver al portal
           </Link>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h1 className="text-2xl font-bold">{p.name}</h1>
-              <p className="text-white/80 mt-1 max-w-2xl">{p.descripcion}</p>
+              <p className="text-white mt-1 max-w-2xl">{p.descripcion}</p>
             </div>
             {p.estado && (
               <span
-                className="text-sm px-3 py-1 rounded-full text-white font-semibold"
-                style={{ backgroundColor: p.estado.color }}
+                className="text-sm px-3 py-1 rounded-full font-semibold"
+                style={{ backgroundColor: p.estado.color, color: textoSobre(p.estado.color) }}
               >
                 {p.estado.name}
               </span>
@@ -85,8 +88,8 @@ export default function PublicProjectDetailPage() {
                   </div>
                   {t.estado && (
                     <span
-                      className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold"
-                      style={{ backgroundColor: t.estado.color }}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                      style={{ backgroundColor: t.estado.color, color: textoSobre(t.estado.color) }}
                     >
                       {t.estado.name}
                     </span>

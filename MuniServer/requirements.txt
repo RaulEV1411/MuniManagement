@@ -30,6 +30,7 @@ certifi==2026.11.20 \
     # via
     #   cloudinary
     #   requests
+    #   sentry-sdk
 cffi==2.1.1 \
     --hash=sha256:046bfc24911b37851ee1b51aab8bffe713d89c68c6a057b09484ce9fd5f69b4e \
     --hash=sha256:06c72bb76605a4b0cd0aad6930b69d4baf7dd5d806cfc409b824191099700e66 \
@@ -488,6 +489,10 @@ requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via django-anymail
+sentry-sdk==3.0.1 \
+    --hash=sha256:f70e3b7e789e2bfbb8d5614615037ab73303647aa7f782cc442452c6289696d7 \
+    --hash=sha256:feb0c131d2e497842e968f13363ef5f065f61d2517be005328766bc00e28e4b8
+    # via -r requirements.in
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
@@ -519,6 +524,7 @@ urllib3==2.8.0 \
     #   cloudinary
     #   django-anymail
     #   requests
+    #   sentry-sdk
 vine==5.1.0 \
     --hash=sha256:40fdf3c48b2cfe1c38a49e9ae2da6fda88e4794c810050a728bd7413811fb1dc \
     --hash=sha256:8b62e981d35c41049211cf62a0a1242d8c1ee9bd15bb196ce38aefd6799e61e0

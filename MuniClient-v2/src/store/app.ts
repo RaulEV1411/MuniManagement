@@ -1,8 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { jwtDecode } from 'jwt-decode'
-import { getCookie, deleteCookie } from '@/lib/utils'
-import { getMe } from '@/lib/api'
+import { getMe, logout as apiLogout, setCsrfToken } from '@/lib/api'
 
 interface RoleFlags {
   puede_delegar: boolean
@@ -10,7 +8,7 @@ interface RoleFlags {
   puede_ver_todo: boolean
 }
 
-interface DecodedToken {
+export interface SessionUser {
   user_ID: string
   first_name: string
   last_name: string
@@ -18,16 +16,28 @@ interface DecodedToken {
   role: string
   user_photo: string | null
   role_flags?: RoleFlags
+  departamento_ID?: string
+  onboarding_completado?: boolean
 }
+
+type DatosDeSesion = SessionUser & { csrf_token?: string }
 
 interface AppState {
   isDark: boolean
-  user: DecodedToken | null
+  user: SessionUser | null
+  // Tour pedido a mano desde Ayuda; el del primer ingreso lo decide useOnboardingTour.
+  tourForzado: boolean
+  setTourForzado: (v: boolean) => void
   toggleTheme: () => void
   initTheme: () => void
-  loadUserFromToken: () => void
-  refreshUserFromBackend: () => Promise<void>
-  logout: () => void
+  iniciarSesion: (datos: DatosDeSesion) => void
+  cargarSesion: () => Promise<boolean>
+  logout: () => Promise<void>
+}
+
+const sinCsrf = ({ csrf_token, ...user }: DatosDeSesion): SessionUser => {
+  setCsrfToken(csrf_token ?? null)
+  return user
 }
 
 export const useAppStore = create<AppState>()(
@@ -35,6 +45,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       isDark: false,
       user: null,
+      tourForzado: false,
+      setTourForzado: v => set({ tourForzado: v }),
 
       toggleTheme: () => {
         const next = !get().isDark
@@ -47,33 +59,23 @@ export const useAppStore = create<AppState>()(
         document.documentElement.classList.toggle('dark', isDark)
       },
 
-      loadUserFromToken: () => {
-        const token = getCookie('accessToken')
-        if (!token) { set({ user: null }); return }
+      // Con la respuesta del login: datos de la persona y token CSRF.
+      iniciarSesion: datos => set({ user: sinCsrf(datos) }),
+
+      // Al recargar la página: si las cookies de sesión siguen vigentes, /me/ responde.
+      cargarSesion: async () => {
         try {
-          const decoded = jwtDecode<DecodedToken>(token)
-          set({ user: decoded })
-          // Hidrata datos faltantes desde el backend si el token es viejo
-          get().refreshUserFromBackend().catch(() => {})
+          set({ user: sinCsrf(await getMe()) })
+          return true
         } catch {
           set({ user: null })
+          return false
         }
       },
 
-      refreshUserFromBackend: async () => {
-        try {
-          const me = await getMe()
-          set(state => ({
-            user: state.user
-              ? { ...state.user, ...me }
-              : me as DecodedToken,
-          }))
-        } catch { /* ignorar */ }
-      },
-
-      logout: () => {
-        deleteCookie('accessToken')
-        deleteCookie('refreshToken')
+      logout: async () => {
+        try { await apiLogout() } catch { /* las cookies se borran igual al vencer */ }
+        setCsrfToken(null)
         set({ user: null })
         window.location.href = '/login'
       },

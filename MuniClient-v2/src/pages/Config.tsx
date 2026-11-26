@@ -10,8 +10,12 @@ import {
 } from '@/lib/api'
 import { type Estado, type Prioridad, type Tipo } from '@/types'
 import { cn } from '@/lib/utils'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import InstitucionPanel from '@/components/config/InstitucionPanel'
+import { useTituloDePagina } from '@/hooks/useMarca'
+import { pestanas } from '@/lib/pestanas'
 
-const TABS = ['Estados', 'Prioridades', 'Tipos'] as const
+const TABS = ['Institución', 'Estados', 'Prioridades', 'Tipos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -56,18 +60,18 @@ function ItemRow({
     >
       {editing ? (
         <>
-          <input
+          <input aria-label="Nombre"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel() }}
             autoFocus
             className="flex-1 px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <button onClick={handleSave} disabled={saving}
+          <button aria-label="Guardar" onClick={handleSave} disabled={saving}
             className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors flex-shrink-0 disabled:opacity-60">
             <Check size={13} />
           </button>
-          <button onClick={handleCancel}
+          <button aria-label="Cancelar" onClick={handleCancel}
             className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent transition-colors flex-shrink-0">
             <X size={13} />
           </button>
@@ -90,14 +94,14 @@ function ItemRow({
               Sistema
             </span>
           ) : (
-            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
+            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity">
+              <button aria-label={`Editar ${item.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 <Pencil size={13} />
               </button>
-              <button
+              <button aria-label={`Eliminar ${item.name}`}
                 onClick={() => onDelete(item.id, item.name)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
@@ -115,7 +119,8 @@ function ItemRow({
 function CrudSection({
   items,
   isLoading,
-  emptyLabel,
+  textoNuevo,
+  textoVacio,
   onSave,
   onDelete,
   onCreate,
@@ -124,7 +129,8 @@ function CrudSection({
 }: {
   items: GenericItem[]
   isLoading: boolean
-  emptyLabel: string
+  textoNuevo: string
+  textoVacio: string
   onSave: (id: string, name: string) => Promise<void>
   onDelete: (id: string, name: string) => Promise<void>
   onCreate: (name: string) => Promise<void>
@@ -154,11 +160,11 @@ function CrudSection({
         </div>
       ) : (
         <form onSubmit={handleCreate} className="flex gap-2">
-          <input
+          <input aria-label={textoNuevo}
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            placeholder={`Nuevo ${emptyLabel.toLowerCase()}...`}
-            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder={textoNuevo}
+            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
             type="submit"
@@ -179,7 +185,7 @@ function CrudSection({
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-2 text-center bg-card border border-border rounded-2xl">
-          <p className="text-sm text-muted-foreground">No hay {emptyLabel.toLowerCase()}s registrado{emptyLabel.toLowerCase().endsWith('o') ? 's' : 's'}</p>
+          <p className="text-sm text-muted-foreground">{textoVacio}</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -195,12 +201,14 @@ function CrudSection({
 }
 
 export default function ConfigPage() {
+  useTituloDePagina('Configuración')
   const qc = useQueryClient()
-  const [tab, setTab] = useState<Tab>('Estados')
+  const [tab, setTab] = useState<Tab>('Institución')
+  const tabs = pestanas('configuracion', TABS, tab, setTab)
 
-  const { data: estados = [],     isLoading: loadingEstados }     = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
-  const { data: prioridades = [], isLoading: loadingPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
-  const { data: tipos = [],       isLoading: loadingTipos }       = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
+  const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
+  const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
+  const { data: tipos = [],       isLoading: loadingTipos, error: errTipos, refetch: refetchTipos } = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
 
   // ── Estados ──
   const estadoItems: GenericItem[] = estados.map(e => ({
@@ -269,6 +277,11 @@ export default function ConfigPage() {
     toast.success('Tipo creado')
   }
 
+  const errorCatalogos = errEstados ?? errPrioridades ?? errTipos
+  if (errorCatalogos) {
+    return <ErrorDeCarga error={errorCatalogos} onReintentar={() => { refetchEstados(); refetchPrioridades(); refetchTipos() }} que="los catálogos" />
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
@@ -279,25 +292,27 @@ export default function ConfigPage() {
           </div>
           <div>
             <h1 className="text-base font-bold text-foreground">Configuración</h1>
-            <p className="text-xs text-muted-foreground">Estados, prioridades y tipos de proyecto</p>
+            <p className="text-xs text-muted-foreground">Institución, estados, prioridades y tipos de proyecto</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones de la configuración">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
-                tab === t ? 'border-ocean-500 text-ocean-500' : 'border-transparent text-muted-foreground hover:text-foreground',
+                tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {t}
-              <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
-              </span>
+              {t !== 'Institución' && (
+                <span className="ml-1.5 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                  {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -308,16 +323,19 @@ export default function ConfigPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
           >
+            {tab === 'Institución' && <InstitucionPanel />}
             {tab === 'Estados' && (
               <CrudSection
                 items={estadoItems}
                 isLoading={loadingEstados}
-                emptyLabel="Estado"
+                textoNuevo="Nuevo estado..."
+                textoVacio="No hay estados registrados"
                 onSave={onSaveEstado}
                 onDelete={onDeleteEstado}
                 onCreate={onCreateEstado}
@@ -329,7 +347,8 @@ export default function ConfigPage() {
               <CrudSection
                 items={prioridadItems}
                 isLoading={loadingPrioridades}
-                emptyLabel="Prioridad"
+                textoNuevo="Nueva prioridad..."
+                textoVacio="No hay prioridades registradas"
                 onSave={onSavePrioridad}
                 onDelete={onDeletePrioridad}
                 onCreate={onCreatePrioridad}
@@ -341,7 +360,8 @@ export default function ConfigPage() {
               <CrudSection
                 items={tipoItems}
                 isLoading={loadingTipos}
-                emptyLabel="Tipo"
+                textoNuevo="Nuevo tipo..."
+                textoVacio="No hay tipos registrados"
                 onSave={onSaveTipo}
                 onDelete={onDeleteTipo}
                 onCreate={onCreateTipo}

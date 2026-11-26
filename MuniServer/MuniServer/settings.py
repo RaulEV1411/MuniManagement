@@ -5,7 +5,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Apagado por defecto: el modo de desarrollo se activa a propósito con DEBUG=True.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Secret key: en DEBUG permite fallback; en producción exige env.
 _SECRET = os.environ.get('SECRET_KEY')
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'Feedback.apps.FeedbackConfig',
     'Historial.apps.HistorialConfig',
     'Notifications.apps.NotificationsConfig',
+    'Configuracion.apps.ConfiguracionConfig',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
@@ -130,27 +132,24 @@ else:
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@muni.local')
 
 LANGUAGE_CODE = 'es-cr'
-TIME_ZONE = 'America/Costa_Rica'
+# Por instalación; el valor es el nombre IANA (America/Costa_Rica, America/Guatemala…).
+TIME_ZONE = os.environ.get('ZONA_HORARIA', 'America/Costa_Rica')
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'Users/static'),
-]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'Users.autenticacion.JWTCookieAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 200,
+    'DEFAULT_PAGINATION_CLASS': 'MuniServer.paginacion.Paginacion',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
@@ -172,11 +171,24 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': False,
 }
 
-# Cookies seguras solo en producción
+CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174']
+# El front manda las cookies de sesión en cada petición a la API.
+CORS_ALLOW_CREDENTIALS = True
+
+# URL pública del frontend, para los enlaces de los correos (activar cuenta, recuperar contraseña).
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
+
+# En producción: solo HTTPS, detrás de un proxy (nginx) que fija X-Forwarded-Proto.
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
+    # El chequeo de salud de Docker entra por HTTP dentro de la red interna.
+    SECURE_REDIRECT_EXEMPT = [r'^api/v1/health/$']
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
@@ -184,6 +196,20 @@ AUTH_USER_MODEL = 'Users.Users'
 
 # ── Celery + Redis ──────────────────────────────────────────
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+
+# Caché compartida entre procesos: el límite de intentos de login vive aquí.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.environ.get('CACHE_URL', REDIS_URL),
+    }
+}
+# Detrás de un proxy, la IP real del cliente llega en un header (p. ej. HTTP_X_REAL_IP de nginx).
+RATELIMIT_IP_META_KEY = os.environ.get('RATELIMIT_IP_META_KEY', 'REMOTE_ADDR')
+# Intentos de login: por correo, para frenar a quien prueba claves de una cuenta; por IP, más alto,
+# porque toda una oficina municipal suele salir a internet con la misma IP.
+LOGIN_LIMITE_POR_CORREO = os.environ.get('LOGIN_LIMITE_POR_CORREO', '5/m')
+LOGIN_LIMITE_POR_IP = os.environ.get('LOGIN_LIMITE_POR_IP', '30/m')
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
 CELERY_ACCEPT_CONTENT = ['json']
@@ -202,6 +228,13 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# ── Fotos ───────────────────────────────────────────────────
+# 'local' (por defecto): disco del servidor, servido por Caddy en MEDIA_URL y dentro de los respaldos.
+# 'cloudinary': el servicio externo (requiere CLOUDINARY_* y un contrato de encargado de datos).
+ALMACENAMIENTO_FOTOS = os.environ.get('ALMACENAMIENTO_FOTOS', 'local').strip().lower()
+MEDIA_URL = '/api/v1/media/'
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
+
 import cloudinary
 cloudinary.config(
     cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
@@ -209,3 +242,39 @@ cloudinary.config(
     api_secret=os.environ.get('CLOUDINARY_API_SECRET', ''),
     secure=True,
 )
+
+
+# ── Logs ────────────────────────────────────────────────────
+# En producción, una línea JSON por evento en la salida estándar (docker logs).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {'()': 'MuniServer.registro.FormatoJSON'},
+        'simple': {'format': '{levelname} {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'consola': {'class': 'logging.StreamHandler', 'formatter': 'simple' if DEBUG else 'json'},
+    },
+    'root': {'handlers': ['consola'], 'level': os.environ.get('LOG_LEVEL', 'INFO')},
+}
+
+# ── Sentry (opcional) ───────────────────────────────────────
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '').strip()
+if SENTRY_DSN:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=os.environ.get('SENTRY_ENVIRONMENT', 'produccion'),
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0')),
+        # Sin datos personales (Ley 8968): ni identidad ni IP, ni cookies, ni headers, ni cuerpos,
+        # ni las variables locales de las trazas (pueden tener cédulas o correos).
+        data_collection={
+            'user_info': False,
+            'cookies': {'mode': 'off'},
+            'http_headers': {'request': {'mode': 'off'}},
+            'http_bodies': [],
+            'url_query_params': {'mode': 'denylist'},
+            'stack_frame_variables': False,
+        },
+    )

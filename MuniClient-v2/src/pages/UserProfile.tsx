@@ -10,21 +10,23 @@ import {
 import { toast } from 'sonner'
 import {
   getUserById, getProjectsByUser, updateUser, uploadUserPhoto,
-  changePassword, getRoles, getDepartments,
+  changePassword, getRoles, getDepartments, enviarAcceso,
 } from '@/lib/api'
+import { useAppStore } from '@/store/app'
 import { type User, type Project, type Role, type Department } from '@/types'
 import { cn, formatDate, getInitials, fullName, isOverdue } from '@/lib/utils'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { esNoEncontrado } from '@/lib/errores'
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
+import { pestanas } from '@/lib/pestanas'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
 
 const AVATAR_COLORS = [
-  'bg-ocean-500', 'bg-sunset-500', 'bg-purple-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-cyan-500', 'bg-rose-500', 'bg-indigo-500',
+  'bg-ocean-500', 'bg-purple-700', 'bg-emerald-700', 'bg-amber-700',
+  'bg-cyan-700', 'bg-rose-700', 'bg-indigo-600', 'bg-teal-700',
 ]
 
 function avatarColor(name: string): string {
@@ -51,11 +53,13 @@ function EditModal({
   user,
   roles,
   departments,
+  puedeEditarTodo,
   onClose,
   onSaved,
 }: {
   user: User
   roles: Role[]
+  puedeEditarTodo: boolean
   departments: Department[]
   onClose: () => void
   onSaved: () => void
@@ -80,27 +84,30 @@ function EditModal({
       await updateUser(user.user_ID, {
         first_name:   form.first_name,
         last_name:    form.last_name,
-        cedula:       form.cedula ? parseInt(form.cedula) : undefined,
-        email:        form.email,
         phone_number: form.phone_number ? parseInt(form.phone_number) : undefined,
         puesto:       form.puesto,
-        role:         form.role || undefined,
-        departamento_ID: form.departamento_ID || undefined,
+        // Cédula, correo, rol y departamento solo los cambia la alcaldía.
+        ...(puedeEditarTodo && {
+          cedula:          form.cedula ? parseInt(form.cedula) : undefined,
+          email:           form.email,
+          role:            form.role || undefined,
+          departamento_ID: form.departamento_ID || undefined,
+        }),
       })
       toast.success('Usuario actualizado')
       onSaved()
       onClose()
-    } catch {
-      toast.error('Error al actualizar usuario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar usuario'))
     } finally {
       setLoading(false)
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Editar usuario" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -109,50 +116,50 @@ function EditModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">Editar usuario</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Nombre</label>
-              <input value={form.first_name} onChange={e => set('first_name', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-nombre" className="text-xs font-semibold text-muted-foreground">Nombre</label>
+              <input id="userprofile-nombre" value={form.first_name} onChange={e => set('first_name', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Apellido</label>
-              <input value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-apellido" className="text-xs font-semibold text-muted-foreground">Apellido</label>
+              <input id="userprofile-apellido" value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Cédula</label>
-            <input type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-cedula" className="text-xs font-semibold text-muted-foreground">Cédula</label>
+            <input id="userprofile-cedula" type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Email</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-correo-electronico" className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
+            <input id="userprofile-correo-electronico" type="email" value={form.email} onChange={e => set('email', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Teléfono</label>
-              <input type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-telefono" className="text-xs font-semibold text-muted-foreground">Teléfono</label>
+              <input id="userprofile-telefono" type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Puesto</label>
-              <input value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
+              <label htmlFor="userprofile-puesto" className="text-xs font-semibold text-muted-foreground">Puesto</label>
+              <input id="userprofile-puesto" value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Rol</label>
-              <select value={form.role} onChange={e => set('role', e.target.value)} className={inputCls}>
+              <label htmlFor="userprofile-rol" className="text-xs font-semibold text-muted-foreground">Rol</label>
+              <select id="userprofile-rol" value={form.role} onChange={e => set('role', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin rol</option>
                 {roles.map(r => <option key={r.role_ID} value={r.role_ID}>{r.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
-              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="userprofile-departamento" className="text-xs font-semibold text-muted-foreground">Departamento</label>
+              <select id="userprofile-departamento" value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
                 <option value="">Sin departamento</option>
                 {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
               </select>
@@ -170,7 +177,7 @@ function EditModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -182,23 +189,23 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (form.next !== form.confirm) { toast.error('Las contraseñas no coinciden'); return }
-    if (form.next.length < 6) { toast.error('La contraseña debe tener al menos 6 caracteres'); return }
+    if (form.next.length < 8) { toast.error('La contraseña debe tener al menos 8 caracteres'); return }
     setLoading(true)
     try {
       await changePassword(form.current, form.next)
       toast.success('Contraseña actualizada')
       onClose()
-    } catch {
-      toast.error('Error al cambiar contraseña — verifica la contraseña actual')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'No se pudo cambiar la contraseña. Revise la contraseña actual.'))
     } finally {
       setLoading(false)
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Cambiar contraseña" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -207,22 +214,22 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Cambiar contraseña</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-3">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Contraseña actual</label>
-            <input type="password" value={form.current} onChange={e => set('current', e.target.value)} className={inputCls} autoFocus />
+            <label htmlFor="userprofile-contrasena-actual" className="text-xs font-semibold text-muted-foreground">Contraseña actual</label>
+            <input id="userprofile-contrasena-actual" type="password" value={form.current} onChange={e => set('current', e.target.value)} className={inputCls} autoFocus />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nueva contraseña</label>
-            <input type="password" value={form.next} onChange={e => set('next', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-nueva-contrasena" className="text-xs font-semibold text-muted-foreground">Nueva contraseña</label>
+            <input id="userprofile-nueva-contrasena" type="password" value={form.next} onChange={e => set('next', e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Confirmar nueva contraseña</label>
-            <input type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} className={inputCls} />
+            <label htmlFor="userprofile-confirmar-nueva-contrasena" className="text-xs font-semibold text-muted-foreground">Confirmar nueva contraseña</label>
+            <input id="userprofile-confirmar-nueva-contrasena" type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} className={inputCls} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
@@ -236,7 +243,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -250,15 +257,31 @@ export default function UserProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [tab, setTab]         = useState<Tab>('Información')
+  const tabs = pestanas('perfil', TABS, tab, setTab)
   const [showEdit, setShowEdit]     = useState(false)
   const [showPassword, setPassword] = useState(false)
   const [uploading, setUploading]   = useState(false)
+  const yo = useAppStore(s => s.user)
+  const esPropio = yo?.user_ID === id
+  const esAlcaldia = !!yo?.role_flags?.puede_ver_todo
+  // Con el directorio abierto a todos, editar y cambiar la foto quedan para la persona y la alcaldía.
+  const puedeEditar = esPropio || esAlcaldia
 
-  const { data: user, isLoading: loadingUser } = useQuery<User>({
+  const reenviarAcceso = async () => {
+    try {
+      await enviarAcceso(id!)
+      toast.success('Le enviamos un correo con el enlace para definir su contraseña.')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'No se pudo reenviar el acceso.'))
+    }
+  }
+
+  const { data: user, isLoading: loadingUser, isError: errorUser, error: errUser, refetch: refetchUser } = useQuery<User>({
     queryKey: ['user', id],
     queryFn: () => getUserById(id!),
     enabled: !!id,
   })
+  useTituloDePagina(user ? `${user.first_name} ${user.last_name}` : 'Usuario')
 
   const { data: projects = [], isLoading: loadingProjects } = useQuery<Project[]>({
     queryKey: ['user-projects', id],
@@ -284,8 +307,8 @@ export default function UserProfilePage() {
       await uploadUserPhoto(id, file)
       await qc.invalidateQueries({ queryKey: ['user', id] })
       toast.success('Foto actualizada')
-    } catch {
-      toast.error('Error al subir foto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al subir foto'))
     } finally {
       setUploading(false)
     }
@@ -302,12 +325,16 @@ export default function UserProfilePage() {
     )
   }
 
+  if (errorUser && !esNoEncontrado(errUser)) {
+    return <ErrorDeCarga error={errUser} onReintentar={refetchUser} que="el usuario" />
+  }
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
         <AlertCircle size={32} />
         <p className="text-sm">Usuario no encontrado</p>
-        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 hover:underline">Volver</button>
+        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Volver</button>
       </div>
     )
   }
@@ -323,7 +350,7 @@ export default function UserProfilePage() {
       {/* ── Header ── */}
       <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-center gap-3 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex-shrink-0 active:scale-[0.98]"
           >
@@ -341,13 +368,16 @@ export default function UserProfilePage() {
                 {initials}
               </div>
             )}
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-            >
-              <Camera size={12} className="text-white" />
-            </button>
+            {puedeEditar && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                aria-label="Cambiar la foto"
+                className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex items-center justify-center transition-opacity"
+              >
+                <Camera size={12} className="text-white" />
+              </button>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -358,7 +388,7 @@ export default function UserProfilePage() {
           {/* Mini stats */}
           <div className="hidden md:flex items-center gap-2">
             {[
-              { icon: FolderOpen,   value: totalProjects, label: 'Total',       color: 'text-ocean-500' },
+              { icon: FolderOpen,   value: totalProjects, label: 'Total',       color: 'text-ocean-500 dark:text-ocean-200' },
               { icon: Clock,        value: inProgress,    label: 'En progreso', color: 'text-blue-500' },
               { icon: CheckCircle2, value: completed,     label: 'Completados', color: 'text-emerald-500' },
             ].map(({ icon: Icon, value, label, color: c }) => (
@@ -371,31 +401,46 @@ export default function UserProfilePage() {
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={() => setShowEdit(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
-            >
-              <Edit2 size={12} /> Editar
-            </button>
-            <button
-              onClick={() => setPassword(true)}
-              className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
-              title="Cambiar contraseña"
-            >
-              <Lock size={14} />
-            </button>
+            {puedeEditar && (
+              <button
+                onClick={() => setShowEdit(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+              >
+                <Edit2 size={12} /> Editar
+              </button>
+            )}
+            {esPropio && (
+              <button
+                onClick={() => setPassword(true)}
+                className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
+                title="Cambiar mi contraseña"
+                aria-label="Cambiar mi contraseña"
+              >
+                <Lock size={14} />
+              </button>
+            )}
+            {!esPropio && esAlcaldia && (
+              <button
+                onClick={reenviarAcceso}
+                className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-[0.98]"
+                title="Reenviar el enlace de acceso"
+                aria-label="Reenviar el enlace de acceso"
+              >
+                <Mail size={14} />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del perfil">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
-                tab === t ? 'border-ocean-500 text-ocean-500' : 'border-transparent text-muted-foreground hover:text-foreground',
+                tab === t ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {t}
@@ -412,6 +457,7 @@ export default function UserProfilePage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -420,16 +466,17 @@ export default function UserProfilePage() {
             {tab === 'Información' && (
               <div className="max-w-xl space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-4">
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Datos personales</h3>
-                  <InfoRow icon={CreditCard} label="Cédula"      value={user.cedula} />
-                  <InfoRow icon={Calendar}   label="Cumpleaños"  value={formatDate(user.birthday)} />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">{puedeEditar ? 'Datos personales' : 'Datos'}</h3>
+                  {/* Cédula, cumpleaños y teléfono solo los ven la persona y la alcaldía (el servidor ni los manda). */}
+                  {puedeEditar && <InfoRow icon={CreditCard} label="Cédula"      value={user.cedula} />}
+                  {puedeEditar && <InfoRow icon={Calendar}   label="Cumpleaños"  value={formatDate(user.birthday)} />}
                   <InfoRow icon={Shield}     label="Rol"         value={user.role?.name} />
                   <InfoRow icon={Building2}  label="Departamento" value={user.departamento_ID?.name} />
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Contacto</h3>
-                  <InfoRow icon={Mail}       label="Email"    value={user.email} />
-                  <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />
+                  <InfoRow icon={Mail}       label="Correo electrónico" value={user.email} />
+                  {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />}
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>
               </div>
@@ -456,19 +503,13 @@ export default function UserProfilePage() {
                         onClick={() => navigate(`/projects/${p.proyect_ID}`)}
                         className="w-full flex items-center gap-4 px-4 py-3.5 bg-card border border-border rounded-xl hover:border-ocean-200 dark:hover:border-ocean-500/30 transition-all text-left group active:scale-[0.99]"
                       >
-                        <div className={cn(
-                          'w-1 h-8 rounded-full flex-shrink-0',
-                          overdue ? 'bg-red-400' :
-                          status === 'En progreso' ? 'bg-blue-400' :
-                          status === 'Completado'  ? 'bg-emerald-400' :
-                          status === 'Cancelado'   ? 'bg-red-300' : 'bg-muted-foreground/30',
-                        )} />
+                        <div className={cn('w-1 h-8 rounded-full flex-shrink-0', claseRelleno)} style={conColor(colorDeEstado(overdue, p.estado_ID))} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">{p.name}</p>
+                          <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">{p.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{p.departamento_ID?.name} · {formatDate(p.fecha_entrega)}</p>
                         </div>
                         {status && (
-                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0', STATUS_STYLE[status] ?? 'bg-muted text-muted-foreground')}>
+                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0', claseEtiqueta)} style={conColor(colorDeEstado(overdue, p.estado_ID))}>
                             {status}
                           </span>
                         )}
@@ -489,6 +530,7 @@ export default function UserProfilePage() {
             user={user}
             roles={roles}
             departments={departments}
+            puedeEditarTodo={esAlcaldia}
             onClose={() => setShowEdit(false)}
             onSaved={() => qc.invalidateQueries({ queryKey: ['user', id] })}
           />

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { keepPreviousData, useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FolderOpen, Clock, CheckCircle2, AlertTriangle,
@@ -8,29 +8,20 @@ import {
   TrendingUp, RefreshCw, Columns3, User,
   ChevronLeft, ChevronRight, ImageIcon, Upload, Zap,
 } from 'lucide-react'
-import { getProjects, uploadProjectImage, patchProject, getEstados, getPrioridades } from '@/lib/api'
+import { getProyectosPagina, getResumenProyectos, uploadProjectImage, patchProject, getEstados, getPrioridades } from '@/lib/api'
 import { type Project, type Estado, type Prioridad } from '@/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { cn, isOverdue, daysUntil, formatDate } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
 import { toast } from 'sonner'
 import ImageLightbox from '@/components/common/ImageLightbox'
-
-const PRIORITY_ORDER = { Alta: 0, Media: 1, Baja: 2 } as Record<string, number>
-
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Vencido':     'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import RazonModal from '@/components/common/RazonModal'
+import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 
 // ── Cambio rápido de estado ───────────────────────────────────────────────────
 function StatusQuickChange({ project }: { project: Project }) {
@@ -38,10 +29,12 @@ function StatusQuickChange({ project }: { project: Project }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  const [conMotivo, setConMotivo] = useState<Estado | null>(null)
   const { mutate, isPending } = useMutation({
-    mutationFn: (estadoId: string) => patchProject(project.proyect_ID, { estado_ID: estadoId }),
+    mutationFn: ({ estadoId, razon }: { estadoId: string; razon?: string }) =>
+      patchProject(project.proyect_ID, { estado_ID: estadoId, ...(razon && { razon }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); toast.success('Estado actualizado'); setOpen(false) },
-    onError: () => toast.error('Error al actualizar estado'),
+    onError: err => toast.error(mensajeDeError(err, 'Error al actualizar estado')),
   })
 
   useEffect(() => {
@@ -54,15 +47,16 @@ function StatusQuickChange({ project }: { project: Project }) {
   const currentStatus = isOverdue(project) ? 'Vencido' : (project.estado_ID?.name ?? '')
 
   return (
-    <div ref={ref} className="relative inline-flex" onClick={e => e.stopPropagation()}>
+    <div ref={ref} className="relative z-10 inline-flex" onClick={e => e.stopPropagation()}>
       <button
         onClick={() => setOpen(v => !v)}
         disabled={isPending}
         className={cn(
           'flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all',
-          STATUS_STYLE[currentStatus] ?? 'bg-muted text-muted-foreground',
+          claseEtiqueta,
           'hover:ring-2 hover:ring-offset-1 hover:ring-current/30 cursor-pointer',
         )}
+        style={conColor(colorDeEstado(isOverdue(project), project.estado_ID))}
         title="Cambiar estado"
       >
         {isPending ? <RefreshCw size={9} className="animate-spin" /> : <Zap size={9} />}
@@ -80,24 +74,34 @@ function StatusQuickChange({ project }: { project: Project }) {
             {estados.map(e => (
               <button
                 key={e.estado_ID}
-                onClick={() => mutate(e.estado_ID)}
+                onClick={() => {
+                  if (ESTADOS_CON_MOTIVO.includes(e.name) && e.estado_ID !== project.estado_ID?.estado_ID) {
+                    setOpen(false)
+                    setConMotivo(e)
+                  } else {
+                    mutate({ estadoId: e.estado_ID })
+                  }
+                }}
                 className={cn(
                   'flex items-center gap-2 w-full px-3 py-2 text-[11px] font-medium text-left hover:bg-accent transition-colors',
                   e.estado_ID === project.estado_ID?.estado_ID && 'bg-accent',
                 )}
               >
-                <span className={cn(
-                  'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                  e.name === 'Completado' ? 'bg-emerald-400' :
-                  e.name === 'En progreso' ? 'bg-blue-400' :
-                  e.name === 'Cancelado' ? 'bg-red-300' : 'bg-muted-foreground/40',
-                )} />
+                <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', claseRelleno)} style={conColor(e.color)} />
                 {e.name}
               </button>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
+      {conMotivo && (
+        <RazonModal
+          title={`Pasar a ${conMotivo.name}`}
+          description="Indique el motivo; queda en el historial del proyecto."
+          onConfirm={razon => { mutate({ estadoId: conMotivo.estado_ID, razon }); setConMotivo(null) }}
+          onClose={() => setConMotivo(null)}
+        />
+      )}
     </div>
   )
 }
@@ -109,7 +113,7 @@ function StatCard({ icon: Icon, value, label, color, alert }: {
     <div className={cn(
       'flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold',
       alert
-        ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400'
+        ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400'
         : 'bg-card border-border text-muted-foreground',
     )}>
       <Icon size={12} className={alert ? '' : color} />
@@ -164,15 +168,15 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
         {/* Prev / Next */}
         {images.length > 1 && (
           <>
-            <button
+            <button aria-label="Foto anterior"
               onClick={prev}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronLeft size={12} />
             </button>
-            <button
+            <button aria-label="Foto siguiente"
               onClick={next}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 transition-opacity hover:bg-black/70"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity hover:bg-black/70"
             >
               <ChevronRight size={12} />
             </button>
@@ -181,7 +185,7 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
 
         {/* Contador */}
         {images.length > 1 && (
-          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full opacity-0 group-hover/car:opacity-100 transition-opacity pointer-events-none">
+          <div className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity pointer-events-none">
             {idx + 1}/{images.length}
           </div>
         )}
@@ -192,6 +196,8 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
             {images.map((_, i) => (
               <button
                 key={i}
+                aria-label={`Foto ${i + 1}`}
+                aria-current={i === idx}
                 onClick={e => { e.stopPropagation(); setIdx(i) }}
                 className={cn(
                   'w-1.5 h-1.5 rounded-full transition-all',
@@ -203,7 +209,7 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
         )}
 
         {/* Zoom hint */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/car:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/car:opacity-100 focus-visible:opacity-100 group-focus-within/car:opacity-100 transition-opacity pointer-events-none">
           <div className="bg-black/30 rounded-full p-2">
             <ImageIcon size={14} className="text-white" />
           </div>
@@ -225,7 +231,6 @@ function ImageCarousel({ images }: { images: Array<{ imagen_ID: string; url: str
 
 // ── Vista lista ──────────────────────────────────────────────────────────────
 function ProjectListRow({ project }: { project: Project }) {
-  const navigate  = useNavigate()
   const overdue   = isOverdue(project)
   const status    = overdue ? 'Vencido' : project.estado_ID?.name
   const days      = project.fecha_entrega ? daysUntil(project.fecha_entrega) : null
@@ -240,42 +245,34 @@ function ProjectListRow({ project }: { project: Project }) {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
-        onClick={() => navigate(`/projects/${project.proyect_ID}`)}
-        className="flex items-center gap-4 px-5 py-3 hover:bg-accent/50 transition-colors cursor-pointer group border-b border-border last:border-0"
+        className="relative flex items-center gap-4 px-5 py-3 hover:bg-accent/50 transition-colors cursor-pointer group border-b border-border last:border-0 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
       >
         {/* Thumbnail o barra de color */}
         {thumbnail ? (
-          <div className="relative flex-shrink-0">
+          <button type="button" aria-label={`Ver las fotos de ${project.name}`} onClick={() => setLightbox(0)} className="relative z-10 flex-shrink-0 rounded-xl">
             <img
               src={thumbnail}
               alt=""
               className="w-11 h-11 rounded-xl object-cover border border-border"
-              onClick={e => { e.stopPropagation(); setLightbox(0) }}
             />
             {imgCount > 1 && (
               <span className="absolute -bottom-1 -right-1 bg-ocean-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {imgCount > 9 ? '9+' : imgCount}
               </span>
             )}
-          </div>
+          </button>
         ) : (
-          <div className={cn(
-            'w-1 h-9 rounded-full flex-shrink-0',
-            overdue ? 'bg-red-400' :
-            status === 'En progreso' ? 'bg-blue-400' :
-            status === 'Completado'  ? 'bg-emerald-400' :
-            status === 'Cancelado'   ? 'bg-red-300' : 'bg-muted-foreground/30',
-          )} />
+          <div className={cn('w-1 h-9 rounded-full flex-shrink-0', claseRelleno)} style={conColor(colorDeEstado(overdue, project.estado_ID))} />
         )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">
+            <Link to={`/projects/${project.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
               {project.name}
-            </span>
+            </Link>
             <StatusQuickChange project={project} />
             {project.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                 {project.prioridad_ID.name}
               </span>
             )}
@@ -289,8 +286,8 @@ function ProjectListRow({ project }: { project: Project }) {
           {days !== null && status !== 'Completado' && status !== 'Cancelado' && (
             <span className={cn(
               'hidden md:block px-2 py-0.5 rounded-full text-[10px] font-medium',
-              overdue ? 'bg-red-50 text-red-500 dark:bg-red-500/10' :
-              days <= 3 ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' :
+              overdue ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
+              days <= 3 ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400' :
               'bg-muted text-muted-foreground',
             )}>
               {overdue ? `Vencido ${Math.abs(days)}d` : days === 0 ? 'Vence hoy' : `${days}d`}
@@ -315,7 +312,6 @@ function ProjectListRow({ project }: { project: Project }) {
 
 // ── Vista grid ───────────────────────────────────────────────────────────────
 function ProjectGridCard({ project }: { project: Project }) {
-  const navigate = useNavigate()
   const qc       = useQueryClient()
   const overdue  = isOverdue(project)
   const images   = project.images ?? []
@@ -328,6 +324,7 @@ function ProjectGridCard({ project }: { project: Project }) {
     if (!files.length) return
     if (fileInputRef.current) fileInputRef.current.value = ''
     let done = 0, failed = 0
+    let ultimoError: unknown = null
     setUploadProgress({ current: 0, total: files.length })
     for (const file of files) {
       try {
@@ -335,12 +332,12 @@ function ProjectGridCard({ project }: { project: Project }) {
         done++
         setUploadProgress({ current: done, total: files.length })
         qc.invalidateQueries({ queryKey: ['projects'] })
-      } catch { failed++ }
+      } catch (err) { failed++; ultimoError = err }
     }
     setUploadProgress(null)
     if (done > 0 && failed === 0) toast.success(done > 1 ? `${done} fotos subidas` : 'Foto subida')
-    else if (done > 0) toast.success(`${done} subidas, ${failed} fallaron`)
-    else toast.error('Error al subir fotos')
+    else if (done > 0) toast.warning(`${done} subidas, ${failed} fallaron`, { description: mensajeDeError(ultimoError, '') })
+    else toast.error(mensajeDeError(ultimoError, 'Error al subir fotos'))
   }
 
   return (
@@ -349,8 +346,7 @@ function ProjectGridCard({ project }: { project: Project }) {
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={() => navigate(`/projects/${project.proyect_ID}`)}
-      className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group relative"
+      className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
     >
       <input
         ref={fileInputRef}
@@ -363,14 +359,14 @@ function ProjectGridCard({ project }: { project: Project }) {
 
       {/* Imagen / zona vacía */}
       {images.length > 0 ? (
-        <div className="relative">
+        <div className="relative z-10">
           <ImageCarousel images={images} />
           {/* Botón subir más fotos */}
           <button
             onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
             disabled={!!uploadProgress}
             title="Subir más fotos"
-            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 disabled:opacity-40 z-10"
+            className="absolute top-2 left-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity hover:bg-black/70 disabled:opacity-40 z-10"
           >
             {uploadProgress
               ? <RefreshCw size={11} className="animate-spin" />
@@ -379,28 +375,30 @@ function ProjectGridCard({ project }: { project: Project }) {
           </button>
         </div>
       ) : (
-        <div
-          className="h-20 bg-gradient-to-br from-ocean-500/10 via-ocean-500/5 to-transparent flex items-center justify-center border-b border-border/50 group/empty"
-          onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+        <button
+          type="button"
+          className="relative z-10 w-full h-20 bg-gradient-to-br from-ocean-500/10 via-ocean-500/5 to-transparent flex items-center justify-center border-b border-border/50 group/empty"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!!uploadProgress}
         >
           {uploadProgress ? (
-            <div className="flex items-center gap-1.5 text-ocean-500">
+            <div className="flex items-center gap-1.5 text-ocean-500 dark:text-ocean-200">
               <RefreshCw size={13} className="animate-spin" />
               <span className="text-[10px] font-medium">{uploadProgress.current}/{uploadProgress.total}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-muted-foreground/40 group-hover/empty:text-ocean-500 transition-colors">
+            <div className="flex items-center gap-1.5 text-muted-foreground group-hover/empty:text-ocean-500 dark:group-hover/empty:text-ocean-200 transition-colors">
               <ImageIcon size={14} />
               <span className="text-[10px] font-medium">Agregar foto</span>
             </div>
           )}
-        </div>
+        </button>
       )}
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1.5">
-          <h3 className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors line-clamp-2 flex-1">
-            {project.name}
+          <h3 className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 flex-1">
+            <Link to={`/projects/${project.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{project.name}</Link>
           </h3>
           <StatusQuickChange project={project} />
         </div>
@@ -412,7 +410,7 @@ function ProjectGridCard({ project }: { project: Project }) {
         <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-2">
           <span className="truncate">{project.departamento_ID?.name}</span>
           {project.fecha_entrega && (
-            <span className={cn('font-medium flex-shrink-0', overdue ? 'text-red-500' : '')}>
+            <span className={cn('font-medium flex-shrink-0', overdue ? 'text-red-700 dark:text-red-400' : '')}>
               {formatDate(project.fecha_entrega)}
             </span>
           )}
@@ -421,7 +419,7 @@ function ProjectGridCard({ project }: { project: Project }) {
         {(project.prioridad_ID?.name || images.length > 0) && (
           <div className="mt-2.5 pt-2.5 border-t border-border flex items-center justify-between">
             {project.prioridad_ID?.name ? (
-              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                 {project.prioridad_ID.name}
               </span>
             ) : <span />}
@@ -438,20 +436,13 @@ function ProjectGridCard({ project }: { project: Project }) {
 }
 
 // ── Vista kanban ─────────────────────────────────────────────────────────────
-const KANBAN_COLS = ['Pendiente', 'En progreso', 'Completado', 'Cancelado'] as const
-
-function KanbanCol({ status, projects }: { status: string; projects: Project[] }) {
-  const navigate = useNavigate()
+function KanbanCol({ estado, projects }: { estado: Estado; projects: Project[] }) {
 
   return (
     <div className="flex flex-col min-w-[240px] max-w-[280px] flex-1">
       <div className="flex items-center gap-2 mb-3 px-1">
-        <span className={cn('w-2 h-2 rounded-full flex-shrink-0',
-          status === 'En progreso' ? 'bg-blue-400' :
-          status === 'Completado'  ? 'bg-emerald-400' :
-          status === 'Cancelado'   ? 'bg-red-300' : 'bg-muted-foreground/40',
-        )} />
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{status}</span>
+        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', claseRelleno)} style={conColor(estado.color)} />
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{estado.name}</span>
         <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{projects.length}</span>
       </div>
       <div className="space-y-2 flex-1">
@@ -462,8 +453,7 @@ function KanbanCol({ status, projects }: { status: string; projects: Project[] }
           return (
             <div
               key={p.proyect_ID}
-              onClick={() => navigate(`/projects/${p.proyect_ID}`)}
-              className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:border-ocean-300 dark:hover:border-ocean-500/40 hover:shadow-sm transition-all group"
+              className="relative bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:border-ocean-300 dark:hover:border-ocean-500/40 hover:shadow-sm transition-all group focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
             >
               {imgs.length > 0 ? (
                 <div className="h-24 overflow-hidden relative bg-muted">
@@ -471,7 +461,6 @@ function KanbanCol({ status, projects }: { status: string; projects: Project[] }
                     src={imgs[0].url}
                     alt=""
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onClick={e => e.stopPropagation()}
                   />
                   {imgs.length > 1 && (
                     <span className="absolute top-1.5 right-1.5 bg-black/50 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
@@ -481,16 +470,16 @@ function KanbanCol({ status, projects }: { status: string; projects: Project[] }
                 </div>
               ) : null}
               <div className="p-3">
-                <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 transition-colors line-clamp-2 mb-1.5">{p.name}</p>
+                <p className="text-xs font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors line-clamp-2 mb-1.5"><Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link></p>
                 <div className="flex items-center justify-between gap-1">
                   {p.prioridad_ID?.name && (
-                    <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', PRIORITY_STYLE[p.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                    <span className={cn('text-[9px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
                       {p.prioridad_ID.name}
                     </span>
                   )}
-                  {days !== null && status !== 'Completado' && status !== 'Cancelado' && (
+                  {days !== null && estado.name !== 'Completado' && estado.name !== 'Cancelado' && (
                     <span className={cn('text-[9px] font-medium ml-auto',
-                      od ? 'text-red-500' : days <= 3 ? 'text-amber-500' : 'text-muted-foreground',
+                      od ? 'text-red-700 dark:text-red-400' : days <= 3 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
                     )}>
                       {od ? `+${Math.abs(days)}d` : days === 0 ? 'Hoy' : `${days}d`}
                     </span>
@@ -507,7 +496,7 @@ function KanbanCol({ status, projects }: { status: string; projects: Project[] }
         })}
         {projects.length === 0 && (
           <div className="border-2 border-dashed border-border rounded-xl p-4 text-center">
-            <p className="text-[10px] text-muted-foreground/50">Sin proyectos</p>
+            <p className="text-[10px] text-muted-foreground">Sin proyectos</p>
           </div>
         )}
       </div>
@@ -517,6 +506,8 @@ function KanbanCol({ status, projects }: { status: string; projects: Project[] }
 
 // ── Página principal ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  useTituloDePagina('Proyectos')
+  const marca = useMarca()
   const navigate  = useNavigate()
   const { user }  = useAppStore()
   const [params, setParams] = useSearchParams()
@@ -527,14 +518,22 @@ export default function DashboardPage() {
   const sortBy   = params.get('orden') ?? 'reciente'
   const view     = (params.get('vista') ?? 'list') as 'list' | 'grid' | 'kanban'
   const mineOnly = params.get('mios') === '1'
+  const pagina   = Math.max(1, Number(params.get('pagina') ?? '1') || 1)
 
   const setParam = (key: string, val: string, def: string) => {
     setParams(prev => {
       const next = new URLSearchParams(prev)
       if (val === def) next.delete(key)
       else next.set(key, val)
+      // Cambiar un filtro, el orden o la vista vuelve a la primera página.
+      if (key !== 'pagina') next.delete('pagina')
       return next
     }, { replace: true })
+  }
+  const setPagina = (n: number) => {
+    setParam('pagina', String(n), '1')
+    // La lista vive en el <main> con scroll propio: al cambiar de página se vuelve arriba.
+    document.querySelector('main')?.scrollTo({ top: 0 })
   }
   const setSearch   = (v: string) => setParam('q', v, '')
   const setStatus   = (v: string) => setParam('estado', v, 'Todos')
@@ -543,82 +542,63 @@ export default function DashboardPage() {
   const setView     = (v: string) => setParam('vista', v, 'list')
   const setMineOnly = (fn: (prev: boolean) => boolean) => setParam('mios', fn(mineOnly) ? '1' : '', '')
 
-  const { data: projects = [], isLoading, refetch } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  // Filtros, orden y paginación los resuelve el servidor (antes se bajaban los primeros 200 y se
+  // filtraba en el navegador, así que con más proyectos los resultados quedaban incompletos).
+  const busqueda = useValorDiferido(search.trim())
+  const filtros = {
+    ...(busqueda && { search: busqueda }),
+    ...(status !== 'Todos' && { estado: status }),
+    ...(priority !== 'Todas' && { prioridad: priority }),
+    ...(mineOnly && { mios: '1' }),
+    orden: sortBy,
+  }
+  const porPagina = view === 'kanban' ? 100 : 24
+  const { data: paginaActual, isLoading, refetch, isError, error, isPlaceholderData } = useQuery({
+    queryKey: ['projects', 'dashboard', filtros, pagina, porPagina],
+    queryFn: () => getProyectosPagina({ ...filtros, page: pagina, page_size: porPagina }),
+    placeholderData: keepPreviousData,
   })
+  const displayed = useMemo(() => paginaActual?.results ?? [], [paginaActual])
+  const totalFiltrado = paginaActual?.count ?? 0
+  const totalPaginas = Math.max(1, Math.ceil(totalFiltrado / porPagina))
+
+  // Totales de todos los proyectos visibles, sin filtros.
+  const { data: resumen } = useQuery({ queryKey: ['projects', 'resumen'], queryFn: () => getResumenProyectos() })
 
   const { data: estados = [] }     = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: prioridades = [] } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades, staleTime: 300_000 })
 
   const [showChart, setShowChart] = useState(false)
 
-  const stats = useMemo(() => {
-    const total      = projects.length
-    const completado = projects.filter(p => p.estado_ID?.name === 'Completado').length
-    return {
-      total,
-      enProgreso: projects.filter(p => p.estado_ID?.name === 'En progreso').length,
-      completado,
-      vencidos:   projects.filter(isOverdue).length,
-      pct: total ? Math.round((completado / total) * 100) : 0,
-    }
-  }, [projects])
+  const stats = {
+    total:      resumen?.total ?? 0,
+    enProgreso: resumen?.en_progreso ?? 0,
+    completado: resumen?.completados ?? 0,
+    vencidos:   resumen?.vencidos ?? 0,
+    pct:        resumen?.porcentaje_completado ?? 0,
+  }
 
-  const deptChartData = useMemo(() => {
-    const map: Record<string, { total: number; completado: number }> = {}
-    projects.forEach(p => {
-      const dept = p.departamento_ID?.name ?? 'Sin depto.'
-      if (!map[dept]) map[dept] = { total: 0, completado: 0 }
-      map[dept].total++
-      if (p.estado_ID?.name === 'Completado') map[dept].completado++
-    })
-    return Object.entries(map)
-      .map(([name, v]) => ({ name: name.length > 14 ? name.slice(0, 13) + '…' : name, total: v.total, completado: v.completado }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8)
-  }, [projects])
-
-  const displayed = useMemo(() => {
-    let r = [...projects]
-    if (mineOnly) r = r.filter(p => p.user_ID?.user_ID === user?.user_ID)
-    if (status === 'Vencido')    r = r.filter(isOverdue)
-    else if (status !== 'Todos') r = r.filter(p => p.estado_ID?.name === status && !isOverdue(p))
-    if (priority !== 'Todas')    r = r.filter(p => p.prioridad_ID?.name === priority)
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      r = r.filter(p =>
-        p.name?.toLowerCase().includes(q) ||
-        p.descripcion?.toLowerCase().includes(q) ||
-        p.departamento_ID?.name?.toLowerCase().includes(q) ||
-        `${p.user_ID?.first_name} ${p.user_ID?.last_name}`.toLowerCase().includes(q),
-      )
-    }
-    if (sortBy === 'nombre')      r.sort((a, b) => a.name.localeCompare(b.name))
-    else if (sortBy === 'entrega')  r.sort((a, b) => { if (!a.fecha_entrega) return 1; if (!b.fecha_entrega) return -1; return new Date(a.fecha_entrega).getTime() - new Date(b.fecha_entrega).getTime() })
-    else if (sortBy === 'prioridad') r.sort((a, b) => (PRIORITY_ORDER[a.prioridad_ID?.name] ?? 9) - (PRIORITY_ORDER[b.prioridad_ID?.name] ?? 9))
-    else r.sort((a, b) => b.proyect_ID.localeCompare(a.proyect_ID))
-    return r
-  }, [projects, status, priority, search, sortBy, mineOnly, user?.user_ID])
+  const deptChartData = (resumen?.por_departamento ?? []).map(d => ({
+    name: d.name.length > 14 ? d.name.slice(0, 13) + '…' : d.name, total: d.total, completado: d.completados,
+  }))
 
   const hasFilters = search || status !== 'Todos' || priority !== 'Todas' || mineOnly
   const clearFilters = () => { setSearch(''); setStatus('Todos'); setPriority('Todas'); setMineOnly(() => false) }
 
+  // Una columna por estado de Configuración; los vencidos quedan en su estado real, marcados en la tarjeta.
   const kanbanByStatus = useMemo(() => {
     const grouped: Record<string, Project[]> = {}
-    KANBAN_COLS.forEach(col => { grouped[col] = [] })
-    displayed.forEach(p => {
-      const s = isOverdue(p) ? 'Pendiente' : (p.estado_ID?.name ?? 'Pendiente')
-      if (grouped[s]) grouped[s].push(p)
-      else grouped['Pendiente'].push(p)
-    })
+    estados.forEach(e => { grouped[e.estado_ID] = [] })
+    displayed.forEach(p => { grouped[p.estado_ID?.estado_ID ?? '']?.push(p) })
     return grouped
-  }, [displayed])
+  }, [displayed, estados])
 
   const greeting = () => {
     const h = new Date().getHours()
     return h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches'
   }
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
 
   return (
     <div className="flex flex-col h-full">
@@ -633,9 +613,9 @@ export default function DashboardPage() {
             {greeting()}, {user?.first_name ?? 'Usuario'}
           </h1>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">Municipalidad de Puntarenas</span>
+            <span className="text-xs text-muted-foreground">{marca.nombre}</span>
             {stats.pct > 0 && !isLoading && (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">
                 <TrendingUp size={9} /> {stats.pct}% completado
               </span>
             )}
@@ -643,7 +623,7 @@ export default function DashboardPage() {
         </div>
         {!isLoading && (
           <div className="hidden lg:flex items-center gap-2">
-            <StatCard icon={FolderOpen}   value={stats.total}      label="Total"       color="text-ocean-500" />
+            <StatCard icon={FolderOpen}   value={stats.total}      label="Total"       color="text-ocean-500 dark:text-ocean-200" />
             <StatCard icon={Clock}        value={stats.enProgreso}  label="En progreso" color="text-blue-500" />
             <StatCard icon={CheckCircle2} value={stats.completado}  label="Completados" color="text-emerald-500" />
             {stats.vencidos > 0 && <StatCard icon={AlertTriangle} value={stats.vencidos} label="Vencidos" color="" alert />}
@@ -673,21 +653,23 @@ export default function DashboardPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar proyectos..."
-            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+            aria-label="Buscar proyectos"
+            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button aria-label="Borrar la búsqueda" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               <X size={12} />
             </button>
           )}
         </div>
 
         {[
-          { value: status,   onChange: setStatus,   opts: ['Todos', ...estados.map(e => e.name), 'Vencido'] },
-          { value: priority, onChange: setPriority, opts: ['Todas', ...prioridades.map(p => p.name)] },
+          { value: status,   onChange: setStatus,   etiqueta: 'Filtrar por estado',    opts: ['Todos', ...estados.map(e => e.name), 'Vencido'] },
+          { value: priority, onChange: setPriority, etiqueta: 'Filtrar por prioridad', opts: ['Todas', ...prioridades.map(p => p.name)] },
         ].map((f, i) => (
           <div key={i} className="relative flex-shrink-0">
             <select
+              aria-label={f.etiqueta}
               value={f.value}
               onChange={e => f.onChange(e.target.value)}
               className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -700,6 +682,7 @@ export default function DashboardPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Ordenar"
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -721,7 +704,7 @@ export default function DashboardPage() {
         <div className="flex-1" />
 
         {hasFilters && (
-          <span className="text-xs text-muted-foreground flex-shrink-0">{displayed.length} resultado{displayed.length !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-muted-foreground flex-shrink-0">{totalFiltrado} resultado{totalFiltrado !== 1 ? 's' : ''}</span>
         )}
 
         <button
@@ -743,7 +726,7 @@ export default function DashboardPage() {
             { v: 'grid',   icon: <LayoutGrid size={13} /> },
             { v: 'kanban', icon: <Columns3 size={13} /> },
           ] as const).map(({ v, icon }, i) => (
-            <button
+            <button aria-label={v === 'list' ? 'Vista de lista' : v === 'grid' ? 'Vista de cuadrícula' : 'Vista de tablero'} aria-pressed={view === v}
               key={v}
               onClick={() => setView(v)}
               className={cn('px-2.5 py-1.5 transition-colors', i > 0 ? 'border-l border-border' : '',
@@ -754,7 +737,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <button onClick={() => refetch()} className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
+        <button aria-label="Actualizar" onClick={() => refetch()} className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
           <RefreshCw size={13} />
         </button>
 
@@ -813,8 +796,8 @@ export default function DashboardPage() {
             <AnimatePresence mode="popLayout">
               {view === 'kanban' ? (
                 <motion.div key="kanban" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]">
-                  {KANBAN_COLS.map(col => (
-                    <KanbanCol key={col} status={col} projects={kanbanByStatus[col] ?? []} />
+                  {estados.map(e => (
+                    <KanbanCol key={e.estado_ID} estado={e} projects={kanbanByStatus[e.estado_ID] ?? []} />
                   ))}
                 </motion.div>
               ) : view === 'grid' ? (
@@ -827,11 +810,32 @@ export default function DashboardPage() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {view !== 'kanban' && (
-              <p className="text-xs text-muted-foreground text-center pt-4">
-                {displayed.length}{projects.length !== displayed.length ? ` de ${projects.length}` : ''} proyecto{displayed.length !== 1 ? 's' : ''}
-              </p>
-            )}
+            <nav className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground" aria-label="Páginas de proyectos">
+              <span>
+                {view === 'kanban' && totalFiltrado > displayed.length
+                  ? `Se muestran los ${displayed.length} más ${sortBy === 'reciente' ? 'recientes' : 'arriba en el orden elegido'} de ${totalFiltrado}. Use los filtros para acotar.`
+                  : `${(pagina - 1) * porPagina + 1}–${(pagina - 1) * porPagina + displayed.length} de ${totalFiltrado} proyecto${totalFiltrado !== 1 ? 's' : ''}`}
+              </span>
+              {view !== 'kanban' && totalPaginas > 1 && (
+                <span className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setPagina(pagina - 1)}
+                    disabled={pagina <= 1 || isPlaceholderData}
+                    className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40"
+                  >
+                    Anterior
+                  </button>
+                  <span aria-current="page">Página {pagina} de {totalPaginas}</span>
+                  <button
+                    onClick={() => setPagina(pagina + 1)}
+                    disabled={pagina >= totalPaginas || isPlaceholderData}
+                    className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40"
+                  >
+                    Siguiente
+                  </button>
+                </span>
+              )}
+            </nav>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -843,7 +847,7 @@ export default function DashboardPage() {
               {search ? 'Ningún proyecto coincide.' : 'No hay proyectos con ese filtro.'}
             </p>
             {hasFilters
-              ? <button onClick={clearFilters} className="text-xs text-ocean-500 hover:underline">Ver todos</button>
+              ? <button onClick={clearFilters} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Ver todos</button>
               : <button onClick={() => navigate('/projects/new')} className="flex items-center gap-2 px-4 py-2 bg-ocean-500 text-white text-sm font-semibold rounded-xl hover:bg-ocean-600 transition-all"><Plus size={13} /> Crear proyecto</button>
             }
           </div>

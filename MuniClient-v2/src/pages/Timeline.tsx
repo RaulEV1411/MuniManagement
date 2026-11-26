@@ -1,24 +1,13 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { GanttChartSquare, ChevronDown } from 'lucide-react'
-import { getProjects, getDepartments } from '@/lib/api'
-import { type Project, type Department } from '@/types'
+import { getProjects, getDepartments, getEstados } from '@/lib/api'
+import { type Project, type Department, type Estado } from '@/types'
 import { cn, isOverdue } from '@/lib/utils'
-
-const STATUS_COLOR: Record<string, string> = {
-  'Completado':  'bg-emerald-500',
-  'En progreso': 'bg-blue-500',
-  'Pendiente':   'bg-muted-foreground/40',
-  'Cancelado':   'bg-red-400',
-  'Vencido':     'bg-red-500',
-}
-
-const PRIORITY_BORDER: Record<string, string> = {
-  'Alta':  'border-l-4 border-red-400',
-  'Media': 'border-l-4 border-amber-400',
-  'Baja':  'border-l-4 border-emerald-400',
-}
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { COLOR_VENCIDO, claseRelleno, colorDeEstado, conColor, textoSobre } from '@/lib/colores'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 function toDate(s: string | null | undefined): Date | null {
   if (!s) return null
@@ -35,22 +24,20 @@ function diffDays(a: Date, b: Date) {
 }
 
 export default function TimelinePage() {
-  const navigate = useNavigate()
+  useTituloDePagina('Cronograma')
   const [deptFilter, setDeptFilter] = useState('')
 
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
+    queryKey: ['projects', 'timeline', deptFilter],
+    queryFn: () => getProjects({ ...(deptFilter && { departamento: deptFilter }), orden: 'entrega' }),
   })
+  const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
 
-  const filtered = useMemo(() => {
-    if (!deptFilter) return projects
-    return projects.filter(p => p.departamento_ID?.departamentos_ID === deptFilter)
-  }, [projects, deptFilter])
+  const filtered = projects
 
   const { start, end, days } = useMemo(() => {
     const dates: Date[] = []
@@ -92,6 +79,8 @@ export default function TimelinePage() {
     return result
   }, [start, end, days])
 
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -100,13 +89,14 @@ export default function TimelinePage() {
           <GanttChartSquare size={16} className="text-white" />
         </div>
         <div className="flex-1">
-          <h1 className="text-base font-bold text-foreground">Timeline de proyectos</h1>
+          <h1 className="text-base font-bold text-foreground">Cronograma de proyectos</h1>
           {!isLoading && (
             <p className="text-xs text-muted-foreground">{filtered.length} proyecto{filtered.length !== 1 ? 's' : ''}</p>
           )}
         </div>
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por departamento"
             value={deptFilter}
             onChange={e => setDeptFilter(e.target.value)}
             className="pl-2.5 pr-7 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
@@ -152,18 +142,17 @@ export default function TimelinePage() {
             {/* Filas de proyectos */}
             <div className="space-y-1.5 relative">
               {/* Línea de hoy */}
+              {/* Se ubica sobre la zona de barras (sin la columna de nombres de 12rem). */}
               {hasToday && (
-                <div
-                  className="absolute top-0 bottom-0 w-px bg-red-400/70 z-10 ml-48"
-                  style={{ left: `calc(${todayOffset}% * (100% - 12rem) / 100 + 12rem)` }}
-                />
+                <div className="absolute inset-y-0 left-48 right-0 pointer-events-none z-10">
+                  <div className="absolute top-0 bottom-0 w-px bg-red-400/70" style={{ left: `${todayOffset}%` }} />
+                </div>
               )}
 
               {filtered.map(p => {
                 const s   = toDate(p.fecha_inicio)
                 const e   = toDate(p.fecha_entrega)
                 const od  = isOverdue(p)
-                const statusName = od ? 'Vencido' : p.estado_ID?.name ?? 'Pendiente'
 
                 let leftPct  = 0
                 let widthPct = 5
@@ -180,13 +169,12 @@ export default function TimelinePage() {
                 return (
                   <div
                     key={p.proyect_ID}
-                    className="flex items-center gap-0 h-10 group cursor-pointer"
-                    onClick={() => navigate(`/projects/${p.proyect_ID}`)}
+                    className="relative flex items-center gap-0 h-10 group cursor-pointer rounded-lg focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
                   >
                     {/* Nombre */}
                     <div className="w-48 flex-shrink-0 pr-3 flex items-center">
-                      <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 transition-colors truncate">
-                        {p.name}
+                      <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
+                        <Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link>
                       </p>
                     </div>
 
@@ -196,12 +184,18 @@ export default function TimelinePage() {
                         <div
                           className={cn(
                             'absolute h-full rounded-lg flex items-center px-2 transition-all group-hover:opacity-90 overflow-hidden',
-                            STATUS_COLOR[statusName] ?? 'bg-muted-foreground/30',
-                            p.prioridad_ID?.name ? PRIORITY_BORDER[p.prioridad_ID.name] ?? '' : '',
+                            claseRelleno,
+                            p.prioridad_ID && 'border-l-4',
                           )}
-                          style={{ left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8 }}
+                          style={{
+                            ...conColor(colorDeEstado(od, p.estado_ID)),
+                            color: textoSobre(colorDeEstado(od, p.estado_ID) ?? '#64748b'),
+                            left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8,
+                            borderLeftColor: p.prioridad_ID?.color,
+                          }}
+                          title={`${p.name} · ${od ? 'Vencido' : p.estado_ID?.name ?? ''} · prioridad ${p.prioridad_ID?.name ?? '—'}`}
                         >
-                          <span className="text-[9px] font-semibold text-white truncate hidden sm:block">
+                          <span className="text-[9px] font-semibold truncate hidden sm:block">
                             {p.departamento_ID?.name}
                           </span>
                         </div>
@@ -214,10 +208,10 @@ export default function TimelinePage() {
 
             {/* Leyenda */}
             <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border flex-wrap">
-              {Object.entries(STATUS_COLOR).map(([s, cls]) => (
-                <div key={s} className="flex items-center gap-1.5">
-                  <div className={cn('w-3 h-3 rounded-sm', cls)} />
-                  <span className="text-[10px] text-muted-foreground">{s}</span>
+              {[...estados.map(e => ({ name: e.name, color: e.color })), { name: 'Vencido', color: COLOR_VENCIDO }].map(s => (
+                <div key={s.name} className="flex items-center gap-1.5">
+                  <div className={cn('w-3 h-3 rounded-sm', claseRelleno)} style={conColor(s.color)} />
+                  <span className="text-[10px] text-muted-foreground">{s.name}</span>
                 </div>
               ))}
               {hasToday && (

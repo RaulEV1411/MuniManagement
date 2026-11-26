@@ -9,18 +9,11 @@ import {
 } from '@/lib/api'
 import { type Tipo, type Estado, type Prioridad, type Department, type User } from '@/types'
 import { cn, formatDate, fullName } from '@/lib/utils'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { claseEtiqueta, conColor } from '@/lib/colores'
+import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
 
 interface FormData {
   name: string
@@ -33,6 +26,7 @@ interface FormData {
   prioridad_ID: string
   departamento_ID: string
   user_ID: string
+  es_publico: boolean
 }
 
 const INITIAL: FormData = {
@@ -46,6 +40,7 @@ const INITIAL: FormData = {
   prioridad_ID: '',
   departamento_ID: '',
   user_ID: '',
+  es_publico: false,
 }
 
 const STEP_LABELS = ['Básico', 'Planificación', 'Asignación']
@@ -58,25 +53,25 @@ const slideVariants = {
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-muted-foreground">
+    <label className="block space-y-1.5">
+      <span className="block text-xs font-semibold text-muted-foreground">
         {label} {required && <span className="text-destructive">*</span>}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   )
 }
 
-const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all'
+const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all'
 
-function SummaryRow({ label, value, badge, badgeStyle }: {
-  label: string; value: string; badge?: boolean; badgeStyle?: string
+function SummaryRow({ label, value, badge, color }: {
+  label: string; value: string; badge?: boolean; color?: string
 }) {
   return (
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0">
       <span className="text-xs text-muted-foreground">{label}</span>
       {badge ? (
-        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', badgeStyle ?? 'bg-muted text-muted-foreground')}>
+        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(color)}>
           {value}
         </span>
       ) : (
@@ -87,22 +82,43 @@ function SummaryRow({ label, value, badge, badgeStyle }: {
 }
 
 export default function ProjectCreatePage() {
+  useTituloDePagina('Nuevo proyecto')
+  const { formatear, simbolo } = useMoneda()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [loading, setLoading] = useState(false)
 
-  const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: keyof FormData, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
-  const { data: tipos = [] }       = useQuery<Tipo[]>({ queryKey: ['tipos'], queryFn: getTipos })
-  const { data: estados = [] }     = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados })
-  const { data: prioridades = [] } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
-  const { data: departments = [] } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
-  const { data: users = [] }       = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
+  const { data: tipos = [], error: errTipos }       = useQuery<Tipo[]>({ queryKey: ['tipos'], queryFn: getTipos })
+  const { data: estados = [], error: errEstados }     = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados })
+  const { data: prioridades = [], error: errPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
+  const { data: departments = [], error: errDepartments } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
+  const { data: users = [], error: errUsers }       = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
+
+  // Lo que el servidor exige, revisado en el paso donde se llena, para no enterarse al final.
+  const faltaEnPaso = (paso: number): string | null => {
+    if (paso === 0) {
+      if (!form.name.trim()) return 'El nombre es requerido'
+      if (!form.descripcion.trim()) return 'La descripción es requerida'
+    }
+    if (paso === 1) {
+      if (!form.fecha_inicio || !form.fecha_entrega) return 'Las fechas de inicio y de entrega son requeridas'
+      if (form.fecha_entrega < form.fecha_inicio) return 'La fecha de entrega no puede ser anterior a la de inicio'
+      if (form.costo === '' || Number(form.costo) < 0) return 'El costo estimado es requerido (puede ser 0)'
+    }
+    if (paso === 2) {
+      if (!form.departamento_ID) return 'Seleccione un departamento'
+      if (!form.user_ID) return 'Seleccione un responsable'
+    }
+    return null
+  }
 
   const goNext = () => {
-    if (step === 0 && !form.name.trim()) { toast.error('El nombre es requerido'); return }
+    const falta = faltaEnPaso(step)
+    if (falta) { toast.error(falta); return }
     setDir(1)
     setStep(s => s + 1)
   }
@@ -113,9 +129,13 @@ export default function ProjectCreatePage() {
   }
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { toast.error('El nombre es requerido'); return }
-    if (!form.departamento_ID) { toast.error('Selecciona un departamento'); return }
-    if (!form.user_ID) { toast.error('Selecciona un responsable'); return }
+    for (const paso of [0, 1, 2]) {
+      const falta = faltaEnPaso(paso)
+      if (falta) { toast.error(falta); setStep(paso); return }
+    }
+    // Si no se eligió, el proyecto arranca Pendiente y con prioridad Media.
+    const estadoPorDefecto = estados.find(e => e.name === 'Pendiente')?.estado_ID
+    const prioridadPorDefecto = prioridades.find(p => p.name === 'Media')?.prioridad_ID
 
     setLoading(true)
     try {
@@ -125,16 +145,17 @@ export default function ProjectCreatePage() {
         tipos_ID: form.tipos_ID || undefined,
         fecha_inicio: form.fecha_inicio || undefined,
         fecha_entrega: form.fecha_entrega || undefined,
-        costo: form.costo ? parseFloat(form.costo) : undefined,
-        estado_ID: form.estado_ID || undefined,
-        prioridad_ID: form.prioridad_ID || undefined,
+        costo: form.costo ? parseFloat(form.costo) : 0,
+        estado_ID: form.estado_ID || estadoPorDefecto,
+        prioridad_ID: form.prioridad_ID || prioridadPorDefecto,
         departamento_ID: form.departamento_ID,
         user_ID: form.user_ID,
+        es_publico: form.es_publico,
       })
       toast.success('Proyecto creado exitosamente')
       navigate('/dashboard')
-    } catch {
-      toast.error('Error al crear el proyecto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear el proyecto'))
     } finally {
       setLoading(false)
     }
@@ -144,6 +165,9 @@ export default function ProjectCreatePage() {
   const selectedPrioridad = prioridades.find(p => p.prioridad_ID === form.prioridad_ID)
   const selectedDept      = departments.find(d => d.departamentos_ID === form.departamento_ID)
   const selectedUser      = users.find(u => u.user_ID === form.user_ID)
+
+  const errorDatos = errTipos ?? errEstados ?? errPrioridades ?? errDepartments ?? errUsers
+  if (errorDatos) return <ErrorDeCarga error={errorDatos} que="los datos del formulario" />
 
   return (
     <div className="flex flex-col h-full">
@@ -208,12 +232,12 @@ export default function ProjectCreatePage() {
                       autoFocus
                     />
                   </Field>
-                  <Field label="Descripción">
+                  <Field label="Descripción" required>
                     <textarea
                       value={form.descripcion}
                       onChange={e => set('descripcion', e.target.value)}
                       rows={4}
-                      placeholder="Describe el alcance y objetivos del proyecto..."
+                      placeholder="Describa el alcance y los objetivos del proyecto…"
                       className={cn(inputCls, 'resize-none')}
                     />
                   </Field>
@@ -230,14 +254,14 @@ export default function ProjectCreatePage() {
               {step === 1 && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Fecha inicio">
+                    <Field label="Fecha inicio" required>
                       <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls} />
                     </Field>
-                    <Field label="Fecha entrega">
+                    <Field label="Fecha entrega" required>
                       <input type="date" value={form.fecha_entrega} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
                     </Field>
                   </div>
-                  <Field label="Costo estimado (₡)">
+                  <Field label={`Costo estimado (${simbolo})`} required>
                     <input
                       type="number"
                       value={form.costo}
@@ -250,13 +274,13 @@ export default function ProjectCreatePage() {
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Estado">
                       <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
-                        <option value="">Seleccionar...</option>
+                        <option value="">Pendiente (por defecto)</option>
                         {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
                       </select>
                     </Field>
                     <Field label="Prioridad">
                       <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={inputCls}>
-                        <option value="">Seleccionar...</option>
+                        <option value="">Media (por defecto)</option>
                         {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
                       </select>
                     </Field>
@@ -280,6 +304,19 @@ export default function ProjectCreatePage() {
                     </select>
                   </Field>
 
+                  <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.es_publico}
+                      onChange={e => set('es_publico', e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-ocean-500"
+                    />
+                    <span>
+                      Mostrar en el portal público
+                      <span className="block text-xs text-muted-foreground">La ciudadanía verá nombre, descripción, fechas, estado, avance y fotos.</span>
+                    </span>
+                  </label>
+
                   {/* Resumen */}
                   <div className="mt-6 bg-muted/40 rounded-2xl border border-border p-4">
                     <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Resumen</h3>
@@ -287,12 +324,12 @@ export default function ProjectCreatePage() {
                     {form.descripcion && <SummaryRow label="Descripción" value={form.descripcion.slice(0, 80) + (form.descripcion.length > 80 ? '…' : '')} />}
                     {form.fecha_inicio && <SummaryRow label="Inicio" value={formatDate(form.fecha_inicio)} />}
                     {form.fecha_entrega && <SummaryRow label="Entrega" value={formatDate(form.fecha_entrega)} />}
-                    {form.costo && <SummaryRow label="Costo" value={`₡${parseFloat(form.costo).toLocaleString('es-CR')}`} />}
+                    {form.costo && <SummaryRow label="Costo" value={formatear(parseFloat(form.costo))} />}
                     {selectedEstado && (
-                      <SummaryRow label="Estado" value={selectedEstado.name} badge badgeStyle={STATUS_STYLE[selectedEstado.name]} />
+                      <SummaryRow label="Estado" value={selectedEstado.name} badge color={selectedEstado.color} />
                     )}
                     {selectedPrioridad && (
-                      <SummaryRow label="Prioridad" value={selectedPrioridad.name} badge badgeStyle={PRIORITY_STYLE[selectedPrioridad.name]} />
+                      <SummaryRow label="Prioridad" value={selectedPrioridad.name} badge color={selectedPrioridad.color} />
                     )}
                     {selectedDept && <SummaryRow label="Departamento" value={selectedDept.name} />}
                     {selectedUser && <SummaryRow label="Responsable" value={fullName(selectedUser)} />}

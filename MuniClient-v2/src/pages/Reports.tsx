@@ -1,59 +1,50 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileDown, FileSpreadsheet, Search, ChevronDown } from 'lucide-react'
-import { getProjects, getDepartments } from '@/lib/api'
-import { type Project, type Department } from '@/types'
+import { getProjects, getDepartments, getEstados } from '@/lib/api'
+import { type Project, type Department, type Estado } from '@/types'
 import { cn, formatDate, isOverdue } from '@/lib/utils'
 import { toast } from 'sonner'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
+import { claseEtiqueta, colorDeEstado, conColor } from '@/lib/colores'
+import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 
-const STATUS_BADGE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Vencido':     'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-
-const PRIORITY_BADGE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
+// Costo con los aumentos y rebajos aprobados; si el servidor no lo manda, el costo base.
+const costoTotal = (p: Project) => p.costo_total ?? p.costo ?? 0
 
 export default function ReportsPage() {
+  useTituloDePagina('Reportes')
+  const marca = useMarca()
+  const { formatear, simbolo } = useMoneda()
   const [search, setSearch]           = useState('')
   const [deptFilter, setDeptFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  // Filtra el servidor; el reporte trae todas las páginas del resultado para exportarlo completo.
+  const busqueda = useValorDiferido(search.trim())
+  const filtrosServidor = {
+    ...(deptFilter && { departamento: deptFilter }),
+    ...(statusFilter && { estado: statusFilter }),
+    ...(busqueda && { search: busqueda }),
+    orden: 'entrega',
+  }
+  const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
+    queryKey: ['projects', 'reportes', filtrosServidor],
+    queryFn: () => getProjects(filtrosServidor),
   })
+  const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
 
-  const filtered = useMemo(() => {
-    let r = projects
-    if (deptFilter) r = r.filter(p => p.departamento_ID?.departamentos_ID === deptFilter)
-    if (statusFilter) {
-      if (statusFilter === 'Vencido') r = r.filter(p => isOverdue(p))
-      else r = r.filter(p => p.estado_ID?.name === statusFilter && !isOverdue(p))
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      r = r.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.departamento_ID?.name ?? '').toLowerCase().includes(q),
-      )
-    }
-    return r
-  }, [projects, deptFilter, statusFilter, search])
+  const filtered = projects
 
-  const totalCost = filtered.reduce((sum, p) => sum + (p.costo ?? 0), 0)
+  const totalCost = filtered.reduce((sum, p) => sum + costoTotal(p), 0)
 
   const exportPDF = () => {
     try {
@@ -62,7 +53,7 @@ export default function ReportsPage() {
       doc.setFontSize(18)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(12, 56, 87)
-      doc.text('Municipalidad de Puntarenas', 14, 18)
+      doc.text(marca.nombre, 14, 18)
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
@@ -72,13 +63,13 @@ export default function ReportsPage() {
         14, 26,
       )
       doc.text(
-        `Total proyectos: ${filtered.length}   Costo total: ₡${totalCost.toLocaleString('es-CR')}`,
+        `Total proyectos: ${filtered.length}   Costo total: ${formatear(totalCost)}`,
         14, 32,
       )
 
       autoTable(doc, {
         startY: 38,
-        head: [['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'F. Entrega', 'Costo (₡)']],
+        head: [['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'F. Entrega', `Costo total (${simbolo})`]],
         body: filtered.map((p, i) => [
           i + 1,
           p.name,
@@ -86,7 +77,7 @@ export default function ReportsPage() {
           isOverdue(p) ? 'Vencido' : (p.estado_ID?.name ?? '—'),
           p.prioridad_ID?.name ?? '—',
           formatDate(p.fecha_entrega),
-          p.costo != null ? p.costo.toLocaleString('es-CR') : '—',
+          costoTotal(p).toLocaleString('es-CR'),
         ]),
         foot: [['', '', '', '', '', `Total (${filtered.length})`, totalCost.toLocaleString('es-CR')]],
         styles: { fontSize: 8, cellPadding: 3 },
@@ -98,15 +89,15 @@ export default function ReportsPage() {
 
       doc.save(`proyectos_${new Date().toISOString().slice(0, 10)}.pdf`)
       toast.success('PDF exportado correctamente')
-    } catch {
-      toast.error('Error al exportar PDF')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al exportar PDF'))
     }
   }
 
   const exportExcel = async () => {
     try {
       const { default: writeExcelFile } = await import('write-excel-file/browser')
-      const encabezados = ['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'Responsable', 'Fecha Inicio', 'Fecha Entrega', 'Costo (₡)']
+      const encabezados = ['#', 'Proyecto', 'Departamento', 'Estado', 'Prioridad', 'Responsable', 'Fecha Inicio', 'Fecha Entrega', `Costo total (${simbolo})`]
       const filas = filtered.map((p, i) => [
         i + 1,
         p.name,
@@ -116,7 +107,7 @@ export default function ReportsPage() {
         p.user_ID ? `${p.user_ID.first_name} ${p.user_ID.last_name}` : '',
         formatDate(p.fecha_inicio),
         formatDate(p.fecha_entrega),
-        p.costo ?? 0,
+        costoTotal(p),
       ])
 
       await writeExcelFile([encabezados, ...filas], {
@@ -124,12 +115,14 @@ export default function ReportsPage() {
         columns: [4, 35, 22, 14, 10, 25, 14, 14, 16].map(width => ({ width })),
       }).toFile(`proyectos_${new Date().toISOString().slice(0, 10)}.xlsx`)
       toast.success('Excel exportado correctamente')
-    } catch {
-      toast.error('Error al exportar Excel')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al exportar Excel'))
     }
   }
 
   const selectCls = 'pl-2.5 pr-7 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring'
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los proyectos" />
 
   return (
     <div className="flex flex-col h-full">
@@ -143,14 +136,14 @@ export default function ReportsPage() {
           <h1 className="text-base font-bold text-foreground">Reportes</h1>
           {!isLoading && (
             <p className="text-xs text-muted-foreground">
-              {filtered.length} proyecto{filtered.length !== 1 ? 's' : ''} · ₡{totalCost.toLocaleString('es-CR')}
+              {filtered.length} proyecto{filtered.length !== 1 ? 's' : ''} · {formatear(totalCost)}
             </p>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={exportExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
           >
             <FileSpreadsheet size={13} /> Excel
           </button>
@@ -174,20 +167,21 @@ export default function ReportsPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar proyecto..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label="Buscar proyecto"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="relative">
-            <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className={selectCls}>
+            <select aria-label="Filtrar por departamento" value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className={selectCls}>
               <option value="">Todos los departamentos</option>
               {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
             </select>
             <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           </div>
           <div className="relative">
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
+            <select aria-label="Filtrar por estado" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
               <option value="">Todos los estados</option>
-              {['Pendiente', 'En progreso', 'Completado', 'Cancelado', 'Vencido'].map(s => (
+              {[...estados.map(e => e.name), 'Vencido'].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -245,20 +239,20 @@ export default function ReportsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{p.departamento_ID?.name ?? '—'}</td>
                       <td className="px-4 py-3">
-                        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', STATUS_BADGE[statusName] ?? 'bg-muted text-muted-foreground')}>
+                        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(colorDeEstado(od, p.estado_ID))}>
                           {statusName}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         {p.prioridad_ID?.name && (
-                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', PRIORITY_BADGE[p.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>
                             {p.prioridad_ID.name}
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(p.fecha_entrega)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-right text-foreground">
-                        {p.costo != null ? `₡${p.costo.toLocaleString('es-CR')}` : '—'}
+                        {formatear(costoTotal(p))}
                       </td>
                     </tr>
                   )
@@ -271,7 +265,7 @@ export default function ReportsPage() {
                   </td>
                   <td />
                   <td className="px-4 py-3 text-sm font-bold text-right text-foreground">
-                    ₡{totalCost.toLocaleString('es-CR')}
+                    {formatear(totalCost)}
                   </td>
                 </tr>
               </tfoot>

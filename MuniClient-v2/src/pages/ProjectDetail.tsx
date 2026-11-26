@@ -11,7 +11,7 @@ import ImageLightbox from '@/components/common/ImageLightbox'
 import { toast } from 'sonner'
 import {
   getProjectById, getTasksByProject, getFeedback,
-  createTask, updateTask, patchTask, deleteTask, updateProject, patchProject,
+  createTask, patchTask, deleteTask, patchProject,
   deleteProject, createFeedback, deleteFeedback,
   uploadProjectImage, deleteProjectImage,
   uploadTaskImage, deleteTaskImage,
@@ -22,7 +22,6 @@ import StatusStepper from '@/components/projects/StatusStepper'
 import BudgetSection from '@/components/projects/BudgetSection'
 import DelegacionPanel from '@/components/projects/DelegacionPanel'
 
-const ROLES_DELEGADORES = new Set(['Alcalde', 'Vicealcalde', 'Jefe de Dirección', 'Jefe de Departamento'])
 import {
   type Project, type Task, type TaskImage, type Feedback,
   type Estado, type Prioridad, type Department, type User as UserModel,
@@ -30,27 +29,16 @@ import {
 } from '@/types'
 import { cn, formatDate, daysUntil, isOverdue, fullName } from '@/lib/utils'
 import { useAppStore } from '@/store/app'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { esNoEncontrado } from '@/lib/errores'
+import RazonModal from '@/components/common/RazonModal'
+import { ESTADOS_CON_MOTIVO } from '@/lib/estados'
+import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
+import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
+import { pestanas } from '@/lib/pestanas'
 
-const STATUS_STYLE: Record<string, string> = {
-  'Completado':  'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  'En progreso': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
-  'Pendiente':   'bg-muted text-muted-foreground',
-  'Cancelado':   'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-}
-const PRIORITY_STYLE: Record<string, string> = {
-  'Alta':  'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
-  'Media': 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  'Baja':  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-}
-
-const STATUS_DOT: Record<string, string> = {
-  'En progreso': 'bg-blue-500',
-  'Pendiente':   'bg-muted-foreground/40',
-  'Completado':  'bg-emerald-500',
-  'Cancelado':   'bg-red-400',
-}
-
-const TASK_GROUP_ORDER = ['En progreso', 'Pendiente', 'Completado', 'Cancelado']
 
 // ── Image Grid (reutilizable) ────────────────────────────────────────────────
 function ImageGrid({
@@ -79,14 +67,14 @@ function ImageGrid({
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center gap-2">
               <button
                 onClick={e => { e.stopPropagation(); setLightboxIdx(i) }}
-                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
+                className="p-2 rounded-xl bg-white/90 text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-white active:scale-95"
                 title="Ver imagen"
               >
                 <ZoomIn size={12} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onDelete(img.imagen_ID) }}
-                className="p-2 rounded-xl bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 active:scale-95"
+                className="p-2 rounded-xl bg-red-600 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-all duration-200 hover:bg-red-700 active:scale-95"
                 title="Eliminar imagen"
               >
                 <Trash2 size={12} />
@@ -118,7 +106,9 @@ function EditProjectModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { simbolo } = useMoneda()
   const [loading, setLoading] = useState(false)
+  const [pidiendoMotivo, setPidiendoMotivo] = useState(false)
   const [form, setForm] = useState({
     name:            project.name,
     descripcion:     project.descripcion ?? '',
@@ -129,12 +119,13 @@ function EditProjectModal({
     prioridad_ID:    project.prioridad_ID?.prioridad_ID ?? '',
     departamento_ID: project.departamento_ID?.departamentos_ID ?? '',
     user_ID:         project.user_ID?.user_ID ?? '',
+    es_publico:      project.es_publico ?? false,
   })
 
   const { data: departments = [] } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
   const { data: users = [] }       = useQuery<UserModel[]>({ queryKey: ['users'], queryFn: getUsers })
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -142,9 +133,20 @@ function EditProjectModal({
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
+    const nuevoEstado = estados.find(x => x.estado_ID === form.estado_ID)?.name ?? ''
+    if (form.estado_ID !== (project.estado_ID?.estado_ID ?? '') && ESTADOS_CON_MOTIVO.includes(nuevoEstado)) {
+      setPidiendoMotivo(true)
+      return
+    }
+    await guardar()
+  }
+
+  const guardar = async (razon?: string) => {
+    setPidiendoMotivo(false)
     setLoading(true)
     try {
-      await updateProject(project.proyect_ID, {
+      await patchProject(project.proyect_ID, {
+        ...(razon && { razon }),
         name:            form.name,
         descripcion:     form.descripcion || undefined,
         fecha_inicio:    form.fecha_inicio || undefined,
@@ -154,21 +156,22 @@ function EditProjectModal({
         prioridad_ID:    form.prioridad_ID || undefined,
         departamento_ID: form.departamento_ID || undefined,
         user_ID:         form.user_ID || undefined,
+        es_publico:      form.es_publico,
       })
       toast.success('Proyecto actualizado')
       onSaved()
       onClose()
-    } catch {
-      toast.error('Error al actualizar proyecto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar proyecto'))
     } finally {
       setLoading(false)
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Editar proyecto" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -177,45 +180,45 @@ function EditProjectModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">Editar proyecto</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} />
+            <label htmlFor="projectdetail-nombre" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+            <input id="projectdetail-nombre" value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Descripción</label>
-            <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
+            <label htmlFor="projectdetail-descripcion" className="text-xs font-semibold text-muted-foreground">Descripción</label>
+            <textarea id="projectdetail-descripcion" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
               className={cn(inputCls, 'resize-none')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio</label>
-              <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls} />
+              <label htmlFor="projectdetail-fecha-inicio" className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
+              <input id="projectdetail-fecha-inicio" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega</label>
-              <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
+              <label htmlFor="projectdetail-fecha-entrega" className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
+              <input id="projectdetail-fecha-entrega" type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Costo estimado (₡)</label>
-            <input type="number" value={form.costo} onChange={e => set('costo', e.target.value)} placeholder="0" className={inputCls} />
+            <label htmlFor="projectdetail-costo-estimado" className="text-xs font-semibold text-muted-foreground">Costo estimado ({simbolo})</label>
+            <input id="projectdetail-costo-estimado" type="number" value={form.costo} onChange={e => set('costo', e.target.value)} placeholder="0" className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Estado</label>
-              <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-estado" className="text-xs font-semibold text-muted-foreground">Estado</label>
+              <select id="projectdetail-estado" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin estado</option>
                 {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Prioridad</label>
-              <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-prioridad" className="text-xs font-semibold text-muted-foreground">Prioridad</label>
+              <select id="projectdetail-prioridad" value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin prioridad</option>
                 {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
               </select>
@@ -223,20 +226,29 @@ function EditProjectModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Departamento</label>
-              <select value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-departamento" className="text-xs font-semibold text-muted-foreground">Departamento</label>
+              <select id="projectdetail-departamento" value={form.departamento_ID} onChange={e => set('departamento_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin departamento</option>
                 {departments.map(d => <option key={d.departamentos_ID} value={d.departamentos_ID}>{d.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Responsable</label>
-              <select value={form.user_ID} onChange={e => set('user_ID', e.target.value)} className={inputCls}>
+              <label htmlFor="projectdetail-responsable" className="text-xs font-semibold text-muted-foreground">Responsable</label>
+              <select id="projectdetail-responsable" value={form.user_ID} onChange={e => set('user_ID', e.target.value)} className={inputCls}>
                 <option value="">Sin responsable</option>
                 {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
               </select>
             </div>
           </div>
+          <label className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.es_publico}
+              onChange={e => set('es_publico', e.target.checked)}
+              className="h-4 w-4 accent-ocean-500"
+            />
+            Mostrar en el portal público
+          </label>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl transition-colors">
@@ -249,7 +261,15 @@ function EditProjectModal({
           </div>
         </form>
       </motion.div>
-    </div>
+      {pidiendoMotivo && (
+        <RazonModal
+          title="Motivo del cambio de estado"
+          description="Para pasar a Cancelado o Pausado hay que indicar el motivo; queda en el historial."
+          onConfirm={razon => guardar(razon)}
+          onClose={() => setPidiendoMotivo(false)}
+        />
+      )}
+    </Dialogo>
   )
 }
 
@@ -263,62 +283,6 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 // ── Razón modal (genérico) ───────────────────────────────────────────────────
-function RazonModal({
-  title, description, onConfirm, onClose,
-}: {
-  title: string
-  description?: string
-  onConfirm: (razon: string) => void
-  onClose: () => void
-}) {
-  const [razon, setRazon] = useState('')
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-base font-bold text-foreground">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
-            <X size={15} />
-          </button>
-        </div>
-        <div className="p-6 space-y-4">
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Motivo *</label>
-            <textarea
-              value={razon}
-              onChange={e => setRazon(e.target.value)}
-              rows={3}
-              placeholder="Describe el motivo de este cambio..."
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-              autoFocus
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl transition-colors">
-              Cancelar
-            </button>
-            <button
-              type="button"
-              disabled={!razon.trim()}
-              onClick={() => onConfirm(razon.trim())}
-              className="px-4 py-2 text-sm font-semibold bg-ocean-500 hover:bg-ocean-600 text-white rounded-xl transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Confirmar
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
 // ── Edit task modal ──────────────────────────────────────────────────────────
 function EditTaskModal({
   task, estados, prioridades, users, projectId, onClose, onSaved,
@@ -347,7 +311,7 @@ function EditTaskModal({
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   const doSave = async (razon = '') => {
     setLoading(true)
@@ -367,8 +331,8 @@ function EditTaskModal({
       toast.success('Tarea actualizada')
       onSaved()
       onClose()
-    } catch {
-      toast.error('Error al actualizar tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar tarea'))
     } finally {
       setLoading(false)
     }
@@ -377,6 +341,7 @@ function EditTaskModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!form.fecha_inicio || !form.fecha_entrega) { toast.error('Las fechas de inicio y de entrega son requeridas'); return }
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
@@ -389,7 +354,7 @@ function EditTaskModal({
     if (esCancelacion || esAmpliacion) {
       const title = esCancelacion ? 'Motivo de cancelación' : 'Motivo de ampliación de plazo'
       const description = esCancelacion
-        ? 'Esta tarea se marcará como cancelada. Indica el motivo.'
+        ? 'Esta tarea se marcará como cancelada. Indique el motivo.'
         : `La fecha de entrega se extiende de ${formatDate(task.fecha_entrega)} a ${formatDate(form.fecha_entrega)}.`
       setRazonConfig({ title, description })
     } else {
@@ -399,7 +364,7 @@ function EditTaskModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <Dialogo titulo="Editar tarea" onCerrar={onClose}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -408,47 +373,47 @@ function EditTaskModal({
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
             <h2 className="text-base font-bold text-foreground">Editar tarea</h2>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+            <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
               <X size={15} />
             </button>
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)} className={cls} />
+              <label htmlFor="projectdetail-nombre-2" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+              <input id="projectdetail-nombre-2" value={form.name} onChange={e => set('name', e.target.value)} className={cls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Descripción</label>
-              <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
+              <label htmlFor="projectdetail-descripcion-2" className="text-xs font-semibold text-muted-foreground">Descripción</label>
+              <textarea id="projectdetail-descripcion-2" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3}
                 className={cn(cls, 'resize-none')} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Fecha inicio</label>
-                <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
+                <label htmlFor="projectdetail-fecha-inicio-2" className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
+                <input id="projectdetail-fecha-inicio-2" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Fecha entrega</label>
-                <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
+                <label htmlFor="projectdetail-fecha-entrega-2" className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
+                <input id="projectdetail-fecha-entrega-2" type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Estado</label>
-                <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
+                <label htmlFor="projectdetail-estado-2" className="text-xs font-semibold text-muted-foreground">Estado</label>
+                <select id="projectdetail-estado-2" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
                   {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Prioridad</label>
-                <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
+                <label htmlFor="projectdetail-prioridad-2" className="text-xs font-semibold text-muted-foreground">Prioridad</label>
+                <select id="projectdetail-prioridad-2" value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
                   {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
                 </select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Asignado a</label>
-              <select value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
+              <label htmlFor="projectdetail-asignado-a" className="text-xs font-semibold text-muted-foreground">Asignado a</label>
+              <select id="projectdetail-asignado-a" value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
                 <option value="">Sin asignar</option>
                 {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
               </select>
@@ -465,7 +430,7 @@ function EditTaskModal({
             </div>
           </form>
         </motion.div>
-      </div>
+      </Dialogo>
       <AnimatePresence>
         {razonConfig && (
           <RazonModal
@@ -510,6 +475,7 @@ function TaskModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!form.fecha_inicio || !form.fecha_entrega) { toast.error('Las fechas de inicio y de entrega son requeridas'); return }
     if (form.fecha_inicio && form.fecha_entrega && form.fecha_entrega < form.fecha_inicio) {
       toast.error('La fecha de entrega no puede ser anterior a la de inicio'); return
     }
@@ -519,17 +485,17 @@ function TaskModal({
       toast.success('Tarea creada')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear tarea'))
     } finally {
       setLoading(false)
     }
   }
 
-  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Nueva tarea" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -538,46 +504,46 @@ function TaskModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Nueva tarea</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre *</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre de la tarea" className={cls} />
+            <label htmlFor="projectdetail-nombre-3" className="text-xs font-semibold text-muted-foreground">Nombre *</label>
+            <input id="projectdetail-nombre-3" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre de la tarea" className={cls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Descripción</label>
-            <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3} placeholder="Descripción..." className={cn(cls, 'resize-none')} />
+            <label htmlFor="projectdetail-descripcion-3" className="text-xs font-semibold text-muted-foreground">Descripción</label>
+            <textarea id="projectdetail-descripcion-3" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3} placeholder="Descripción..." className={cn(cls, 'resize-none')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha inicio</label>
-              <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
+              <label htmlFor="projectdetail-fecha-inicio-3" className="text-xs font-semibold text-muted-foreground">Fecha inicio *</label>
+              <input id="projectdetail-fecha-inicio-3" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={cls} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Fecha entrega</label>
-              <input type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
+              <label htmlFor="projectdetail-fecha-entrega-3" className="text-xs font-semibold text-muted-foreground">Fecha entrega *</label>
+              <input id="projectdetail-fecha-entrega-3" type="date" value={form.fecha_entrega} min={form.fecha_inicio || undefined} onChange={e => set('fecha_entrega', e.target.value)} className={cls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Prioridad</label>
-              <select value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
+              <label htmlFor="projectdetail-prioridad-3" className="text-xs font-semibold text-muted-foreground">Prioridad</label>
+              <select id="projectdetail-prioridad-3" value={form.prioridad_ID} onChange={e => set('prioridad_ID', e.target.value)} className={cls}>
                 {prioridades.map(p => <option key={p.prioridad_ID} value={p.prioridad_ID}>{p.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Estado</label>
-              <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
+              <label htmlFor="projectdetail-estado-3" className="text-xs font-semibold text-muted-foreground">Estado</label>
+              <select id="projectdetail-estado-3" value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={cls}>
                 {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
               </select>
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Asignado a</label>
-            <select value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
+            <label htmlFor="projectdetail-asignado-a-2" className="text-xs font-semibold text-muted-foreground">Asignado a</label>
+            <select id="projectdetail-asignado-a-2" value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
               <option value="">Sin asignar</option>
               {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
             </select>
@@ -594,7 +560,7 @@ function TaskModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -609,6 +575,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
     if (!files.length) return
     let done = 0
     let failed = 0
+    let ultimoError: unknown = null
     setTaskUploadProgress({ current: 0, total: files.length })
     for (const file of files) {
       try {
@@ -616,8 +583,9 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
         done++
         setTaskUploadProgress({ current: done, total: files.length })
         qc.invalidateQueries({ queryKey: ['tasks', projectId] })
-      } catch {
+      } catch (err) {
         failed++
+        ultimoError = err
       }
     }
     setTaskUploadProgress(null)
@@ -625,9 +593,9 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
     if (failed === 0) {
       toast.success(files.length > 1 ? `${files.length} imágenes subidas` : 'Imagen subida')
     } else if (done > 0) {
-      toast.warning(`${done} de ${files.length} imágenes subidas`)
+      toast.warning(`${done} de ${files.length} imágenes subidas`, { description: mensajeDeError(ultimoError, '') })
     } else {
-      toast.error('Error al subir las imágenes')
+      toast.error(mensajeDeError(ultimoError, 'Error al subir las imágenes'))
     }
   }
 
@@ -649,15 +617,15 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
       await deleteTaskImage(imageId)
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       toast.success('Imagen eliminada')
-    } catch {
-      toast.error('Error al eliminar imagen')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar imagen'))
     }
   }
 
   const images: TaskImage[] = task.images ?? []
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Fotos de la tarea" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -680,7 +648,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 ? `${taskUploadProgress.current}/${taskUploadProgress.total}...`
                 : 'Subir fotos'}
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+            <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
               <X size={15} />
             </button>
           </div>
@@ -702,7 +670,7 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 <ImageIcon size={20} className="text-muted-foreground/40" />
               </div>
               <p className="text-sm font-medium text-foreground">Sin imágenes</p>
-              <p className="text-xs text-muted-foreground">Arrastra fotos aquí o usa el botón</p>
+              <p className="text-xs text-muted-foreground">Arrastre fotos aquí o use el botón</p>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!!taskUploadProgress}
@@ -729,13 +697,13 @@ function TaskPhotosModal({ task, projectId, onClose }: { task: Task; projectId: 
                 </div>
               )}
               {dragOver && !taskUploadProgress && (
-                <p className="text-center text-xs text-ocean-500 font-medium mt-3">Suelta para subir</p>
+                <p className="text-center text-xs text-ocean-500 dark:text-ocean-200 font-medium mt-3">Suelte para subir</p>
               )}
             </div>
           )}
         </div>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
@@ -756,11 +724,11 @@ function TaskCard({
   const handleStatusChange = async (estadoId: string) => {
     setUpdating(true)
     try {
-      await updateTask(task.tareas_ID, { estado_ID: estadoId })
+      await patchTask(task.tareas_ID, { estado_ID: estadoId })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       toast.success('Estado actualizado')
-    } catch {
-      toast.error('Error al actualizar estado')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar estado'))
     } finally {
       setUpdating(false)
     }
@@ -772,8 +740,8 @@ function TaskCard({
       await deleteTask(task.tareas_ID)
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       toast.success('Tarea eliminada')
-    } catch {
-      toast.error('Error al eliminar tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar tarea'))
     }
   }
 
@@ -804,7 +772,7 @@ function TaskCard({
               </span>
             )}
             {task.prioridad_ID?.name && (
-              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', PRIORITY_STYLE[task.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(task.prioridad_ID.color)}>
                 {task.prioridad_ID.name}
               </span>
             )}
@@ -813,7 +781,7 @@ function TaskCard({
                 {task.asignado_a.user_photo ? (
                   <img src={task.asignado_a.user_photo} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[8px] font-bold text-white">
+                  <div className="w-3.5 h-3.5 rounded-full bg-amber-700 flex items-center justify-center text-[8px] font-bold text-white">
                     {task.asignado_a.first_name?.[0]}
                   </div>
                 )}
@@ -829,14 +797,15 @@ function TaskCard({
             className={cn(
               'flex items-center gap-1 p-1 rounded-lg transition-colors',
               imageCount > 0
-                ? 'text-ocean-500 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
-                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100',
+                ? 'text-ocean-500 dark:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10'
+                : 'text-muted-foreground hover:bg-accent opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100',
             )}
           >
             <ImageIcon size={12} />
             {imageCount > 0 && <span className="text-[10px] font-bold">{imageCount}</span>}
           </button>
           <select
+            aria-label={`Estado de la tarea ${task.name}`}
             value={task.estado_ID?.estado_ID ?? ''}
             onChange={e => handleStatusChange(e.target.value)}
             disabled={updating}
@@ -844,15 +813,15 @@ function TaskCard({
           >
             {estados.map(e => <option key={e.estado_ID} value={e.estado_ID}>{e.name}</option>)}
           </select>
-          <button
+          <button aria-label={`Editar la tarea ${task.name}`}
             onClick={() => onEdit(task)}
-            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:bg-ocean-50 dark:hover:bg-ocean-500/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
           >
             <Edit2 size={12} />
           </button>
-          <button
+          <button aria-label={`Eliminar la tarea ${task.name}`}
             onClick={handleDelete}
-            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
           >
             <Trash2 size={12} />
           </button>
@@ -894,10 +863,10 @@ function TaskGroup({
     const estado = estados.find(es => es.name === status)
     if (!taskId || !estado) return
     try {
-      await updateTask(taskId, { estado_ID: estado.estado_ID })
+      await patchTask(taskId, { estado_ID: estado.estado_ID })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
-    } catch {
-      toast.error('Error al mover tarea')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al mover tarea'))
     }
   }
 
@@ -920,10 +889,10 @@ function TaskGroup({
           : <ChevronRight size={13} className="text-muted-foreground" />
         }
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{status}</span>
-        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', STATUS_STYLE[status] ?? 'bg-muted text-muted-foreground')}>
+        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full', claseEtiqueta)} style={conColor(estados.find(es => es.name === status)?.color)}>
           {tasks.length}
         </span>
-        {dragOver && <span className="text-[10px] text-ocean-500 font-medium ml-1">Soltar aquí</span>}
+        {dragOver && <span className="text-[10px] text-ocean-500 dark:text-ocean-200 font-medium ml-1">Soltar aquí</span>}
       </button>
       <AnimatePresence>
         {open && (
@@ -981,11 +950,11 @@ function DropZone({ onFiles, disabled, progress }: {
       />
       <div className="flex flex-col items-center gap-2">
         <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
-          <Upload size={20} className={cn('transition-colors', dragOver ? 'text-ocean-500' : 'text-muted-foreground/40')} />
+          <Upload size={20} className={cn('transition-colors', dragOver ? 'text-ocean-500 dark:text-ocean-200' : 'text-muted-foreground/40')} />
         </div>
         {progress ? (
           <>
-            <p className="text-sm font-medium text-ocean-500">
+            <p className="text-sm font-medium text-ocean-500 dark:text-ocean-200">
               Subiendo {progress.current} de {progress.total}...
             </p>
             <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -998,9 +967,9 @@ function DropZone({ onFiles, disabled, progress }: {
         ) : (
           <>
             <p className="text-sm font-medium text-foreground">
-              {dragOver ? 'Suelta las imágenes' : 'Arrastra fotos aquí'}
+              {dragOver ? 'Suelte las imágenes' : 'Arrastre fotos aquí'}
             </p>
-            <p className="text-xs text-muted-foreground">o haz clic · puedes seleccionar varias a la vez</p>
+            <p className="text-xs text-muted-foreground">o haga clic · puede seleccionar varias a la vez</p>
           </>
         )}
       </div>
@@ -1014,13 +983,16 @@ type Tab = typeof TABS[number]
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProjectDetailPage() {
+  const { formatear } = useMoneda()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { user } = useAppStore()
-  const canDelegate = !!user?.role && ROLES_DELEGADORES.has(user.role)
+  // Lo decide el rol que manda el servidor (antes dejaba afuera al Administrador); el alcance lo valida el servidor.
+  const canDelegate = !!(user?.role_flags?.puede_ver_todo || user?.role_flags?.puede_delegar)
 
   const [tab, setTab]                         = useState<Tab>('Tareas')
+  const tabs = pestanas('proyecto', TABS, tab, setTab)
   const [showTaskModal, setShowTaskModal]       = useState(false)
   const [showEditModal, setShowEditModal]       = useState(false)
   const [editingTask, setEditingTask]           = useState<Task | null>(null)
@@ -1028,11 +1000,12 @@ export default function ProjectDetailPage() {
   const [submittingComment, setSubmittingComment] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
 
-  const { data: project, isLoading: loadingProject } = useQuery<Project>({
+  const { data: project, isLoading: loadingProject, isError: errorProject, error: errProject, refetch: refetchProject } = useQuery<Project>({
     queryKey: ['project', id],
     queryFn: () => getProjectById(id!),
     enabled: !!id,
   })
+  useTituloDePagina(project?.name ?? 'Proyecto')
 
   const { data: tasks = [], isLoading: loadingTasks } = useQuery<Task[]>({
     queryKey: ['tasks', id],
@@ -1065,8 +1038,8 @@ export default function ProjectDetailPage() {
       await deleteProject(id!)
       toast.success('Proyecto eliminado')
       navigate('/dashboard')
-    } catch {
-      toast.error('Error al eliminar proyecto')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar proyecto'))
     }
   }
 
@@ -1079,8 +1052,8 @@ export default function ProjectDetailPage() {
       setNewComment('')
       await qc.invalidateQueries({ queryKey: ['feedback', id] })
       toast.success('Comentario agregado')
-    } catch {
-      toast.error('Error al agregar comentario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al agregar comentario'))
     } finally {
       setSubmittingComment(false)
     }
@@ -1090,6 +1063,7 @@ export default function ProjectDetailPage() {
     if (!files.length) return
     let done = 0
     let failed = 0
+    let ultimoError: unknown = null
     setUploadProgress({ current: 0, total: files.length })
     for (const file of files) {
       try {
@@ -1097,17 +1071,18 @@ export default function ProjectDetailPage() {
         done++
         setUploadProgress({ current: done, total: files.length })
         qc.invalidateQueries({ queryKey: ['project', id] })
-      } catch {
+      } catch (err) {
         failed++
+        ultimoError = err
       }
     }
     setUploadProgress(null)
     if (failed === 0) {
       toast.success(files.length > 1 ? `${files.length} imágenes subidas` : 'Imagen subida')
     } else if (done > 0) {
-      toast.warning(`${done} de ${files.length} imágenes subidas`)
+      toast.warning(`${done} de ${files.length} imágenes subidas`, { description: mensajeDeError(ultimoError, '') })
     } else {
-      toast.error('Error al subir las imágenes')
+      toast.error(mensajeDeError(ultimoError, 'Error al subir las imágenes'))
     }
   }
 
@@ -1117,8 +1092,8 @@ export default function ProjectDetailPage() {
       await deleteProjectImage(imageId)
       await qc.invalidateQueries({ queryKey: ['project', id] })
       toast.success('Imagen eliminada')
-    } catch {
-      toast.error('Error al eliminar imagen')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar imagen'))
     }
   }
 
@@ -1128,8 +1103,8 @@ export default function ProjectDetailPage() {
       await deleteFeedback(feedId)
       await qc.invalidateQueries({ queryKey: ['feedback', id] })
       toast.success('Comentario eliminado')
-    } catch {
-      toast.error('Error al eliminar comentario')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar comentario'))
     }
   }
 
@@ -1144,12 +1119,16 @@ export default function ProjectDetailPage() {
     )
   }
 
+  if (errorProject && !esNoEncontrado(errProject)) {
+    return <ErrorDeCarga error={errProject} onReintentar={refetchProject} que="el proyecto" />
+  }
+
   if (!project) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
         <AlertCircle size={32} />
-        <p className="text-sm">Proyecto no encontrado</p>
-        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 hover:underline">Volver</button>
+        <p className="text-sm">Proyecto no encontrado o sin acceso</p>
+        <button onClick={() => navigate(-1)} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Volver</button>
       </div>
     )
   }
@@ -1164,11 +1143,13 @@ export default function ProjectDetailPage() {
     ? tasks.filter(t => t.name.toLowerCase().includes(taskSearch.toLowerCase()) || t.descripcion?.toLowerCase().includes(taskSearch.toLowerCase()))
     : tasks
 
-  const grouped: Record<string, Task[]> = { 'En progreso': [], 'Pendiente': [], 'Completado': [], 'Cancelado': [] }
+  // Un grupo por estado de Configuración, en su orden (antes solo había 4 y el resto caía en Pendiente).
+  const ordenGrupos = estados.map(e => e.name)
+  const grouped: Record<string, Task[]> = Object.fromEntries(ordenGrupos.map(n => [n, [] as Task[]]))
   filteredTasks.forEach(t => {
-    const s = t.estado_ID?.name ?? 'Pendiente'
-    if (grouped[s]) grouped[s].push(t)
-    else grouped['Pendiente'].push(t)
+    const s = t.estado_ID?.name ?? ''
+    if (!grouped[s]) { grouped[s] = []; ordenGrupos.push(s) }
+    grouped[s].push(t)
   })
 
   const projectImages = project.images ?? []
@@ -1179,7 +1160,7 @@ export default function ProjectDetailPage() {
       {/* ── Header ── */}
       <div className="bg-card border-b border-border px-6 flex-shrink-0" style={{ minHeight: 72 }}>
         <div className="flex items-start gap-3 py-4">
-          <button
+          <button aria-label="Volver"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex-shrink-0 mt-0.5 active:scale-[0.98]"
           >
@@ -1190,12 +1171,12 @@ export default function ProjectDetailPage() {
             <div className="flex items-start gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-foreground leading-tight">{project.name}</h1>
               {project.estado_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', STATUS_STYLE[project.estado_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
                   {project.estado_ID.name}
                 </span>
               )}
               {project.prioridad_ID?.name && (
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', PRIORITY_STYLE[project.prioridad_ID.name] ?? 'bg-muted text-muted-foreground')}>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(project.prioridad_ID.color)}>
                   {project.prioridad_ID.name}
                 </span>
               )}
@@ -1246,15 +1227,15 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1">
+        <div className="flex gap-1" {...tabs.lista} aria-label="Secciones del proyecto">
           {TABS.map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              {...tabs.pestana(t)}
               className={cn(
                 'px-4 py-2 text-xs font-semibold border-b-2 transition-all',
                 tab === t
-                  ? 'border-ocean-500 text-ocean-500'
+                  ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200'
                   : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
@@ -1278,6 +1259,7 @@ export default function ProjectDetailPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
+            {...tabs.panel}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -1294,10 +1276,11 @@ export default function ProjectDetailPage() {
                       value={taskSearch}
                       onChange={e => setTaskSearch(e.target.value)}
                       placeholder="Buscar tareas..."
-                      className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                      aria-label="Buscar tareas"
+                      className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                     />
                     {taskSearch && (
-                      <button onClick={() => setTaskSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <button aria-label="Borrar la búsqueda" onClick={() => setTaskSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         <X size={12} />
                       </button>
                     )}
@@ -1311,7 +1294,7 @@ export default function ProjectDetailPage() {
                       <CheckCircle2 size={20} className="text-muted-foreground/40" />
                     </div>
                     <p className="text-sm font-medium text-foreground">Sin tareas</p>
-                    <p className="text-xs text-muted-foreground">Crea la primera tarea para este proyecto</p>
+                    <p className="text-xs text-muted-foreground">Cree la primera tarea de este proyecto</p>
                     <button
                       onClick={() => setShowTaskModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
@@ -1323,14 +1306,14 @@ export default function ProjectDetailPage() {
                   <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
                     <p className="text-sm font-medium text-foreground">Sin resultados</p>
                     <p className="text-xs text-muted-foreground">Ninguna tarea coincide con "{taskSearch}"</p>
-                    <button onClick={() => setTaskSearch('')} className="text-xs text-ocean-500 hover:underline">Limpiar búsqueda</button>
+                    <button onClick={() => setTaskSearch('')} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Limpiar búsqueda</button>
                   </div>
                 ) : (
                   <>
                     <p className="text-[10px] text-muted-foreground">
-                      {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastra las tarjetas entre grupos para cambiar el estado'}
+                      {taskSearch ? `${filteredTasks.length} de ${tasks.length} tareas` : 'Arrastre las tarjetas entre grupos para cambiar el estado'}
                     </p>
-                    {TASK_GROUP_ORDER.map(status => (
+                    {ordenGrupos.map(status => (
                       <TaskGroup
                         key={status}
                         status={status}
@@ -1382,7 +1365,7 @@ export default function ProjectDetailPage() {
                       <InfoRow label="Costo base">
                         <span className="flex items-center gap-1.5">
                           <DollarSign size={12} className="text-muted-foreground flex-shrink-0" />
-                          ₡{project.costo.toLocaleString('es-CR')}
+                          {formatear(project.costo)}
                         </span>
                       </InfoRow>
                     )}
@@ -1424,13 +1407,13 @@ export default function ProjectDetailPage() {
                   <p className="text-xs text-muted-foreground">
                     {projectImages.length === 0
                       ? 'Sin imágenes aún'
-                      : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haz clic para ampliar`}
+                      : `${projectImages.length} imagen${projectImages.length !== 1 ? 'es' : ''} · haga clic para ampliar`}
                   </p>
                   {projectImages.length > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                       {uploadProgress
                         ? `Subiendo ${uploadProgress.current}/${uploadProgress.total}...`
-                        : 'Arrastra o selecciona varias fotos en la zona de abajo'}
+                        : 'Arrastre o seleccione varias fotos en la zona de abajo'}
                     </span>
                   )}
                 </div>
@@ -1447,11 +1430,11 @@ export default function ProjectDetailPage() {
             {tab === 'Comentarios' && (
               <div className="max-w-2xl space-y-4">
                 <form onSubmit={handleAddComment} className="flex gap-2">
-                  <input
+                  <input aria-label="Comentario"
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder="Agregar comentario..."
-                    className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <button
                     type="submit"
@@ -1483,7 +1466,7 @@ export default function ProjectDetailPage() {
                           {author?.user_photo ? (
                             <img src={author.user_photo} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                           ) : (
-                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 dark:text-ocean-200 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                               {initials}
                             </div>
                           )}
@@ -1500,9 +1483,9 @@ export default function ProjectDetailPage() {
                             </div>
                             <p className="text-sm text-foreground leading-snug">{f.info}</p>
                           </div>
-                          <button
+                          <button aria-label="Eliminar el comentario"
                             onClick={() => handleDeleteComment(f.feed_ID)}
-                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 flex-shrink-0"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1538,7 +1521,7 @@ export default function ProjectDetailPage() {
                   <div className="bg-card border border-border rounded-xl p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-foreground">Progreso general</p>
-                      <p className="text-xs font-bold text-ocean-500">{progress}%</p>
+                      <p className="text-xs font-bold text-ocean-500 dark:text-ocean-200">{progress}%</p>
                     </div>
                     <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                       <motion.div
@@ -1549,10 +1532,10 @@ export default function ProjectDetailPage() {
                       />
                     </div>
                     <div className="flex gap-3 flex-wrap">
-                      {TASK_GROUP_ORDER.map(s => (
+                      {ordenGrupos.map(s => (
                         (grouped[s]?.length ?? 0) > 0 && (
                           <div key={s} className="flex items-center gap-1.5">
-                            <div className={cn('w-2 h-2 rounded-full', STATUS_DOT[s])} />
+                            <div className={cn('w-2 h-2 rounded-full', claseRelleno)} style={conColor(estados.find(e => e.name === s)?.color)} />
                             <span className="text-[10px] text-muted-foreground">{s}: {grouped[s].length}</span>
                           </div>
                         )
@@ -1570,7 +1553,7 @@ export default function ProjectDetailPage() {
                     <div className="flex flex-col items-center justify-center py-12 gap-3 text-center bg-card border border-border rounded-xl">
                       <Activity size={28} className="text-muted-foreground/30" />
                       <p className="text-sm text-muted-foreground">Sin cambios registrados aún</p>
-                      <p className="text-[11px] text-muted-foreground/60">Los cambios a tareas y al proyecto aparecerán aquí</p>
+                      <p className="text-[11px] text-muted-foreground">Los cambios a tareas y al proyecto aparecerán aquí</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1592,11 +1575,24 @@ export default function ProjectDetailPage() {
                           const n = entry.datos_nuevos
                           if (a.name && n.name && a.name !== n.name) changes.push(`Nombre: "${a.name}" → "${n.name}"`)
                           if (a.fecha_entrega && n.fecha_entrega && a.fecha_entrega !== n.fecha_entrega) changes.push(`Entrega: ${formatDate(a.fecha_entrega)} → ${formatDate(n.fecha_entrega)}`)
-                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ₡${Number(a.costo).toLocaleString()} → ₡${Number(n.costo).toLocaleString()}`)
+                          if (a.costo && n.costo && a.costo !== n.costo) changes.push(`Costo: ${formatear(Number(a.costo))} → ${formatear(Number(n.costo))}`)
+                          const nombreEstado = (id?: string) => estados.find(e => e.estado_ID === id)?.name ?? '—'
+                          if (a.estado_ID && n.estado_ID && a.estado_ID !== n.estado_ID) changes.push(`Estado: ${nombreEstado(a.estado_ID)} → ${nombreEstado(n.estado_ID)}`)
+                          const nombrePersona = (id?: string) => {
+                            const u = users.find(x => x.user_ID === id)
+                            return u ? `${u.first_name} ${u.last_name}` : (id ? 'otra persona' : 'sin asignar')
+                          }
+                          if (a.asignado_a !== undefined && a.asignado_a !== n.asignado_a) changes.push(`Responsable: ${nombrePersona(a.asignado_a)} → ${nombrePersona(n.asignado_a)}`)
                         }
+                        const nuevos = entry.datos_nuevos
+                        if (nuevos?.tipo && nuevos?.monto) {
+                          changes.push(`${nuevos.tipo === 'rebajo' ? 'Rebajo' : 'Aumento'} de ${formatear(Number(nuevos.monto))}`)
+                        }
+                        if (entry.tipo === 'creacion' && nuevos?.name) changes.push(`«${nuevos.name}»`)
+                        if (entry.tipo === 'eliminacion' && entry.datos_anteriores?.name) changes.push(`«${entry.datos_anteriores.name}»`)
                         return (
                           <div key={entry.historial_ID} className="flex items-start gap-3 bg-card border border-border rounded-xl px-4 py-3">
-                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 flex items-center justify-center flex-shrink-0">
+                            <div className="w-7 h-7 rounded-lg bg-ocean-500/10 text-ocean-500 dark:text-ocean-200 flex items-center justify-center flex-shrink-0">
                               <Activity size={13} />
                             </div>
                             <div className="flex-1 min-w-0">

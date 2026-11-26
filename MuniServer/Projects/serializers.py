@@ -1,10 +1,10 @@
-from rest_framework.serializers import ModelSerializer, SerializerMethodField, ValidationError
+from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField, ValidationError
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
     DelegacionSupervision, AjustePresupuesto,
 )
 from Departments.serializers import DepartamentosSerializer
-from Users.serializers import UsersSerializer
+from Users.serializers import UsuarioResumenSerializer
 
 
 class EstadoSerializer(ModelSerializer):
@@ -34,22 +34,40 @@ class ProjectImageSerializer(ModelSerializer):
 
 
 class ProyectosWriteSerializer(ModelSerializer):
+    # El asistente elige un tipo al crear; se guarda en Proyectos_tipos.
+    tipos_ID = PrimaryKeyRelatedField(queryset=Tipos.objects.all(), write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = Proyectos
         fields = '__all__'
+
+    def create(self, validated_data):
+        tipo = validated_data.pop('tipos_ID', None)
+        proyecto = super().create(validated_data)
+        if tipo is not None:
+            Proyectos_tipos.objects.create(proyecto=proyecto, tipo=tipo)
+        return proyecto
+
+    def update(self, instance, validated_data):
+        validated_data.pop('tipos_ID', None)
+        return super().update(instance, validated_data)
 
 
 class ProyectosReadSerializer(ModelSerializer):
     departamento_ID = DepartamentosSerializer(read_only=True)
     estado_ID = EstadoSerializer(read_only=True)
     prioridad_ID = PrioridadSerializer(read_only=True)
-    user_ID = UsersSerializer(read_only=True)
+    user_ID = UsuarioResumenSerializer(read_only=True)
     images = ProjectImageSerializer(many=True, read_only=True)
     costo_total = SerializerMethodField()
+    tipos = SerializerMethodField()
 
     class Meta:
         model = Proyectos
         fields = '__all__'
+
+    def get_tipos(self, obj):
+        return [{'tipos_ID': str(pt.tipo_id), 'name': pt.tipo.name} for pt in obj.proyectos_tipos_set.all()]
 
     def get_costo_total(self, obj):
         ajustes = getattr(obj, '_prefetched_ajustes', None)
@@ -66,8 +84,8 @@ class ProyectosTiposSerializer(ModelSerializer):
 
 
 class DelegacionSupervisionSerializer(ModelSerializer):
-    supervisor_info = UsersSerializer(source='supervisor', read_only=True)
-    otorgado_por_info = UsersSerializer(source='otorgado_por', read_only=True)
+    supervisor_info = UsuarioResumenSerializer(source='supervisor', read_only=True)
+    otorgado_por_info = UsuarioResumenSerializer(source='otorgado_por', read_only=True)
 
     class Meta:
         model = DelegacionSupervision
@@ -80,7 +98,7 @@ class DelegacionSupervisionSerializer(ModelSerializer):
 
 
 class AjustePresupuestoSerializer(ModelSerializer):
-    usuario_info = UsersSerializer(source='usuario', read_only=True)
+    usuario_info = UsuarioResumenSerializer(source='usuario', read_only=True)
 
     class Meta:
         model = AjustePresupuesto
@@ -88,7 +106,7 @@ class AjustePresupuestoSerializer(ModelSerializer):
             'ajuste_ID', 'proyecto', 'tarea', 'tipo', 'monto', 'motivo',
             'usuario', 'aprobado_por', 'fecha', 'usuario_info',
         ]
-        read_only_fields = ['ajuste_ID', 'fecha', 'usuario']
+        read_only_fields = ['ajuste_ID', 'fecha', 'usuario', 'aprobado_por']
 
     def validate_monto(self, value):
         if value is None or value <= 0:

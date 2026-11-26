@@ -14,15 +14,14 @@ def _role_flag(user, flag):
 ROLES_ADMIN = {'Administrador', 'Alcalde', 'Vicealcalde'}
 ROLES_JEFES = {'Jefe de Dirección', 'Jefe de Departamento'}
 
-CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'cedula', 'email'}
+CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'cedula', 'email', 'is_active'}
 
 
 class UsersPermission(BasePermission):
     """
     Reglas para UsersViewSet:
-    - list/retrieve:
-        * Admin/alcaldía/jefes → todos
-        * Resto → solo self
+    - list/retrieve: lo que permite la jerarquía (authz.usuarios_visibles, en get_queryset);
+      los datos personales los filtra el serializer
     - create: solo admin/alcaldía
     - update / partial_update:
         * Admin/alcaldía → cualquier user, cualquier campo
@@ -31,7 +30,7 @@ class UsersPermission(BasePermission):
     - destroy: solo admin/alcaldía; NUNCA permitir borrarse a sí mismo.
     """
 
-    message = 'No tienes permisos para esta operación sobre usuarios.'
+    message = 'No tiene permisos para esta operación sobre usuarios.'
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
@@ -52,16 +51,15 @@ class UsersPermission(BasePermission):
         rol = _role_name(user)
         ver_todo = _role_flag(user, 'puede_ver_todo')
         es_admin = rol in ROLES_ADMIN or ver_todo
-        es_jefe = rol in ROLES_JEFES
         es_self = obj.user_ID == user.user_ID
 
         if request.method in SAFE_METHODS:
-            # retrieve: admin/jefes ven a todos; resto solo self
-            return es_admin or es_jefe or es_self
+            # La jerarquía ya la aplicó get_queryset; los datos personales solo los ve la alcaldía o la persona.
+            return True
 
         if view.action == 'destroy':
             if es_self:
-                self.message = 'No puedes eliminar tu propia cuenta.'
+                self.message = 'No puede eliminar su propia cuenta.'
                 return False
             return es_admin
 
@@ -70,12 +68,19 @@ class UsersPermission(BasePermission):
             return True
         if es_self:
             # Self solo puede editar campos no críticos.
-            campos = set(request.data.keys() if hasattr(request.data, 'keys') else [])
-            invalidos = campos & CAMPOS_PROTEGIDOS_AUTO_EDIT
+            datos = request.data if hasattr(request.data, 'keys') else {}
+            actuales = {
+                'role': obj.role_id, 'departamento_ID': obj.departamento_ID_id,
+                'cedula': obj.cedula, 'email': obj.email, 'is_active': obj.is_active,
+            }
+            invalidos = {
+                campo for campo in CAMPOS_PROTEGIDOS_AUTO_EDIT & set(datos.keys())
+                if str(datos[campo]).strip().lower() != str(actuales[campo]).strip().lower()
+            }
             if invalidos:
                 self.message = (
-                    f"No puedes modificar tus propios campos: {', '.join(sorted(invalidos))}. "
-                    'Solicítalo a un Administrador.'
+                    f"No puede modificar sus propios campos: {', '.join(sorted(invalidos))}. "
+                    'Solicítelo a un Administrador.'
                 )
                 return False
             return True

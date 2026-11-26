@@ -1,14 +1,17 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, Search, LayoutList, LayoutGrid, RefreshCw,
   Plus, X, ChevronDown,
 } from 'lucide-react'
-import { getUsers, getDepartments } from '@/lib/api'
-import { type User, type Department } from '@/types'
+import { getUsuariosPagina, getDepartments, getRoles } from '@/lib/api'
+import { type User, type Department, type Role } from '@/types'
 import { cn, getInitials, fullName } from '@/lib/utils'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useValorDiferido } from '@/hooks/useValorDiferido'
+import { useTituloDePagina } from '@/hooks/useMarca'
 
 const ROLE_STYLE: Record<string, string> = {
   'Administrador': 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
@@ -19,8 +22,8 @@ const ROLE_STYLE: Record<string, string> = {
 }
 
 const AVATAR_COLORS = [
-  'bg-ocean-500', 'bg-sunset-500', 'bg-purple-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-cyan-500', 'bg-rose-500', 'bg-indigo-500',
+  'bg-ocean-500', 'bg-purple-700', 'bg-emerald-700', 'bg-amber-700',
+  'bg-cyan-700', 'bg-rose-700', 'bg-indigo-600', 'bg-teal-700',
 ]
 
 function avatarColor(name: string): string {
@@ -52,20 +55,18 @@ function UserAvatar({ user, size = 'md' }: { user: User; size?: 'md' | 'lg' }) {
 }
 
 function UserListRow({ user }: { user: User }) {
-  const navigate = useNavigate()
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      onClick={() => navigate(`/users/${user.user_ID}`)}
-      className="flex items-center gap-4 px-5 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer border-b border-border last:border-0 group"
+      className="relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring flex items-center gap-4 px-5 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer border-b border-border last:border-0 group"
     >
       <UserAvatar user={user} size="md" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">
-          {fullName(user)}
+        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
+          <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
       </div>
@@ -85,24 +86,22 @@ function UserListRow({ user }: { user: User }) {
 }
 
 function UserGridCard({ user }: { user: User }) {
-  const navigate = useNavigate()
   return (
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={() => navigate(`/users/${user.user_ID}`)}
-      className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
+      className="relative focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-ocean-200 dark:hover:border-ocean-500/30 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
     >
       <UserAvatar user={user} size="lg" />
       <div className="min-w-0 w-full">
-        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 transition-colors truncate">
-          {fullName(user)}
+        <p className="text-sm font-semibold text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
+          <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
         {user.departamento_ID?.name && (
-          <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{user.departamento_ID.name}</p>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user.departamento_ID.name}</p>
         )}
       </div>
       {user.role?.name && (
@@ -118,45 +117,43 @@ function UserGridCard({ user }: { user: User }) {
 }
 
 export default function UsersPage() {
+  useTituloDePagina('Usuarios')
   const navigate = useNavigate()
   const [search, setSearch]   = useState('')
   const [roleFilter, setRole] = useState('')
   const [deptFilter, setDept] = useState('')
   const [view, setView]       = useState<'list' | 'grid'>('list')
+  const [pagina, setPagina]   = useState(1)
 
-  const { data: users = [], isLoading, refetch } = useQuery<User[]>({
-    queryKey: ['users'],
-    queryFn: getUsers,
+  // Búsqueda, filtros y páginas en el servidor (antes se bajaban los primeros 200).
+  const busqueda = useValorDiferido(search.trim())
+  const filtros = {
+    ...(busqueda && { search: busqueda }),
+    ...(roleFilter && { rol: roleFilter }),
+    ...(deptFilter && { departamento: deptFilter }),
+  }
+  const POR_PAGINA = 48
+  const { data: paginaActual, isLoading, refetch, isError, error, isPlaceholderData } = useQuery({
+    queryKey: ['users', 'lista', filtros, pagina],
+    queryFn: () => getUsuariosPagina({ ...filtros, page: pagina, page_size: POR_PAGINA }),
+    placeholderData: keepPreviousData,
   })
+  const displayed = paginaActual?.results ?? []
+  const total = paginaActual?.count ?? 0
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA))
+  const { data: rolesDisponibles = [] } = useQuery<Role[]>({ queryKey: ['roles'], queryFn: getRoles })
 
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
 
-  const roles = useMemo(() => {
-    const seen = new Set<string>()
-    users.forEach(u => { if (u.role?.name) seen.add(u.role.name) })
-    return Array.from(seen).sort()
-  }, [users])
-
-  const displayed = useMemo(() => {
-    let r = [...users]
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      r = r.filter(u =>
-        fullName(u).toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        String(u.cedula)?.includes(q),
-      )
-    }
-    if (roleFilter) r = r.filter(u => u.role?.name === roleFilter)
-    if (deptFilter) r = r.filter(u => u.departamento_ID?.departamentos_ID === deptFilter)
-    return r
-  }, [users, search, roleFilter, deptFilter])
+  const roles = rolesDisponibles.map(r => r.name)
 
   const hasFilters = !!search || !!roleFilter || !!deptFilter
-  const clearFilters = () => { setSearch(''); setRole(''); setDept('') }
+  const clearFilters = () => { setSearch(''); setRole(''); setDept(''); setPagina(1) }
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los usuarios" />
 
   return (
     <div className="flex flex-col h-full">
@@ -168,12 +165,12 @@ export default function UsersPage() {
         <div className="flex-1">
           <h1 className="text-base font-bold text-foreground">Usuarios</h1>
           {!isLoading && (
-            <p className="text-xs text-muted-foreground">{users.length} registrado{users.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-muted-foreground">{total} {hasFilters ? 'con estos filtros' : `registrado${total !== 1 ? 's' : ''}`}</p>
           )}
         </div>
         {!isLoading && (
           <span className="hidden sm:flex items-center justify-center px-3 py-1 bg-muted rounded-full text-xs font-bold text-foreground">
-            {users.length}
+            {total}
           </span>
         )}
       </div>
@@ -184,12 +181,13 @@ export default function UsersPage() {
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPagina(1) }}
             placeholder="Buscar usuarios..."
-            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+            aria-label="Buscar usuarios"
+            className="w-full pl-9 pr-8 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button aria-label="Borrar la búsqueda" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               <X size={12} />
             </button>
           )}
@@ -197,8 +195,9 @@ export default function UsersPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por rol"
             value={roleFilter}
-            onChange={e => setRole(e.target.value)}
+            onChange={e => { setRole(e.target.value); setPagina(1) }}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Todos los roles</option>
@@ -209,8 +208,9 @@ export default function UsersPage() {
 
         <div className="relative flex-shrink-0">
           <select
+            aria-label="Filtrar por departamento"
             value={deptFilter}
-            onChange={e => setDept(e.target.value)}
+            onChange={e => { setDept(e.target.value); setPagina(1) }}
             className="pl-2.5 pr-6 py-1.5 text-xs bg-background border border-input rounded-xl text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Todos los depto.</option>
@@ -228,13 +228,15 @@ export default function UsersPage() {
         <div className="flex-1" />
 
         {hasFilters && (
-          <span className="text-xs text-muted-foreground flex-shrink-0">{displayed.length} resultado{displayed.length !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-muted-foreground flex-shrink-0">{total} resultado{total !== 1 ? 's' : ''}</span>
         )}
 
         <div className="flex border border-border rounded-xl overflow-hidden flex-shrink-0">
           {(['list', 'grid'] as const).map(v => (
             <button
               key={v}
+              aria-label={v === 'list' ? 'Vista de lista' : 'Vista de cuadrícula'}
+              aria-pressed={view === v}
               onClick={() => setView(v)}
               className={cn('px-2.5 py-1.5 transition-colors', v === 'grid' ? 'border-l border-border' : '',
                 view === v ? 'bg-ocean-500 text-white' : 'text-muted-foreground hover:bg-accent')}
@@ -244,7 +246,7 @@ export default function UsersPage() {
           ))}
         </div>
 
-        <button onClick={() => refetch()}
+        <button aria-label="Actualizar" onClick={() => refetch()}
           className="p-1.5 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all flex-shrink-0">
           <RefreshCw size={13} />
         </button>
@@ -279,7 +281,17 @@ export default function UsersPage() {
               </motion.div>
             )}
           </AnimatePresence>
-        ) : (
+        ) : null}
+        {!isLoading && displayed.length > 0 && totalPaginas > 1 && (
+          <nav className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground" aria-label="Páginas de usuarios">
+            <button onClick={() => { setPagina(pagina - 1); document.querySelector('main')?.scrollTo({ top: 0 }) }} disabled={pagina <= 1 || isPlaceholderData}
+              className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40">Anterior</button>
+            <span aria-current="page">Página {pagina} de {totalPaginas}</span>
+            <button onClick={() => { setPagina(pagina + 1); document.querySelector('main')?.scrollTo({ top: 0 }) }} disabled={pagina >= totalPaginas || isPlaceholderData}
+              className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40">Siguiente</button>
+          </nav>
+        )}
+        {isLoading || displayed.length > 0 ? null : (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
             <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
               <Users size={22} className="text-muted-foreground/40" />
@@ -289,7 +301,7 @@ export default function UsersPage() {
               {hasFilters ? 'Ningún usuario coincide con los filtros.' : 'No hay usuarios registrados.'}
             </p>
             {hasFilters && (
-              <button onClick={clearFilters} className="text-xs text-ocean-500 hover:underline">Limpiar filtros</button>
+              <button onClick={clearFilters} className="text-xs text-ocean-500 dark:text-ocean-200 hover:underline">Limpiar filtros</button>
             )}
           </div>
         )}

@@ -5,6 +5,9 @@ import { Plus, TrendingDown, TrendingUp, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { getAjustes, createAjuste } from '@/lib/api'
 import type { AjustePresupuesto } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import { useMoneda } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Props {
   proyectoId?: string
@@ -13,9 +16,9 @@ interface Props {
   compact?: boolean
 }
 
-const colones = (n: number) => `₡${n.toLocaleString('es-CR')}`
 
 export default function BudgetSection({ proyectoId, tareaId, costoBase, compact }: Props) {
+  const { formatear, simbolo } = useMoneda()
   const qc = useQueryClient()
   const queryKey = ['ajustes', proyectoId ?? '', tareaId ?? '']
   const { data: ajustes = [] } = useQuery<AjustePresupuesto[]>({
@@ -45,7 +48,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
       setMonto('')
       setMotivo('')
     },
-    onError: () => toast.error('No se pudo registrar el ajuste'),
+    onError: err => toast.error(mensajeDeError(err, 'No se pudo registrar el ajuste')),
   })
 
   const delta = ajustes.reduce(
@@ -60,7 +63,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
         <div>
           <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-base'}`}>Presupuesto</h3>
           <p className="text-xs text-muted-foreground">
-            Base {colones(costoBase)} · Total actual <strong className="text-foreground">{colones(total)}</strong>
+            Base {formatear(costoBase)} · Total actual <strong className="text-foreground">{formatear(total)}</strong>
           </p>
         </div>
         <button
@@ -87,7 +90,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
                   <TrendingDown className="h-4 w-4 text-red-600" />
                 )}
                 <span className={a.tipo === 'aumento' ? 'text-emerald-700' : 'text-red-700'}>
-                  {a.tipo === 'aumento' ? '+' : '−'}{colones(a.monto)}
+                  {a.tipo === 'aumento' ? '+' : '−'}{formatear(a.monto)}
                 </span>
               </span>
               <span className="flex-1 text-xs text-muted-foreground truncate">{a.motivo}</span>
@@ -100,7 +103,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <Dialogo titulo="Nuevo ajuste de presupuesto" onCerrar={() => setOpen(false)} fondo="bg-black/50" cerrarAlTocarFondo>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -109,7 +112,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
           >
             <header className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Nuevo ajuste de presupuesto</h3>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button aria-label="Cerrar" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </header>
@@ -137,8 +140,8 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               </button>
             </div>
 
-            <label className="block text-sm font-medium text-foreground mb-1">Monto (₡)</label>
-            <input
+            <label htmlFor="budgetsection-monto" className="block text-sm font-medium text-foreground mb-1">Monto ({simbolo})</label>
+            <input id="budgetsection-monto"
               type="number"
               min={1}
               value={monto}
@@ -146,8 +149,8 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-3"
             />
 
-            <label className="block text-sm font-medium text-foreground mb-1">Motivo</label>
-            <textarea
+            <label htmlFor="budgetsection-motivo" className="block text-sm font-medium text-foreground mb-1">Motivo</label>
+            <textarea id="budgetsection-motivo"
               value={motivo}
               onChange={e => setMotivo(e.target.value)}
               rows={3}
@@ -167,7 +170,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact 
               </button>
             </div>
           </motion.div>
-        </div>
+        </Dialogo>
       )}
     </section>
   )

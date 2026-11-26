@@ -4,12 +4,15 @@ from django.utils.html import escape
 from django.conf import settings
 from django.db import IntegrityError
 from .models import Tareas
+from Projects.authz import delegacion_vigente
 from Projects.models import Proyectos, DelegacionSupervision
 from Users.models import Users
 from Notifications.models import Notificacion
 
 
 DIAS_AVISO = 4
+# Lo terminado o cancelado ya no necesita avisos.
+ESTADOS_CERRADOS = ['Completado', 'Cancelado']
 MAX_NOMBRE = 80
 
 
@@ -25,7 +28,7 @@ def _delegaciones_por_proyecto(proyecto_ids):
     """Mapa {proyecto_id: [supervisores]} en una sola query."""
     rows = (
         DelegacionSupervision.objects
-        .filter(proyecto_id__in=proyecto_ids, activa=True)
+        .filter(delegacion_vigente(), proyecto_id__in=proyecto_ids)
         .select_related('supervisor')
     )
     mapping = {}
@@ -84,26 +87,40 @@ def _enviar(usuario, asunto, titulo, mensaje, tipo, link, dedupe):
         enviar_email_async.delay(asunto, mensaje, html, [usuario.email])
 
 
+def _urgencia(dias):
+    if dias > 0:
+        return f'faltan {dias} día(s)'
+    if dias == 0:
+        return 'HOY vence'
+    return f'venció hace {-dias} día(s)'
+
+
+def desactivar_delegaciones_vencidas(hoy):
+    return DelegacionSupervision.objects.filter(activa=True, expira_en__lt=hoy).update(activa=False)
+
+
 def send_due_date_warnings():
-    """Avisos diarios a 0-4 días del vencimiento. Idempotente por (usuario, dedupe)."""
+    """Avisos diarios desde 4 días antes del vencimiento y cada día mientras siga vencido,
+    salvo lo completado o cancelado. Idempotente por (usuario, dedupe)."""
     hoy = _hoy_cr()
     limite = hoy + timedelta(days=DIAS_AVISO)
+    desactivar_delegaciones_vencidas(hoy)
 
     proyectos = list(
         Proyectos.objects
-        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=limite)
+        .filter(fecha_entrega__lte=limite)
+        .exclude(estado_ID__name__in=ESTADOS_CERRADOS)
         .select_related('user_ID', 'departamento_ID__direccion__jefe', 'departamento_ID__jefe')
     )
     alcaldia = _alcaldia_cache()
     delegados_map = _delegaciones_por_proyecto([p.proyect_ID for p in proyectos])
 
     for p in proyectos:
-        dias = (p.fecha_entrega - hoy).days
-        urgencia = 'HOY vence' if dias == 0 else f'faltan {dias} día(s)'
+        urgencia = _urgencia((p.fecha_entrega - hoy).days)
         titulo = f'Proyecto "{p.name[:MAX_NOMBRE]}" — {urgencia}'
         mensaje = (
             f'El proyecto "{p.name[:MAX_NOMBRE]}" tiene fecha de entrega el {p.fecha_entrega} ({urgencia}). '
-            'Revisa el avance y notifica al equipo si requiere ajuste.'
+            'Revise el avance y avise al equipo si requiere ajustes.'
         )
         link = f'/projects/{p.proyect_ID}'
         dedupe = f'venc-proy:{p.proyect_ID}:{hoy.isoformat()}'
@@ -112,7 +129,9 @@ def send_due_date_warnings():
 
     tareas = list(
         Tareas.objects
-        .filter(fecha_entrega__gte=hoy, fecha_entrega__lte=limite)
+        .filter(fecha_entrega__lte=limite)
+        .exclude(estado_ID__name__in=ESTADOS_CERRADOS)
+        .exclude(proyecto_ID__estado_ID__name__in=ESTADOS_CERRADOS)
         .select_related(
             'proyecto_ID__user_ID',
             'proyecto_ID__departamento_ID__direccion__jefe',
@@ -124,12 +143,11 @@ def send_due_date_warnings():
     delegados_map_t = _delegaciones_por_proyecto(proyecto_ids_tareas)
 
     for t in tareas:
-        dias = (t.fecha_entrega - hoy).days
-        urgencia = 'HOY vence' if dias == 0 else f'faltan {dias} día(s)'
+        urgencia = _urgencia((t.fecha_entrega - hoy).days)
         titulo = f'Tarea "{t.name[:MAX_NOMBRE]}" — {urgencia}'
         mensaje = (
             f'La tarea "{t.name[:MAX_NOMBRE]}" del proyecto "{t.proyecto_ID.name[:MAX_NOMBRE]}" '
-            f'vence el {t.fecha_entrega} ({urgencia}).'
+            f'tiene fecha de entrega el {t.fecha_entrega} ({urgencia}).'
         )
         link = f'/projects/{t.proyecto_ID_id}'
         dedupe = f'venc-tarea:{t.tareas_ID}:{hoy.isoformat()}'

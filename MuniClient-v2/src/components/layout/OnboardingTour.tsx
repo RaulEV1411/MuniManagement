@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, X, Sparkles, Bell, ListChecks, DollarSign, ShieldCheck, HelpCircle, type LucideIcon } from 'lucide-react'
 import { useOnboardingTour } from '@/hooks/useOnboardingTour'
+import Dialogo from '@/components/common/Dialogo'
 
 interface Step {
   icon: LucideIcon
@@ -12,33 +13,33 @@ interface Step {
 const STEPS: Step[] = [
   {
     icon: Sparkles,
-    title: '¡Bienvenida/o a MuniManagement!',
-    body: 'Esta plataforma te permite gestionar proyectos, tareas y presupuestos municipales. Te mostramos lo principal en menos de un minuto.',
+    title: 'Le damos la bienvenida a MuniManagement',
+    body: 'Esta plataforma le permite gestionar proyectos, tareas y presupuestos municipales. Le mostramos lo principal en menos de un minuto.',
   },
   {
     icon: Bell,
-    title: 'Recibe avisos automáticos',
-    body: 'En la campana de la parte superior verás notificaciones cuando un proyecto o tarea esté próximo a vencer (4 días antes y todos los días siguientes).',
+    title: 'Reciba avisos automáticos',
+    body: 'En la campana de la parte superior verá un aviso cuando un proyecto o una tarea esté por vencer: desde 4 días antes y cada día, hasta que se cierre.',
   },
   {
     icon: ListChecks,
-    title: 'Cambia estados con un clic',
-    body: 'Entra a un proyecto y, en la pestaña Información, haz clic en cualquiera de las píldoras (Pendiente, En progreso, Completado…) para cambiar el estado. Si pausas o cancelas, te pediremos un motivo.',
+    title: 'Cambie estados con un clic',
+    body: 'Entre a un proyecto y, en la pestaña Información, haga clic en cualquiera de las píldoras (Pendiente, En progreso, Completado…) para cambiar el estado. Si lo pausa o lo cancela, se le pedirá un motivo.',
   },
   {
     icon: DollarSign,
-    title: 'Registra aumentos y rebajos',
-    body: 'En la sección Presupuesto del proyecto puedes registrar ajustes (+ o −) con su motivo. Todo queda en historial para consultas.',
+    title: 'Registre aumentos y rebajos',
+    body: 'En la sección Presupuesto del proyecto puede registrar ajustes (+ o −) con su motivo. Todo queda en el historial.',
   },
   {
     icon: ShieldCheck,
-    title: 'Delega supervisión cuando lo necesites',
-    body: 'Si eres jefatura, puedes delegar supervisión a un compañero por proyecto. Útil para vacaciones, comisiones o acompañamientos puntuales.',
+    title: 'Delegue la supervisión cuando lo necesite',
+    body: 'Las jefaturas pueden delegar la supervisión de un proyecto en otra persona de su área. Sirve para vacaciones, comisiones o acompañamientos puntuales.',
   },
   {
     icon: HelpCircle,
-    title: '¿Dudas? Visita Ayuda',
-    body: 'En la barra lateral encuentras la sección Ayuda con preguntas frecuentes y un botón para volver a ver este tour cuando quieras.',
+    title: '¿Dudas? Visite Ayuda',
+    body: 'En el menú lateral está la sección Ayuda, con preguntas frecuentes y un botón para volver a ver este recorrido cuando quiera.',
   },
 ]
 
@@ -52,7 +53,7 @@ export default function OnboardingTour() {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4">
+      <Dialogo titulo={step.title} onCerrar={finish} capa="z-[100]" fondo="bg-black/60">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -61,13 +62,13 @@ export default function OnboardingTour() {
         >
           <button
             onClick={finish}
-            aria-label="Cerrar tour"
+            aria-label="Cerrar el recorrido"
             className="absolute top-3 right-3 p-2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
 
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-ocean-500/10 text-ocean-500 mb-4">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-ocean-500/10 text-ocean-500 dark:text-ocean-200 mb-4">
             <Icon className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">{step.title}</h2>
@@ -100,7 +101,7 @@ export default function OnboardingTour() {
             </div>
           </div>
         </motion.div>
-      </div>
+      </Dialogo>
     </AnimatePresence>
   )
 }

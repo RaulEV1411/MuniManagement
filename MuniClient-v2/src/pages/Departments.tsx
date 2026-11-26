@@ -4,9 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Building2, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections,
+  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections, getUsers,
 } from '@/lib/api'
-import { type Department, type Direction } from '@/types'
+import { type Department, type Direction, type User } from '@/types'
+import { mensajeDeError } from '@/lib/errores'
+import ErrorDeCarga from '@/components/common/ErrorDeCarga'
+import { useTituloDePagina } from '@/hooks/useMarca'
+import Dialogo from '@/components/common/Dialogo'
 
 function CreateModal({
   directions,
@@ -24,23 +28,24 @@ function CreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) { toast.error('El nombre es requerido'); return }
+    if (!dirId) { toast.error('Seleccione la dirección a la que pertenece'); return }
     setLoading(true)
     try {
       await createDepartment({ name: name.trim(), direccion: dirId || undefined })
       toast.success('Departamento creado')
       onCreated()
       onClose()
-    } catch {
-      toast.error('Error al crear departamento')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al crear departamento'))
     } finally {
       setLoading(false)
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring'
+  const inputCls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Dialogo titulo="Nuevo departamento" onCerrar={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -49,14 +54,14 @@ function CreateModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-bold text-foreground">Nuevo departamento</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             <X size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Nombre <span className="text-destructive">*</span></label>
-            <input
+            <label htmlFor="departments-nombre" className="text-xs font-semibold text-muted-foreground">Nombre <span className="text-destructive">*</span></label>
+            <input id="departments-nombre"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Ej: Departamento de Proyectos"
@@ -65,9 +70,9 @@ function CreateModal({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Dirección</label>
-            <select value={dirId} onChange={e => setDirId(e.target.value)} className={inputCls}>
-              <option value="">Sin dirección</option>
+            <label htmlFor="departments-direccion" className="text-xs font-semibold text-muted-foreground">Dirección *</label>
+            <select id="departments-direccion" value={dirId} onChange={e => setDirId(e.target.value)} className={inputCls}>
+              <option value="">Seleccionar dirección...</option>
               {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
             </select>
           </div>
@@ -83,18 +88,20 @@ function CreateModal({
           </div>
         </form>
       </motion.div>
-    </div>
+    </Dialogo>
   )
 }
 
 function DepartmentRow({
   dept,
   directions,
+  users,
   onSaved,
   onDeleted,
 }: {
   dept: Department
   directions: Direction[]
+  users: User[]
   onSaved: () => void
   onDeleted: () => void
 }) {
@@ -104,19 +111,23 @@ function DepartmentRow({
     typeof dept.direccion === 'string' ? dept.direccion : (dept.direccion as Direction | null)?.direccion_ID ?? ''
   )
   const [saving, setSaving]   = useState(false)
+  const [jefeId, setJefeId]   = useState(dept.jefe ?? '')
+  const jefe = users.find(u => u.user_ID === dept.jefe)
+  const nombreJefe = jefe ? `${jefe.first_name} ${jefe.last_name}` : '—'
 
   const dirName = directions.find(d => d.direccion_ID === dirId)?.name ?? '—'
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('El nombre no puede estar vacío'); return }
+    if (!dirId) { toast.error('Seleccione la dirección a la que pertenece'); return }
     setSaving(true)
     try {
-      await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined })
+      await updateDepartment(dept.departamentos_ID, { name: name.trim(), direccion: dirId || undefined, jefe: jefeId || null })
       toast.success('Departamento actualizado')
       onSaved()
       setEditing(false)
-    } catch {
-      toast.error('Error al actualizar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al actualizar'))
     } finally {
       setSaving(false)
     }
@@ -125,6 +136,7 @@ function DepartmentRow({
   const handleCancel = () => {
     setName(dept.name)
     setDirId(typeof dept.direccion === 'string' ? dept.direccion : (dept.direccion as Direction | null)?.direccion_ID ?? '')
+    setJefeId(dept.jefe ?? '')
     setEditing(false)
   }
 
@@ -134,8 +146,8 @@ function DepartmentRow({
       await deleteDepartment(dept.departamentos_ID)
       toast.success('Departamento eliminado')
       onDeleted()
-    } catch {
-      toast.error('Error al eliminar')
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'Error al eliminar'))
     }
   }
 
@@ -151,7 +163,7 @@ function DepartmentRow({
     >
       <td className="px-5 py-3.5 min-w-0">
         {editing ? (
-          <input
+          <input aria-label="Nombre del departamento"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Escape') handleCancel() }}
@@ -164,36 +176,46 @@ function DepartmentRow({
       </td>
       <td className="px-5 py-3.5 min-w-0">
         {editing ? (
-          <select value={dirId} onChange={e => setDirId(e.target.value)} className={cellInput}>
-            <option value="">Sin dirección</option>
+          <select aria-label="Dirección" value={dirId} onChange={e => setDirId(e.target.value)} className={cellInput}>
+            <option value="">Seleccionar dirección...</option>
             {directions.map(d => <option key={d.direccion_ID} value={d.direccion_ID}>{d.name}</option>)}
           </select>
         ) : (
           <span className="text-sm text-muted-foreground">{dirName}</span>
         )}
       </td>
+      <td className="px-5 py-3.5 min-w-0">
+        {editing ? (
+          <select value={jefeId} onChange={e => setJefeId(e.target.value)} aria-label="Jefe" className="w-full px-2.5 py-1.5 text-sm bg-background border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">Sin jefe</option>
+            {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}{u.role?.name ? ` · ${u.role.name}` : ''}</option>)}
+          </select>
+        ) : (
+          <span className="text-sm text-muted-foreground">{nombreJefe}</span>
+        )}
+      </td>
       <td className="px-5 py-3.5 text-right">
         <div className="flex items-center justify-end gap-1.5">
           {editing ? (
             <>
-              <button onClick={handleSave} disabled={saving}
+              <button aria-label="Guardar" onClick={handleSave} disabled={saving}
                 className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors disabled:opacity-60">
                 <Check size={13} />
               </button>
-              <button onClick={handleCancel}
+              <button aria-label="Cancelar" onClick={handleCancel}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent transition-colors">
                 <X size={13} />
               </button>
             </>
           ) : (
             <>
-              <button
+              <button aria-label={`Editar ${dept.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 <Pencil size={13} />
               </button>
-              <button
+              <button aria-label={`Eliminar ${dept.name}`}
                 onClick={handleDelete}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
@@ -208,20 +230,24 @@ function DepartmentRow({
 }
 
 export default function DepartmentsPage() {
+  useTituloDePagina('Departamentos')
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
 
-  const { data: departments = [], isLoading } = useQuery<Department[]>({
+  const { data: departments = [], isLoading, isError, error, refetch } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
 
+  const { data: users = [] } = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
   const { data: directions = [] } = useQuery<Direction[]>({
     queryKey: ['directions'],
     queryFn: getDirections,
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['departments'] })
+
+  if (isError) return <ErrorDeCarga error={error} onReintentar={refetch} que="los departamentos" />
 
   return (
     <div className="flex flex-col h-full">
@@ -258,7 +284,7 @@ export default function DepartmentsPage() {
               <Building2 size={20} className="text-muted-foreground/40" />
             </div>
             <p className="text-sm font-medium text-foreground">Sin departamentos</p>
-            <p className="text-xs text-muted-foreground">Crea el primer departamento para comenzar</p>
+            <p className="text-xs text-muted-foreground">Cree el primer departamento para comenzar</p>
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 text-white text-xs font-semibold rounded-xl hover:bg-ocean-600 transition-all active:scale-[0.98]"
@@ -273,6 +299,7 @@ export default function DepartmentsPage() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Dirección</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Jefe</th>
                   <th className="px-5 py-3 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -283,6 +310,7 @@ export default function DepartmentsPage() {
                       key={d.departamentos_ID}
                       dept={d}
                       directions={directions}
+                      users={users}
                       onSaved={invalidate}
                       onDeleted={invalidate}
                     />

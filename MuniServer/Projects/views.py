@@ -1,5 +1,6 @@
-import cloudinary.uploader
+from MuniServer.subidas import borrar_imagen, error_de_imagen, subir_imagen
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -15,10 +16,12 @@ from .serializers import (
     ProyectosTiposSerializer, ProyectosReadSerializer, ProyectosWriteSerializer,
     ProjectImageSerializer, DelegacionSupervisionSerializer, AjustePresupuestoSerializer,
 )
-from .permissions import SystemRecordReadOnly
-from . import authz
+from .permissions import SystemRecordReadOnly, CatalogoSoloAdministrador
+from . import authz, consultas
+from MuniServer.borrado import ProtegidoAlBorrarMixin
 from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
+from Notifications.servicios import interesados_del_proyecto, nombre, notificar
 
 
 ESTADOS_REQUIEREN_MOTIVO = {'Cancelado', 'Pausado'}
@@ -26,35 +29,33 @@ ESTADOS_REQUIEREN_MOTIVO = {'Cancelado', 'Pausado'}
 
 def _proyectos_visibles_qs(user):
     """Proyectos que el usuario puede ver (queryset filtrado, no list)."""
-    qs = Proyectos.objects.select_related(
+    return authz.proyectos_visibles(user).select_related(
         'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID'
-    ).prefetch_related('images', 'ajustes_presupuesto')
-    if authz.tiene_vision_global(user):
-        return qs
-    return qs.filter(
-        Q(user_ID=user)
-        | Q(departamento_ID__jefe=user)
-        | Q(departamento_ID__direccion__jefe=user)
-        | Q(delegaciones__supervisor=user, delegaciones__activa=True)
-    ).distinct()
+    ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo')
 
 
-class EstadoViewSet(ModelViewSet):
+class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Estado.objects.all()
     serializer_class = EstadoSerializer
-    permission_classes = [IsAuthenticated, SystemRecordReadOnly]
+    pagination_class = None
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
+    mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con este estado.'
 
 
-class PrioridadViewSet(ModelViewSet):
+class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Prioridad.objects.all()
     serializer_class = PrioridadSerializer
-    permission_classes = [IsAuthenticated, SystemRecordReadOnly]
+    pagination_class = None
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador, SystemRecordReadOnly]
+    mensaje_protegido = 'No se puede borrar: hay proyectos o tareas con esta prioridad.'
 
 
-class TiposViewSet(ModelViewSet):
+class TiposViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     queryset = Tipos.objects.all()
     serializer_class = TiposSerializer
-    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
+    mensaje_protegido = 'No se puede borrar: hay proyectos de este tipo.'
 
 
 class ProyectosReadViewSet(ModelViewSet):
@@ -63,33 +64,49 @@ class ProyectosReadViewSet(ModelViewSet):
     http_method_names = ['get', 'head', 'options']
 
     def get_queryset(self):
-        qs = _proyectos_visibles_qs(self.request.user)
-        user_ID = self.request.query_params.get('user_ID')
-        if user_ID:
-            qs = qs.filter(user_ID=user_ID)
-        return qs
+        p = self.request.query_params
+        qs = consultas.filtrar(_proyectos_visibles_qs(self.request.user), p, self.request.user)
+        return consultas.ordenar(qs, p)
+
+    @action(detail=False, methods=['get'])
+    def resumen(self, request):
+        """Totales para el dashboard, el menú y los reportes, con los mismos filtros que la lista."""
+        qs = consultas.filtrar(authz.proyectos_visibles(request.user), request.query_params, request.user)
+        return Response(consultas.resumen(qs))
 
 
 class ProyectosWriteViewSet(ModelViewSet):
-    queryset = Proyectos.objects.all()
     serializer_class = ProyectosWriteSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return authz.proyectos_visibles(self.request.user)
 
     def get_object(self):
         obj = super().get_object()
         if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
             if not authz.puede_ver(self.request.user, obj):
-                raise PermissionDenied('No tienes acceso a este proyecto.')
+                raise PermissionDenied('No tiene acceso a este proyecto.')
         else:
             if not authz.puede_editar(self.request.user, obj):
-                raise PermissionDenied('No tienes permisos para modificar este proyecto.')
+                raise PermissionDenied('No tiene permisos para modificar este proyecto.')
         return obj
 
     def perform_create(self, serializer):
-        serializer.save()
+        proyecto = serializer.save()
+        HistorialCambios.objects.create(
+            tipo='creacion', proyecto_ID=proyecto, usuario=self.request.user,
+            datos_nuevos={'name': proyecto.name, 'costo': str(proyecto.costo), 'fecha_entrega': str(proyecto.fecha_entrega)},
+        )
+        notificar(
+            [proyecto.user_ID], self.request.user, 'asignacion',
+            f'Le asignaron el proyecto "{nombre(proyecto.name)}"',
+            f'{self.request.user.first_name} {self.request.user.last_name} lo nombró responsable del proyecto.',
+            f'/projects/{proyecto.proyect_ID}',
+        )
 
     def perform_update(self, serializer):
-        prev = self.get_object()
+        prev = serializer.instance
         anterior = {
             'estado_ID': str(prev.estado_ID_id),
             'fecha_entrega': str(prev.fecha_entrega),
@@ -118,6 +135,12 @@ class ProyectosWriteViewSet(ModelViewSet):
         if anterior['estado_ID'] != nuevo['estado_ID']:
             estado_name = instance.estado_ID.name if hasattr(instance, 'estado_ID') else ''
             tipo = 'cancelacion' if 'Cancelad' in estado_name else 'cambio_estado_proyecto'
+            notificar(
+                interesados_del_proyecto(instance), self.request.user, 'cambio_estado',
+                f'"{nombre(instance.name)}" pasó a {estado_name}',
+                f'{self.request.user.first_name} {self.request.user.last_name} cambió el estado del proyecto.',
+                f'/projects/{instance.proyect_ID}',
+            )
         elif anterior['fecha_entrega'] != nuevo['fecha_entrega']:
             tipo = 'ampliacion_plazo' if nuevo['fecha_entrega'] > anterior['fecha_entrega'] else 'reprogramacion'
         elif anterior['costo'] != nuevo['costo']:
@@ -135,23 +158,44 @@ class ProyectosWriteViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         if not authz.puede_editar(self.request.user, instance):
-            raise PermissionDenied('No tienes permisos para eliminar este proyecto.')
+            raise PermissionDenied('No tiene permisos para eliminar este proyecto.')
+        datos = {'proyect_ID': str(instance.proyect_ID), 'name': instance.name}
         instance.delete()
+        # Queda sin proyecto (ya no existe), pero conserva quién y qué se borró.
+        HistorialCambios.objects.create(tipo='eliminacion', usuario=self.request.user, datos_anteriores=datos)
 
 
 class ProyectosTiposViewSet(ModelViewSet):
-    queryset = Proyectos_tipos.objects.all()
     serializer_class = ProyectosTiposSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+    def get_queryset(self):
+        return Proyectos_tipos.objects.filter(
+            proyecto__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
+
+    def perform_create(self, serializer):
+        if not authz.puede_editar(self.request.user, serializer.validated_data['proyecto']):
+            raise PermissionDenied('No tiene permisos para modificar este proyecto.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not authz.puede_editar(self.request.user, instance.proyecto):
+            raise PermissionDenied('No tiene permisos para modificar este proyecto.')
+        instance.delete()
 
 
 class ProjectImageViewSet(ModelViewSet):
     queryset = ProjectImage.objects.all()
     serializer_class = ProjectImageSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(
+            proyecto__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
         proyecto_ID = self.request.query_params.get('proyecto_ID')
         if proyecto_ID:
             queryset = queryset.filter(proyecto_id=proyecto_ID)
@@ -166,14 +210,16 @@ class ProjectImageViewSet(ModelViewSet):
         if not proyecto_id:
             return Response({'error': 'proyecto_ID es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            proyecto = Proyectos.objects.get(pk=proyecto_id)
-        except Proyectos.DoesNotExist:
+        proyecto = authz.proyectos_visibles(request.user).filter(pk=proyecto_id).first()
+        if proyecto is None:
             return Response({'error': 'Proyecto no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         if not authz.puede_editar(request.user, proyecto):
-            raise PermissionDenied('No tienes permisos para subir imágenes a este proyecto.')
+            raise PermissionDenied('No tiene permisos para subir imágenes a este proyecto.')
+        error = error_de_imagen(file)
+        if error:
+            return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
 
-        result = cloudinary.uploader.upload(file, folder='munimanagement/proyectos')
+        result = subir_imagen(file, 'munimanagement/proyectos')
         image = ProjectImage.objects.create(
             proyecto_id=proyecto_id,
             url=result['secure_url'],
@@ -184,8 +230,8 @@ class ProjectImageViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if not authz.puede_editar(request.user, instance.proyecto):
-            raise PermissionDenied('No tienes permisos para borrar esta imagen.')
-        cloudinary.uploader.destroy(instance.public_id)
+            raise PermissionDenied('No tiene permisos para borrar esta imagen.')
+        borrar_imagen(instance.public_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -214,12 +260,16 @@ class DelegacionSupervisionViewSet(ModelViewSet):
 
     def _check_can_manage(self, proyecto):
         if not authz.puede_delegar(self.request.user, proyecto):
-            raise PermissionDenied('No tienes permisos para gestionar la supervisión de este proyecto.')
+            raise PermissionDenied('No tiene permisos para gestionar la supervisión de este proyecto.')
 
     def perform_create(self, serializer):
         proyecto = serializer.validated_data['proyecto']
         supervisor = serializer.validated_data['supervisor']
         self._check_can_manage(proyecto)
+        if supervisor.user_ID == self.request.user.user_ID:
+            raise ValidationError({'supervisor': 'No puede delegar la supervisión en su propia cuenta.'})
+        if not authz.usuarios_visibles(self.request.user).filter(pk=supervisor.pk).exists():
+            raise ValidationError({'supervisor': 'Solo puede delegar en personas de su dirección o departamento.'})
         rol = getattr(getattr(supervisor, 'role', None), 'name', '')
         flag_ok = getattr(getattr(supervisor, 'role', None), 'puede_recibir_delegacion', False)
         if not flag_ok and rol not in {'Coordinador', 'Funcionario', 'Jefe de Departamento', 'Jefe de Dirección'}:
@@ -228,15 +278,18 @@ class DelegacionSupervisionViewSet(ModelViewSet):
         Notificacion.objects.create(
             usuario=instance.supervisor,
             tipo='delegacion',
-            titulo=f'Te delegaron supervisión del proyecto "{proyecto.name}"',
-            mensaje=f'{self.request.user.first_name} {self.request.user.last_name} te asignó como supervisor.',
+            titulo=f'Se le delegó la supervisión del proyecto "{proyecto.name}"',
+            mensaje=f'{self.request.user.first_name} {self.request.user.last_name} le asignó la supervisión.',
             link=f'/projects/{proyecto.proyect_ID}',
             clave_dedupe=f'delegacion-{instance.delegacion_ID}',
         )
 
     def perform_update(self, serializer):
-        proyecto = self.get_object().proyecto
-        self._check_can_manage(proyecto)
+        delegacion = serializer.instance
+        self._check_can_manage(delegacion.proyecto)
+        for campo in ('proyecto', 'supervisor'):
+            if campo in serializer.validated_data and serializer.validated_data[campo] != getattr(delegacion, campo):
+                raise ValidationError({campo: 'No se puede cambiar; revoca la delegación y crea otra.'})
         serializer.save()
 
     def perform_destroy(self, instance):
@@ -262,14 +315,8 @@ class AjustePresupuestoViewSet(ModelViewSet):
             qs = qs.filter(tarea_id=tarea_ID)
         if authz.tiene_vision_global(user):
             return qs
-        return qs.filter(
-            Q(proyecto__user_ID=user)
-            | Q(proyecto__departamento_ID__jefe=user)
-            | Q(proyecto__departamento_ID__direccion__jefe=user)
-            | Q(proyecto__delegaciones__supervisor=user, proyecto__delegaciones__activa=True)
-            | Q(tarea__proyecto_ID__user_ID=user)
-            | Q(tarea__asignado_a=user)
-        ).distinct()
+        visibles = authz.proyectos_visibles(user).values('pk')
+        return qs.filter(Q(proyecto__in=visibles) | Q(tarea__proyecto_ID__in=visibles))
 
     def _proyecto_objetivo(self, ajuste):
         return ajuste.proyecto or (ajuste.tarea.proyecto_ID if ajuste.tarea else None)
@@ -282,7 +329,7 @@ class AjustePresupuestoViewSet(ModelViewSet):
         if not proyecto:
             raise ValidationError('Debe indicar un proyecto o una tarea.')
         if not authz.puede_editar(self.request.user, proyecto):
-            raise PermissionDenied('No tienes permisos para registrar ajustes en este proyecto.')
+            raise PermissionDenied('No tiene permisos para registrar ajustes en este proyecto.')
 
         instance = serializer.save(usuario=self.request.user)
         HistorialCambios.objects.create(
@@ -307,5 +354,5 @@ class AjustePresupuestoViewSet(ModelViewSet):
     def perform_destroy(self, instance):
         proyecto = self._proyecto_objetivo(instance)
         if proyecto and not authz.puede_editar(self.request.user, proyecto):
-            raise PermissionDenied('No puedes borrar ajustes de un proyecto que no gestionas.')
+            raise PermissionDenied('No puede borrar ajustes de un proyecto que no gestiona.')
         instance.delete()

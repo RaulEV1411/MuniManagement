@@ -1,6 +1,12 @@
 FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 WORKDIR /app
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
+RUN pip install --require-hashes -r requirements.txt
+# Sin root: el proceso corre como un usuario sin privilegios.
+RUN useradd --create-home --uid 1000 muni && mkdir -p /app/staticfiles /app/media && chown muni:muni /app/staticfiles /app/media
+COPY --chown=muni:muni . .
+USER muni
 EXPOSE 8000
