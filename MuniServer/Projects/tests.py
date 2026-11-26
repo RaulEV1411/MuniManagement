@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 
 from MuniServer.pruebas import Escenario, crear_proyecto
-from Projects.models import AjustePresupuesto, DelegacionSupervision, Estado, Proyectos_tipos, Tipos
+from Projects.models import AjustePresupuesto, Estado, MiembroProyecto, Proyectos_tipos, RolProyecto, Tipos
 
 
 class CatalogosTests(Escenario, APITestCase):
@@ -35,11 +35,12 @@ class ProyectosTests(Escenario, APITestCase):
         self.assertEqual(Proyectos_tipos.objects.count(), 1)
 
 
-class DelegacionTests(Escenario, APITestCase):
-    URL = '/api/v1/projects/delegaciones/'
+class MiembrosTests(Escenario, APITestCase):
+    URL = '/api/v1/projects/miembros/'
 
-    def datos(self, supervisor):
-        return {'proyecto': str(self.proyecto.proyect_ID), 'supervisor': str(supervisor.user_ID)}
+    def datos(self, usuario, rol='Supervisor', **extra):
+        return {'proyecto': str(self.proyecto.proyect_ID), 'usuario': str(usuario.user_ID),
+                'rol': str(RolProyecto.objects.get(nombre=rol).pk), **extra}
 
     def test_el_jefe_del_departamento_delega_en_su_alcance(self):
         self.assertEqual(self.como(self.jefe_a).post(self.URL, self.datos(self.companero), format='json').status_code, 201)
@@ -55,14 +56,36 @@ class DelegacionTests(Escenario, APITestCase):
     def test_nadie_se_delega_a_si_mismo(self):
         self.assertEqual(self.como(self.jefe_a).post(self.URL, self.datos(self.jefe_a), format='json').status_code, 400)
 
-    def test_un_patch_no_cambia_proyecto_ni_supervisor(self):
-        delegacion = DelegacionSupervision.objects.create(proyecto=self.proyecto, supervisor=self.ajeno, otorgado_por=self.jefe_a)
+    def test_un_patch_no_cambia_proyecto_ni_persona_pero_si_rol_y_vigencia(self):
+        miembro = MiembroProyecto.objects.create(proyecto=self.proyecto, usuario=self.ajeno, otorgado_por=self.jefe_a,
+                                                 rol=RolProyecto.objects.get(nombre='Observador'))
         otro = crear_proyecto(self.dueno, name='Otro')
         c = self.como(self.jefe_a)
-        url = f'{self.URL}{delegacion.pk}/'
+        url = f'{self.URL}{miembro.pk}/'
         self.assertEqual(c.patch(url, {'proyecto': str(otro.proyect_ID)}, format='json').status_code, 400)
-        self.assertEqual(c.patch(url, {'supervisor': str(self.asignado.user_ID)}, format='json').status_code, 400)
-        self.assertEqual(c.patch(url, {'puede_editar': True}, format='json').status_code, 200)
+        self.assertEqual(c.patch(url, {'usuario': str(self.asignado.user_ID)}, format='json').status_code, 400)
+        supervisor = str(RolProyecto.objects.get(nombre='Supervisor').pk)
+        self.assertEqual(c.patch(url, {'rol': supervisor, 'hasta': '2099-01-01'}, format='json').status_code, 200)
+
+    def test_no_se_repite_ni_vence_en_el_pasado(self):
+        c = self.como(self.jefe_a)
+        self.assertEqual(c.post(self.URL, self.datos(self.companero), format='json').status_code, 201)
+        r = c.post(self.URL, self.datos(self.companero, rol='Observador'), format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('ya está en el equipo', str(r.data))
+        MiembroProyecto.objects.all().delete()
+        r = c.post(self.URL, self.datos(self.companero, hasta='2000-01-01'), format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_quitar_a_alguien_lo_revoca_y_deja_constancia(self):
+        c = self.como(self.jefe_a)
+        mid = c.post(self.URL, self.datos(self.companero), format='json').data['miembro_ID']
+        self.assertEqual(self.como(self.companero).get(f'/api/v1/projects/proyectosRead/{self.proyecto.pk}/').status_code, 200)
+        self.assertEqual(self.como(self.jefe_a).delete(f'{self.URL}{mid}/').status_code, 204)
+        m = MiembroProyecto.objects.get(pk=mid)
+        self.assertFalse(m.activo)
+        self.assertEqual(m.revocado_por, self.jefe_a)
+        self.assertEqual(self.como(self.companero).get(f'/api/v1/projects/proyectosRead/{self.proyecto.pk}/').status_code, 404)
 
 
 class AjustesTests(Escenario, APITestCase):

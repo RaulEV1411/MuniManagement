@@ -4,8 +4,9 @@ from django.utils.html import escape
 from django.conf import settings
 from django.db import IntegrityError
 from .models import Tareas
-from Projects.authz import delegacion_vigente
-from Projects.models import Proyectos, DelegacionSupervision
+from Projects.authz import membresia_vigente
+from Projects.catalogo_permisos import TODOS
+from Projects.models import MiembroProyecto, Proyectos
 from Users.models import Users
 from Notifications.models import Notificacion
 
@@ -21,19 +22,21 @@ def _hoy_cr():
 
 
 def _alcaldia_cache():
-    return list(Users.objects.filter(role__name__in=['Alcalde', 'Vicealcalde']))
+    """Quienes ven toda la institución (salvo el Administrador, que es técnico) reciben los avisos de vencimiento."""
+    usuarios = Users.objects.filter(is_active=True).exclude(role__name='Administrador').select_related('role')
+    return [u for u in usuarios if (u.role.permisos or {}).get('proyectos.ver') == TODOS]
 
 
 def _delegaciones_por_proyecto(proyecto_ids):
-    """Mapa {proyecto_id: [supervisores]} en una sola query."""
+    """Mapa {proyecto_id: [miembros vigentes del equipo]} en una sola query."""
     rows = (
-        DelegacionSupervision.objects
-        .filter(delegacion_vigente(), proyecto_id__in=proyecto_ids)
-        .select_related('supervisor')
+        MiembroProyecto.objects
+        .filter(membresia_vigente(), proyecto_id__in=proyecto_ids)
+        .select_related('usuario')
     )
     mapping = {}
     for r in rows:
-        mapping.setdefault(r.proyecto_id, []).append(r.supervisor)
+        mapping.setdefault(r.proyecto_id, []).append(r.usuario)
     return mapping
 
 
@@ -95,8 +98,29 @@ def _urgencia(dias):
     return f'venció hace {-dias} día(s)'
 
 
+DIAS_AVISO_ACCESO = 3
+
+
 def desactivar_delegaciones_vencidas(hoy):
-    return DelegacionSupervision.objects.filter(activa=True, expira_en__lt=hoy).update(activa=False)
+    """Los accesos al equipo de un proyecto vencen solos: pasan a inactivos al día siguiente de su fin."""
+    return MiembroProyecto.objects.filter(activo=True, hasta__lt=hoy).update(activo=False)
+
+
+def avisar_accesos_por_vencer(hoy):
+    """Una vez, 3 días antes del fin: a la persona y a quien le dio el acceso, para que lo extienda si hace falta."""
+    limite = hoy + timedelta(days=DIAS_AVISO_ACCESO)
+    for m in MiembroProyecto.objects.filter(activo=True, hasta__gte=hoy, hasta__lte=limite).select_related('usuario', 'otorgado_por', 'proyecto', 'rol'):
+        titulo = f'Su acceso a "{m.proyecto.name[:MAX_NOMBRE]}" vence el {m.hasta:%d/%m/%Y}'
+        mensaje = f'Rol {m.rol.nombre}. Si necesita seguir, pida que se lo extiendan.'
+        for u in {m.usuario, m.otorgado_por} - {None}:
+            texto = titulo if u == m.usuario else f'El acceso de {m.usuario.first_name} {m.usuario.last_name} a "{m.proyecto.name[:MAX_NOMBRE]}" vence el {m.hasta:%d/%m/%Y}'
+            try:
+                Notificacion.objects.get_or_create(
+                    usuario=u, clave_dedupe=f'acceso-vence:{m.miembro_ID}:{m.hasta}',
+                    defaults={'tipo': 'delegacion', 'titulo': texto[:120], 'mensaje': mensaje, 'link': f'/projects/{m.proyecto_id}'},
+                )
+            except IntegrityError:
+                pass
 
 
 def send_due_date_warnings():
@@ -105,6 +129,7 @@ def send_due_date_warnings():
     hoy = _hoy_cr()
     limite = hoy + timedelta(days=DIAS_AVISO)
     desactivar_delegaciones_vencidas(hoy)
+    avisar_accesos_por_vencer(hoy)
 
     proyectos = list(
         Proyectos.objects

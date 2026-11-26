@@ -26,6 +26,12 @@ class Configuracion(models.Model):
         self.pk = 1
         super().save(*args, **kwargs)
 
+    SIMBOLOS = {'CRC': '₡', 'USD': '$', 'EUR': '€', 'GTQ': 'Q', 'HNL': 'L', 'NIO': 'C$', 'PAB': 'B/.', 'MXN': '$', 'COP': '$', 'DOP': 'RD$'}
+
+    def monto(self, valor):
+        """Un monto con la moneda de la instalación, para avisos y correos (en la app lo hace Intl)."""
+        return f"{self.SIMBOLOS.get(self.moneda, self.moneda + ' ')}{int(valor):,}".replace(',', ' ')
+
     @classmethod
     def actual(cls):
         obj, _ = cls.objects.get_or_create(pk=1)

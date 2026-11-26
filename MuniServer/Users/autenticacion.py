@@ -6,6 +6,7 @@
 - Se sigue aceptando "Authorization: Bearer" para scripts y pruebas.
 """
 from django.conf import settings
+from Projects import authz
 from django.middleware.csrf import get_token
 from rest_framework import exceptions
 from rest_framework.authentication import CSRFCheck
@@ -64,11 +65,8 @@ def datos_de_sesion(request, user):
         'last_name': user.last_name,
         'email': user.email,
         'role': role.name if role else '',
-        'role_flags': {
-            'puede_delegar': bool(getattr(role, 'puede_delegar', False)),
-            'puede_recibir_delegacion': bool(getattr(role, 'puede_recibir_delegacion', False)),
-            'puede_ver_todo': bool(getattr(role, 'puede_ver_todo', False)),
-        },
+        # {permiso: alcance}: el front muestra solo lo que el servidor va a permitir.
+        'permisos': authz.permisos_del_rol(user),
         'user_photo': user.user_photo or '',
         'departamento_ID': str(user.departamento_ID_id) if user.departamento_ID_id else '',
         'onboarding_completado': bool(user.onboarding_completado),

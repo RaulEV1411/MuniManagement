@@ -250,15 +250,17 @@ class JerarquiaDeUsuariosTests(Escenario, APITestCase):
         # Y alguien de B que no está en el proyecto no ve al dueño.
         self.assertNotIn(str(self.dueno.user_ID), self.visibles(self.ajeno))
 
-    def test_la_delegacion_vigente_suma_al_equipo_y_la_vencida_no(self):
+    def test_la_membresia_vigente_suma_al_equipo_y_la_vencida_no(self):
         from datetime import timedelta
         from django.utils import timezone
-        from Projects.models import DelegacionSupervision
-        d = DelegacionSupervision.objects.create(proyecto=self.proyecto, supervisor=self.jefe_b, otorgado_por=self.alcalde)
+        from Projects.models import MiembroProyecto, RolProyecto
+        m = MiembroProyecto.objects.create(proyecto=self.proyecto, usuario=self.jefe_b, otorgado_por=self.alcalde,
+                                           rol=RolProyecto.objects.get(nombre='Observador'))
         self.assertIn(str(self.dueno.user_ID), self.visibles(self.jefe_b))
         self.assertIn(str(self.jefe_b.user_ID), self.visibles(self.dueno))
-        d.expira_en = timezone.localdate() - timedelta(days=1)
-        d.save()
+        m.hasta = timezone.localdate() - timedelta(days=1)
+        m.desde = m.hasta - timedelta(days=5)
+        m.save()
         self.assertNotIn(str(self.dueno.user_ID), self.visibles(self.jefe_b))
 
     def test_el_jefe_de_direccion_ve_todos_sus_departamentos(self):

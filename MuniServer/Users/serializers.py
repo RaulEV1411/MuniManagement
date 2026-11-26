@@ -1,14 +1,30 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, ValidationError
 from django.contrib.auth.hashers import make_password
 
+from Projects import catalogo_permisos as cat
 from .acceso import encolar_correo_de_acceso
 from .models import Roles, Users
 
 class RolesSerializer(ModelSerializer):
     class Meta:
         model = Roles
-        fields = ['role_ID', 'name', 'is_system', 'puede_delegar', 'puede_recibir_delegacion']
-        read_only_fields = ['is_system', 'puede_delegar', 'puede_recibir_delegacion']
+        fields = ['role_ID', 'name', 'descripcion', 'is_system', 'permisos']
+        read_only_fields = ['is_system']
+
+    def validate_permisos(self, value):
+        if not isinstance(value, dict):
+            raise ValidationError('Los permisos van como {permiso: alcance}.')
+        limpio = {}
+        for codigo, alcance in value.items():
+            if codigo not in cat.PERMISOS:
+                raise ValidationError(f'No existe el permiso «{codigo}».')
+            if alcance in (None, ''):
+                continue
+            if alcance not in cat.ALCANCES:
+                raise ValidationError(f'Alcance no válido para «{codigo}».')
+            # Los permisos sin alcance (estructura, catálogos, …) son todo o nada.
+            limpio[codigo] = alcance if cat.admite_alcance(codigo) else cat.TODOS
+        return limpio
 
 
 class RolYDepartamentoAnidados:
@@ -20,9 +36,8 @@ class RolYDepartamentoAnidados:
             rol = instance.role
             datos['role'] = rol and {
                 'role_ID': str(rol.role_ID), 'name': rol.name,
-                'puede_delegar': rol.puede_delegar,
-                'puede_recibir_delegacion': rol.puede_recibir_delegacion,
-                'puede_ver_todo': rol.puede_ver_todo,
+                # Para elegir a quién sumar al equipo de un proyecto.
+                'integra_equipos': rol.name == 'Administrador' or 'equipo.integrar' in (rol.permisos or {}),
             }
         if 'departamento_ID' in datos:
             depto = instance.departamento_ID

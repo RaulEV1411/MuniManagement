@@ -47,6 +47,6 @@ class FeedbackViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         user = self.request.user
-        if instance.user_ID_id != user.user_ID and not authz.tiene_vision_global(user):
-            raise PermissionDenied('Solo el autor o la alcaldía pueden borrar este comentario.')
+        if instance.user_ID_id != user.user_ID and not authz.puede(user, 'comentarios.moderar', instance.proyecto_ID):
+            raise PermissionDenied('Solo el autor o quien modera comentarios puede borrar este comentario.')
         instance.delete()

@@ -7,12 +7,12 @@ from .serializers import DireccionSerializer, DepartamentosSerializer
 
 
 class EscrituraSoloAlcaldia(BasePermission):
-    """Todos leen; solo Administrador y alcaldía crean, editan o borran, y nombran jefes."""
+    """Todos leen; crean, editan, borran y nombran jefes quienes tienen estructura.gestionar."""
 
-    message = 'Solo la alcaldía o un administrador pueden modificar direcciones y departamentos.'
+    message = 'No tiene permisos para modificar direcciones y departamentos.'
 
     def has_permission(self, request, view):
-        return request.method in SAFE_METHODS or authz.tiene_vision_global(request.user)
+        return request.method in SAFE_METHODS or authz.puede(request.user, 'estructura.gestionar')
 
 
 class DireccionViewSet(ProtegidoAlBorrarMixin, ModelViewSet):

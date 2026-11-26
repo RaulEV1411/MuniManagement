@@ -70,22 +70,40 @@ class Proyectos_tipos(models.Model):
     tipo = models.ForeignKey(Tipos, on_delete=models.PROTECT)
 
 
-class DelegacionSupervision(models.Model):
-    delegacion_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE, related_name='delegaciones')
-    supervisor = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='delegaciones_recibidas')
-    otorgado_por = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='delegaciones_otorgadas')
-    puede_editar = models.BooleanField(default=False)
-    activa = models.BooleanField(default=True)
-    creada_en = models.DateTimeField(auto_now_add=True)
-    expira_en = models.DateField(null=True, blank=True)
+class RolProyecto(models.Model):
+    """Rol dentro de un proyecto (Responsable, Supervisor, …): qué permisos da solo en ese proyecto."""
+    rol_proyecto_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=50, unique=True)
+    descripcion = models.CharField(max_length=255, blank=True, default='')
+    permisos = models.JSONField(default=list, blank=True)
+    is_system = models.BooleanField(default=False)
+    orden = models.IntegerField(default=0)
 
     class Meta:
-        ordering = ['-creada_en']
-        unique_together = ('proyecto', 'supervisor')
-        indexes = [
-            models.Index(fields=['supervisor', 'activa']),
-        ]
+        ordering = ['orden', 'nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class MiembroProyecto(models.Model):
+    """Una persona en el equipo de un proyecto, con su rol y su vigencia (desde/hasta)."""
+    miembro_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    proyecto = models.ForeignKey(Proyectos, on_delete=models.CASCADE, related_name='miembros')
+    usuario = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='membresias')
+    rol = models.ForeignKey(RolProyecto, on_delete=models.PROTECT, related_name='miembros')
+    desde = models.DateField(default=timezone.localdate)
+    hasta = models.DateField(null=True, blank=True)
+    motivo = models.CharField(max_length=255, blank=True, default='')
+    otorgado_por = models.ForeignKey(Users, null=True, blank=True, on_delete=models.SET_NULL, related_name='membresias_otorgadas')
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    revocado_en = models.DateTimeField(null=True, blank=True)
+    revocado_por = models.ForeignKey(Users, null=True, blank=True, on_delete=models.SET_NULL, related_name='membresias_revocadas')
+
+    class Meta:
+        ordering = ['-creado_en']
+        indexes = [models.Index(fields=['usuario', 'activo']), models.Index(fields=['proyecto', 'activo'])]
 
 
 class AjustePresupuesto(models.Model):
