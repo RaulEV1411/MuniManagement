@@ -61,7 +61,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: '¿Quién puede ver mis proyectos?',
-    a: 'Lo ven las personas involucradas: el responsable, quienes tienen tareas asignadas, las jefaturas y los delegados. Además, los proyectos marcados como públicos aparecen en el portal (/publico), donde la ciudadanía ve el avance sin montos ni datos de personas.',
+    a: 'Lo ven las personas involucradas: el responsable, quienes tienen tareas asignadas, las jefaturas y los delegados. Además, los proyectos marcados como públicos aparecen en el portal (/publico), donde la ciudadanía ve el avance, el presupuesto y lo ejecutado, sin datos de personas.',
   },
   {
     q: '¿Puedo modificar los estados o prioridades?',
@@ -74,6 +74,10 @@ const FAQS: FAQ[] = [
   {
     q: '¿Qué pasa si un campo ya no se necesita?',
     a: 'Desactívelo en Configuración › Campos: deja de pedirse, pero lo que ya se cargó se sigue viendo. Un campo con datos no se borra ni cambia de tipo de dato; si hace falta otro tipo, cree un campo nuevo.',
+  },
+  {
+    q: '¿Qué muestra el portal público y cómo marco la ubicación de un proyecto?',
+    a: 'El portal muestra los proyectos marcados como públicos: avance, presupuesto aprobado y ejecutado, número de SICOP, distrito, ubicación en el mapa, tareas y fotos. Los cancelados y completados siguen ahí con su cierre (fecha, costo final y motivo); las lecciones aprendidas y los nombres de las personas no se publican. Un proyecto cerrado no se edita, pero «Quitar del portal» lo saca de ahí sin reabrirlo. La ubicación se marca en «Editar ficha»: toque el mapa, busque una dirección o escriba la latitud y la longitud. El portal también ofrece todo para descargar en CSV y JSON con la licencia que se elige en Configuración › Institución, donde se marca además el centro del mapa.',
   },
   {
     q: '¿Dónde veo todas mis tareas?',

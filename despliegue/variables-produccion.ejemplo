@@ -7,6 +7,15 @@ DOMINIO=proyectos.muni.go.cr
 # Zona horaria de la institución (nombre IANA): fija qué es «hoy» para los avisos de vencimiento.
 ZONA_HORARIA=America/Costa_Rica
 
+# ── Mapa (opcional) ─────────────────────────────────────────
+# Sin estas variables, el mapa usa OpenFreeMap (gratuito, sin clave, sin garantía de servicio) y la
+# búsqueda de direcciones, Nominatim. Con teselas propias o de un proveedor, indique el estilo y su origen
+# (el origen entra en la CSP). Cambiar MAPA_ESTILO o BUSQUEDA_DIRECCIONES requiere volver a construir web.
+# MAPA_ESTILO=https://mapas.muni.go.cr/estilo.json
+# MAPA_ORIGEN=https://mapas.muni.go.cr
+# BUSQUEDA_DIRECCIONES=https://nominatim.muni.go.cr/search
+# BUSQUEDA_ORIGEN=https://nominatim.muni.go.cr
+
 # ── Django ──────────────────────────────────────────────────
 # Clave larga y aleatoria. Para generarla:
 #   python3 -c "import secrets; print(secrets.token_urlsafe(50))"

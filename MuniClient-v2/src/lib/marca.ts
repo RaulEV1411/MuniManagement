@@ -15,12 +15,21 @@ export interface Marca {
   retencion_auditoria_dias: number
   // Distritos del cantón para la ubicación de los proyectos (vacío: se escriben a mano).
   distritos: string[]
+  // Centro del mapa cuando no hay puntos (sin marcar: se ajusta a los puntos).
+  mapa_latitud: string | null
+  mapa_longitud: string | null
+  mapa_zoom: number
+  // Licencia de los datos abiertos del portal.
+  licencia_datos: CodigoDeLicencia
+  licencia: { codigo: CodigoDeLicencia; nombre: string; url: string }
   // Aviso de privacidad (Ley 8968): texto propio, encargados y versión.
   aviso_privacidad: string
   encargados: Encargado[]
   privacidad_version: number
   privacidad_actualizada: string | null
 }
+
+export type CodigoDeLicencia = 'CC-BY-4.0' | 'CC0-1.0' | 'ODbL-1.0'
 
 export interface Encargado { nombre: string; datos: string; finalidad: string; pais: string }
 
@@ -150,6 +159,8 @@ export function formatearMonto(monto: number, moneda = 'CRC'): string {
 export const MARCA_POR_DEFECTO: Marca = {
   nombre: 'Municipalidad', ubicacion: '', logo: '', color_primario: '#0C3857', color_acento: '#F3951B',
   correo_soporte: '', telefono_soporte: '', horario_soporte: '', moneda: 'CRC', retencion_auditoria_dias: 1825, distritos: [],
+  mapa_latitud: null, mapa_longitud: null, mapa_zoom: 13, licencia_datos: 'CC-BY-4.0',
+  licencia: { codigo: 'CC-BY-4.0', nombre: 'CC BY 4.0', url: 'https://creativecommons.org/licenses/by/4.0/deed.es' },
   aviso_privacidad: '', encargados: [], privacidad_version: 1, privacidad_actualizada: null,
 }
 

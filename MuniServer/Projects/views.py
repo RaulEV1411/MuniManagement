@@ -46,16 +46,11 @@ def _proyectos_visibles_qs(user):
         return Subquery(qs.filter(proyecto_ID=OuterRef('pk')).values('proyecto_ID').annotate(v=valor).values('v'))
 
     abiertas = Tareas.objects.exclude(estado_ID__name='Cancelado')
-    ajustes = AjustePresupuesto.objects.filter(proyecto=OuterRef('pk')).values('proyecto').annotate(
-        v=Sum(Case(When(tipo='aumento', then=F('monto')), default=-F('monto'))),
-    ).values('v')
-    return authz.proyectos_visibles(user).select_related(
+    return consultas.con_presupuesto(authz.proyectos_visibles(user).select_related(
         'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID', 'fuente_financiamiento'
-    ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo').annotate(
-        costo_ejecutado_total=Coalesce(por_proyecto(Tareas.objects, Sum('costo_ejecutado')), 0, output_field=IntegerField()),
+    ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo')).annotate(
         tareas_total=Coalesce(por_proyecto(abiertas, Count('pk')), 0, output_field=IntegerField()),
         tareas_hechas=Coalesce(por_proyecto(abiertas.filter(estado_ID__name='Completado'), Count('pk')), 0, output_field=IntegerField()),
-        presupuesto_total=F('costo') + Coalesce(Subquery(ajustes), 0, output_field=IntegerField()),
         # Las solicitudes se ven con el proyecto (Solicitudes.views._visibles): el conteo no muestra nada de más.
         solicitudes_abiertas=Coalesce(Subquery(
             Solicitud.objects.filter(proyecto=OuterRef('pk'), estado__in=Solicitud.ABIERTAS)
@@ -307,6 +302,22 @@ class ProyectosWriteViewSet(ModelViewSet):
         self._anotar(proyecto, 'reapertura', v['motivo'].strip(), {'estado': anterior}, {'estado': v['estado_ID'].name},
                      f'se reabrió ({v["estado_ID"].name})')
         return Response({'ok': True, 'estado': v['estado_ID'].name})
+
+    @action(detail=True, methods=['post'])
+    def despublicar(self, request, pk=None):
+        """Quitarlo del portal sin reabrirlo. Volver a publicar un proyecto cerrado sí exige reabrirlo."""
+        proyecto = self._visible(pk)
+        if not proyecto.es_publico:
+            raise ValidationError({'es_publico': 'El proyecto no está en el portal.'})
+        if not authz.puede_despublicar(request.user, proyecto):
+            raise PermissionDenied('No tiene permisos para modificar este proyecto.')
+        proyecto.es_publico = False
+        proyecto.save(update_fields=['es_publico'])
+        HistorialCambios.objects.create(
+            tipo='edicion_proyecto', proyecto_ID=proyecto, usuario=request.user, razon='Se quitó del portal público.',
+            datos_anteriores={'es_publico': True}, datos_nuevos={'es_publico': False},
+        )
+        return Response({'ok': True})
 
     @action(detail=True, methods=['post'])
     def archivar(self, request, pk=None):

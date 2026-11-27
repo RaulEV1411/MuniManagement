@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Edit2, Trash2, Plus, ChevronDown, ChevronRight, Flag, RotateCcw, Archive, ArchiveRestore, Lock,
+  ArrowLeft, Edit2, Trash2, Plus, ChevronDown, ChevronRight, Flag, RotateCcw, Archive, ArchiveRestore, Lock, EyeOff,
   Calendar, DollarSign, Building2, User as UserIcon, Clock, CheckCircle2,
   MessageSquare, AlertCircle, X, ImageIcon, Upload, ZoomIn, Activity, Search,
 } from 'lucide-react'
@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 import {
   getProjectById, getTasksByProject, getFeedback,
   createTask, patchTask, deleteTask, patchProject,
-  archivarProyecto, desarchivarProyecto, createFeedback, deleteFeedback,
+  archivarProyecto, desarchivarProyecto, despublicarProyecto, createFeedback, deleteFeedback,
   uploadProjectImage, deleteProjectImage,
   uploadTaskImage, deleteTaskImage,
   getEstados, getPrioridades, getDepartments, getUsers,
@@ -1186,6 +1186,23 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const despublicar = async () => {
+    if (!project) return
+    const pregunta = {
+      titulo: `¿Quitar «${project.name}» del portal?`,
+      mensaje: 'Deja de verse en el portal público y en los datos abiertos. Como el proyecto está cerrado, para volver a publicarlo hay que reabrirlo.',
+      accion: 'Quitar del portal',
+    }
+    if (!(await confirmar(pregunta))) return
+    try {
+      await despublicarProyecto(id!)
+      toast.success('El proyecto ya no está en el portal.')
+      await refrescar()
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'No se pudo quitar del portal.'))
+    }
+  }
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newComment.trim()) return
@@ -1378,6 +1395,12 @@ export default function ProjectDetailPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
             >
               <RotateCcw size={12} aria-hidden="true" /> Reabrir
+            </button>}
+            {project.cerrado && project.es_publico && project.puede_despublicar && <button
+              onClick={despublicar}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
+            >
+              <EyeOff size={12} aria-hidden="true" /> Quitar del portal
             </button>}
             {esAdmin && esFinal(project.estado_ID) && <button
               onClick={() => archivar(!project.archivado)}
