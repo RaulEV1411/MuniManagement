@@ -10,7 +10,8 @@ from django.utils import timezone
 from .models import Users
 
 logger = logging.getLogger(__name__)
-CAMPOS_PERSONALES = ['first_name', 'last_name', 'email', 'tipo_identificacion', 'cedula', 'phone_number', 'birthday', 'puesto', 'user_photo']
+CAMPOS_PERSONALES = ['first_name', 'last_name', 'email', 'tipo_identificacion', 'cedula', 'phone_number', 'birthday', 'puesto', 'user_photo',
+                     'numero_empleado', 'extension', 'fecha_ingreso']
 
 
 def _fecha(valor):
@@ -34,8 +35,13 @@ def datos_de(p):
             'correo': p.email, 'telefono': p.phone_number, 'puesto': p.puesto, 'nacimiento': _fecha(p.birthday),
             'rol': p.role.name if p.role_id else '', 'departamento': p.departamento_ID.name if p.departamento_ID_id else '',
             'foto': p.user_photo or '', 'cuenta_activa': p.is_active,
+            'numero_empleado': p.numero_empleado or '', 'extension': p.extension, 'ingreso': _fecha(p.fecha_ingreso),
+            'especialidades': [e.name for e in p.especialidades.all()],
             'aviso_de_privacidad': {'version_aceptada': p.privacidad_version, 'aceptado_el': _fecha(p.privacidad_aceptada_en)},
         },
+        'ausencias': [
+            {'tipo': a.get_tipo_display(), 'desde': _fecha(a.desde), 'hasta': _fecha(a.hasta)} for a in p.ausencias.all()
+        ],
         'proyectos_a_cargo': [
             {'nombre': x.name, 'estado': x.estado_ID.name, 'entrega': _fecha(x.fecha_entrega)}
             for x in Proyectos.objects.filter(user_ID=p).select_related('estado_ID')
@@ -108,7 +114,12 @@ def anonimizar(persona, motivo):
         first_name='Persona', last_name='anonimizada', email=f'anonimizada-{marca}@anonimo.invalid',
         tipo_identificacion='pasaporte', cedula=f'ANON{marca}'.upper(), phone_number='', birthday=None,
         puesto='', user_photo=None, password=make_password(None),
+        numero_empleado=None, extension='', fecha_ingreso=None,
     )
+    # Ya anonimizada: si la auditoría registra estos borrados, dice «Persona anonimizada».
+    persona.refresh_from_db()
+    persona.especialidades.clear()
+    persona.ausencias.all().delete()
     SesionUsuario.objects.filter(usuario=persona).delete()
     auditoria.registrar(
         'usuarios', 'anonimizar', objeto_tipo='Users.Users', objeto_id=str(persona.pk), objeto_repr='Persona anonimizada',

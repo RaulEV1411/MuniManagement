@@ -4,7 +4,7 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 from Projects import authz
 
 
-CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'tipo_identificacion', 'cedula', 'email', 'is_active'}
+CAMPOS_PROTEGIDOS_AUTO_EDIT = {'role', 'departamento_ID', 'tipo_identificacion', 'cedula', 'email', 'is_active', 'numero_empleado', 'fecha_ingreso'}
 
 
 class UsersPermission(BasePermission):
@@ -50,10 +50,12 @@ class UsersPermission(BasePermission):
             actuales = {
                 'role': obj.role_id, 'departamento_ID': obj.departamento_ID_id,
                 'tipo_identificacion': obj.tipo_identificacion, 'cedula': obj.cedula, 'email': obj.email, 'is_active': obj.is_active,
+                # Vacío y NULL valen lo mismo: el formulario manda '' cuando no hay.
+                'numero_empleado': obj.numero_empleado or '', 'fecha_ingreso': obj.fecha_ingreso or '',
             }
             invalidos = {
                 campo for campo in CAMPOS_PROTEGIDOS_AUTO_EDIT & set(datos.keys())
-                if str(datos[campo]).strip().lower() != str(actuales[campo]).strip().lower()
+                if str('' if datos[campo] is None else datos[campo]).strip().lower() != str(actuales[campo]).strip().lower()
             }
             if invalidos:
                 self.message = (

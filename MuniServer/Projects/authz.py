@@ -6,6 +6,11 @@ Un permiso llega por dos caminos:
 - el rol dentro del proyecto: la membresía vigente (`MiembroProyecto`, con desde y hasta), y además,
   de forma implícita, el dueño cuenta como Responsable y quien tiene tareas asignadas como Colaborador.
 El Administrador siempre tiene todo (no se puede editar, para que nadie quede afuera).
+
+Suplencia: mientras el jefe de un departamento o de una dirección tiene una ausencia vigente, su suplente
+toma esa jefatura: los permisos de proyecto que el rol del jefe da con alcance de jefatura, recortados a
+la zona (el departamento o los departamentos de la dirección). Nunca los permisos generales (usuarios,
+estructura, catálogos, roles, configuración, auditoría) ni el nivel de alcaldía (ver `suplencias`).
 """
 from django.db.models import Q
 from django.utils import timezone
@@ -80,6 +85,63 @@ def _q_departamentos_en_alcance(user, alcance, campo='departamento_ID'):
     return q
 
 
+# ── Suplencias ───────────────────────────────────────────────────────────────
+
+def _jefaturas_suplidas_qs(hoy):
+    from Departments.models import Departamentos, Direccion
+    from Users.models import Ausencia
+    ausentes = Ausencia.objects.filter(desde__lte=hoy, hasta__gte=hoy).values('usuario')
+    deptos = Departamentos.objects.filter(suplente__isnull=False, jefe__in=ausentes, jefe__is_active=True)
+    dirs = Direccion.objects.filter(suplente__isnull=False, jefe__in=ausentes, jefe__is_active=True)
+    return deptos, dirs
+
+
+def suplencias(user):
+    """Jefaturas que la persona cubre hoy: es la suplente y el jefe está ausente.
+
+    Devuelve [(jefe, {ids de los departamentos de la zona}, nivel)], con nivel DEPARTAMENTO o DIRECCION.
+    No hay cadenas: el suplente de un suplente no hereda nada. Se guarda en el objeto del usuario, que
+    dura lo que la petición."""
+    if not _autenticado(user):
+        return []
+    hoy = timezone.localdate()
+    guardado = getattr(user, '_suplencias', None)
+    if guardado and guardado[0] == hoy:
+        return guardado[1]
+    from Departments.models import Departamentos
+    deptos, dirs = _jefaturas_suplidas_qs(hoy)
+    zonas = {}
+    for d in deptos.filter(suplente=user).exclude(jefe=user).select_related('jefe__role', 'jefe__departamento_ID'):
+        zonas.setdefault((d.jefe_id, cat.DEPARTAMENTO), (d.jefe, set()))[1].add(d.pk)
+    for dr in dirs.filter(suplente=user).exclude(jefe=user).select_related('jefe__role', 'jefe__departamento_ID'):
+        ids = Departamentos.objects.filter(direccion=dr).values_list('pk', flat=True)
+        zonas.setdefault((dr.jefe_id, cat.DIRECCION), (dr.jefe, set()))[1].update(ids)
+    resultado = [(jefe, frozenset(ids), nivel) for (_id, nivel), (jefe, ids) in zonas.items()]
+    user._suplencias = (hoy, resultado)
+    return resultado
+
+
+# Lo único que toma la suplencia: permisos de proyecto. La aprobación de solicitudes va aparte
+# (Solicitudes/servicios.puede_decidir), con el nivel de la jefatura.
+DELEGABLES = frozenset([*cat.PERMISOS_DE_PROYECTO, 'proyectos.reabrir', 'proyectos.crear'])
+_ALCANCES_DE_JEFATURA = (cat.DEPARTAMENTO, cat.DIRECCION, cat.TODOS)
+
+
+def jefatura_alcanza(jefe, zona, codigo, departamento):
+    """¿La jefatura suplida da `codigo` sobre este departamento? Se usa el alcance del rol del jefe (el
+    Administrador cuenta como «todos»), recortado a la zona; las membresías y lo propio del jefe no pasan."""
+    if codigo not in DELEGABLES or departamento is None or departamento.pk not in zona:
+        return False
+    alcance = alcance_de(jefe, codigo)
+    return alcance in _ALCANCES_DE_JEFATURA and en_alcance_de_departamento(jefe, alcance, departamento)
+
+
+def suplentes_en_funciones():
+    """Ids de quienes hoy cubren alguna jefatura (para no consultar persona por persona)."""
+    deptos, dirs = _jefaturas_suplidas_qs(timezone.localdate())
+    return set(deptos.values_list('suplente', flat=True)) | set(dirs.values_list('suplente', flat=True))
+
+
 # ── Membresías ───────────────────────────────────────────────────────────────
 
 def membresia_vigente(prefijo=''):
@@ -147,6 +209,15 @@ def puede(user, codigo, proyecto=None):
         return False
     if proyecto is not None and codigo in BLOQUEADOS_AL_CERRAR and esta_cerrado(proyecto):
         return False
+    if _puede_por_si(user, codigo, proyecto):
+        return True
+    # Suplencia: solo sobre un proyecto de la zona. Sin proyecto (acciones generales) no se delega nada.
+    if proyecto is None:
+        return False
+    return any(jefatura_alcanza(jefe, zona, codigo, proyecto.departamento_ID) for jefe, zona, _nivel in suplencias(user))
+
+
+def _puede_por_si(user, codigo, proyecto):
     if es_administrador(user):
         return True
     alcance = alcance_de(user, codigo)
@@ -177,8 +248,7 @@ def puede_delegar(user, proyecto):
     return puede(user, 'equipo.gestionar', proyecto)
 
 
-def puede_crear_proyecto_en(user, departamento):
-    """Crear un proyecto (o moverlo) en este departamento. «Lo propio» es su propio departamento."""
+def _puede_crear_por_si(user, departamento):
     if es_administrador(user):
         return True
     alcance = alcance_de(user, 'proyectos.crear')
@@ -187,6 +257,13 @@ def puede_crear_proyecto_en(user, departamento):
     if alcance == cat.PROPIO:
         return departamento.pk == user.departamento_ID_id
     return en_alcance_de_departamento(user, alcance, departamento)
+
+
+def puede_crear_proyecto_en(user, departamento):
+    """Crear un proyecto (o moverlo) en este departamento. «Lo propio» es su propio departamento."""
+    if _puede_crear_por_si(user, departamento):
+        return True
+    return any(jefatura_alcanza(jefe, zona, 'proyectos.crear', departamento) for jefe, zona, _nivel in suplencias(user))
 
 
 def puede_sobre_usuario(user, codigo, objetivo):
@@ -231,7 +308,27 @@ def puede_gestionar_a(user, objetivo):
 # ── Querysets ────────────────────────────────────────────────────────────────
 
 def proyectos_visibles(user):
-    """Los proyectos que puede ver: es la misma regla que puede_ver()."""
+    """Los proyectos que puede ver: es la misma regla que puede_ver(), con la suplencia incluida."""
+    qs = _proyectos_visibles_por_si(user)
+    sup = suplencias(user)
+    if not sup:
+        return qs
+    from .models import Proyectos
+    q = Q(pk__in=qs.values('pk'))
+    for jefe, zona, _nivel in sup:
+        # La misma regla que jefatura_alcanza: el alcance del rol del jefe, dentro de la zona.
+        alcance = alcance_de(jefe, 'proyectos.ver')
+        if alcance not in _ALCANCES_DE_JEFATURA:
+            continue
+        de_la_zona = Proyectos.objects.filter(departamento_ID__in=zona)
+        q_jefe = _q_departamentos_en_alcance(jefe, alcance)
+        if q_jefe is not None:
+            de_la_zona = de_la_zona.filter(q_jefe)
+        q |= Q(pk__in=de_la_zona.values('pk'))
+    return Proyectos.objects.filter(q)
+
+
+def _proyectos_visibles_por_si(user):
     from .models import Proyectos
     qs = Proyectos.objects.all()
     if not _autenticado(user):
@@ -256,6 +353,7 @@ def usuarios_visibles(user):
 
     - por la jerarquía: quien ve todos los proyectos, a todos; el jefe de una dirección, a los
       departamentos de esa dirección; el jefe de un departamento, a ese departamento; el resto, a su departamento;
+      el suplente en funciones, además, a la zona de la jefatura que cubre;
     - por el trabajo: a todo el equipo de los proyectos donde participa (dueño, personas con tareas
       asignadas y miembros vigentes), sin importar la jerarquía.
     Siempre a sí mismo. Ver a alguien no permite editarlo, y los datos personales los filtra el serializer.
@@ -271,11 +369,15 @@ def usuarios_visibles(user):
         | Q(tareas__colaboradores=user)
         | (Q(miembros__usuario=user) & membresia_vigente('miembros__'))
     ).values('pk')
+    q_suplencia = Q(pk__in=[])
+    for _jefe, zona, _nivel in suplencias(user):
+        q_suplencia |= Q(departamento_ID__in=zona)
     return qs.filter(
         Q(pk=user.pk)
         | Q(departamento_ID=user.departamento_ID_id)
         | Q(departamento_ID__jefe=user)
         | Q(departamento_ID__direccion__jefe=user)
+        | q_suplencia
         | Q(proyectos__in=mis_proyectos)
         | Q(tareas_asignadas__proyecto_ID__in=mis_proyectos)
         | Q(tareas_colaboracion__proyecto_ID__in=mis_proyectos)

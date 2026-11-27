@@ -7,7 +7,7 @@ from .models import Tareas
 from Projects.authz import membresia_vigente
 from Projects.catalogo_permisos import TODOS
 from Projects.models import MiembroProyecto, Proyectos
-from Users.models import Users
+from Users.models import Ausencia, Users
 from Notifications.models import Notificacion
 
 
@@ -39,15 +39,28 @@ def _delegaciones_por_proyecto(proyecto_ids):
     return mapping
 
 
-def _destinatarios_proyecto(proyecto, alcaldia, delegados_map):
+def _ausentes_hoy(hoy):
+    return set(Ausencia.objects.filter(desde__lte=hoy, hasta__gte=hoy).values_list('usuario_id', flat=True))
+
+
+def _jefatura(unidad, ausentes):
+    """El jefe, y su suplente mientras el jefe está ausente."""
+    personas = []
+    if unidad and unidad.jefe_id:
+        personas.append(unidad.jefe)
+        if unidad.jefe_id in ausentes and unidad.suplente_id:
+            personas.append(unidad.suplente)
+    return personas
+
+
+def _destinatarios_proyecto(proyecto, alcaldia, delegados_map, ausentes=frozenset()):
     destinatarios = set()
     if proyecto.user_ID_id:
         destinatarios.add(proyecto.user_ID)
     depto = proyecto.departamento_ID
-    if depto and depto.jefe_id:
-        destinatarios.add(depto.jefe)
-    if depto and depto.direccion and depto.direccion.jefe_id:
-        destinatarios.add(depto.direccion.jefe)
+    destinatarios.update(_jefatura(depto, ausentes))
+    if depto:
+        destinatarios.update(_jefatura(depto.direccion, ausentes))
     destinatarios.update(alcaldia)
     for s in delegados_map.get(proyecto.proyect_ID, []):
         destinatarios.add(s)
@@ -141,9 +154,11 @@ def send_due_date_warnings():
         Proyectos.objects
         .filter(fecha_entrega__lte=limite)
         .exclude(estado_ID__categoria='finalizado').filter(archivado=False)
-        .select_related('user_ID', 'departamento_ID__direccion__jefe', 'departamento_ID__jefe')
+        .select_related('user_ID', 'departamento_ID__direccion__jefe', 'departamento_ID__jefe',
+                        'departamento_ID__suplente', 'departamento_ID__direccion__suplente')
     )
     alcaldia = _alcaldia_cache()
+    ausentes = _ausentes_hoy(hoy)
     delegados_map = _delegaciones_por_proyecto([p.proyect_ID for p in proyectos])
 
     for p in proyectos:
@@ -155,7 +170,7 @@ def send_due_date_warnings():
         )
         link = f'/projects/{p.proyect_ID}'
         dedupe = f'venc-proy:{p.proyect_ID}:{hoy.isoformat()}'
-        for u in _destinatarios_proyecto(p, alcaldia, delegados_map):
+        for u in _destinatarios_proyecto(p, alcaldia, delegados_map, ausentes):
             _enviar(u, f'[Muni] {titulo}', titulo, mensaje, 'vencimiento_proyecto', link, dedupe)
 
     tareas = list(
@@ -167,6 +182,8 @@ def send_due_date_warnings():
             'proyecto_ID__user_ID',
             'proyecto_ID__departamento_ID__direccion__jefe',
             'proyecto_ID__departamento_ID__jefe',
+            'proyecto_ID__departamento_ID__suplente',
+            'proyecto_ID__departamento_ID__direccion__suplente',
             'asignado_a',
         )
     )
@@ -182,7 +199,7 @@ def send_due_date_warnings():
         )
         link = f'/projects/{t.proyecto_ID_id}'
         dedupe = f'venc-tarea:{t.tareas_ID}:{hoy.isoformat()}'
-        destinatarios = _destinatarios_proyecto(t.proyecto_ID, alcaldia, delegados_map_t)
+        destinatarios = _destinatarios_proyecto(t.proyecto_ID, alcaldia, delegados_map_t, ausentes)
         if t.asignado_a_id:
             destinatarios.add(t.asignado_a)
         for u in destinatarios:

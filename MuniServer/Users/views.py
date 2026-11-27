@@ -17,8 +17,12 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
-from .models import Roles, Users
-from .serializers import RolesSerializer, UsersSerializer, UsuarioDirectorioSerializer
+from .models import Ausencia, Especialidad, Roles, Users
+from .serializers import (AusenciaSerializer, EspecialidadSerializer, RolesSerializer, UsersSerializer,
+                          UsuarioDirectorioSerializer)
+from . import ausencias as servicio_ausencias
+from Projects.permissions import CatalogoSoloAdministrador
+from Notifications.servicios import notificar
 from .permissions import UsersPermission, RolesPermission
 from Projects import authz
 from Projects import catalogo_permisos as cat
@@ -115,11 +119,15 @@ class UsersViewSet(ModelViewSet):
         user = self.request.user
         # Pedir también a los dados de baja: quien gestiona usuarios o equipos (antes: alcaldía y jefaturas).
         gestiona = authz.puede(user, 'usuarios.gestionar') or authz.puede(user, 'equipo.gestionar')
-        qs = authz.usuarios_visibles(user).select_related('role', 'departamento_ID').annotate(
+        qs = authz.usuarios_visibles(user).select_related('role', 'departamento_ID__direccion').prefetch_related(
+            'especialidades', servicio_ausencias.prefetch_vigentes(),
+        ).annotate(
             ultima_conexion=Subquery(
                 SesionUsuario.objects.filter(usuario=OuterRef('pk')).order_by('-ultima_actividad').values('ultima_actividad')[:1]
             ),
         )
+        if self.action in ('list', 'retrieve'):
+            qs = servicio_ausencias.anotar_carga(qs)
         # Los dados de baja no aparecen en las listas; la alcaldía y los jefes pueden pedirlos.
         if self.action == 'list':
             p = self.request.query_params
@@ -135,6 +143,8 @@ class UsersViewSet(ModelViewSet):
                 qs = qs.filter(role__name=p['rol'])
             if p.get('departamento'):
                 qs = qs.filter(departamento_ID=p['departamento'])
+            if p.get('especialidad'):
+                qs = qs.filter(especialidades=p['especialidad'])
             qs = qs.order_by('first_name', 'last_name')
         return qs
 
@@ -240,6 +250,90 @@ class UsersViewSet(ModelViewSet):
         encolar_correo_de_acceso(user, 'recuperacion')
         auditoria.registrar('usuarios', 'enviar_acceso', objeto=user)
         return Response({'ok': True})
+
+
+class EspecialidadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
+    queryset = Especialidad.objects.all()
+    serializer_class = EspecialidadSerializer
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
+    pagination_class = None
+    mensaje_protegido = 'No se puede borrar: hay personas con esta especialidad.'
+
+    def perform_destroy(self, instance):
+        # La relación con las personas es M2M y no protege sola: se trata como los demás catálogos en uso.
+        from django.db.models import ProtectedError
+        if instance.usuarios.exists():
+            raise ProtectedError(self.mensaje_protegido, {instance})
+        instance.delete()
+
+
+class AusenciaViewSet(ModelViewSet):
+    """Ausencias de las personas que se ven. Las registra la persona, quien la gestiona o su jefatura
+    (también quien la cubre como suplente)."""
+    serializer_class = AusenciaSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = Ausencia.objects.filter(usuario__in=authz.usuarios_visibles(self.request.user).values('pk')).select_related(
+            'usuario__departamento_ID__direccion', 'usuario__role', 'registrada_por',
+        )
+        persona = self.request.query_params.get('usuario')
+        if persona:
+            qs = qs.filter(usuario=persona)
+        if self.request.query_params.get('desde'):
+            qs = qs.filter(hasta__gte=self.request.query_params['desde'])
+        return qs
+
+    def _exigir(self, persona):
+        if not authz.usuarios_visibles(self.request.user).filter(pk=persona.pk).exists():
+            raise ValidationError({'usuario': 'Persona no encontrada.'})
+        if not servicio_ausencias.puede_registrar_ausencia(self.request.user, persona):
+            raise PermissionDenied('Solo la persona, quien la gestiona o su jefatura registran sus ausencias.')
+
+    def perform_create(self, serializer):
+        persona = serializer.validated_data['usuario']
+        self._exigir(persona)
+        ausencia = serializer.save(registrada_por=self.request.user)
+        self._avisar(ausencia)
+
+    def perform_update(self, serializer):
+        self._exigir(serializer.instance.usuario)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._exigir(instance.usuario)
+        instance.delete()
+
+    def create(self, request, *args, **kwargs):
+        respuesta = super().create(request, *args, **kwargs)
+        # Para sugerir la delegación: los proyectos abiertos a cargo que ve quien registra.
+        persona = Users.objects.get(pk=respuesta.data['usuario'])
+        respuesta.data['proyectos_a_cargo'] = [
+            {'proyect_ID': str(p['proyect_ID']), 'name': p['name']}
+            for p in servicio_ausencias.proyectos_abiertos_a_cargo(persona, request.user)
+        ]
+        return respuesta
+
+    def _avisar(self, ausencia):
+        """Sin el tipo: la jefatura sabe que no está, no por qué."""
+        from Departments.models import Departamentos, Direccion
+        persona = ausencia.usuario
+        nombre = f'{persona.first_name} {persona.last_name}'.strip()
+        periodo = f'del {ausencia.desde:%d/%m/%Y} al {ausencia.hasta:%d/%m/%Y}'
+        a_cargo = len(servicio_ausencias.proyectos_abiertos_a_cargo(persona, persona))
+        depto = persona.departamento_ID
+        if a_cargo and depto:
+            jefatura = depto.jefe if depto.jefe_id and depto.jefe_id != persona.pk else (depto.direccion.jefe if depto.direccion_id else None)
+            notificar([jefatura], self.request.user, 'general', f'{nombre} estará ausente',
+                      f'{nombre} estará ausente {periodo} y tiene {a_cargo} proyecto{"s" if a_cargo != 1 else ""} '
+                      'abierto(s) a cargo. Conviene delegarlos en el equipo de cada proyecto.', f'/users/{persona.pk}')
+        unidades = [*Departamentos.objects.filter(jefe=persona, suplente__isnull=False).select_related('suplente'),
+                    *Direccion.objects.filter(jefe=persona, suplente__isnull=False).select_related('suplente')]
+        for unidad in unidades:
+            notificar([unidad.suplente], self.request.user, 'delegacion', f'Suplencia: {unidad.name}',
+                      f'{nombre} estará ausente {periodo}. Durante esos días usted cubre la jefatura de {unidad.name}.',
+                      f'/users/{persona.pk}')
 
 
 def _fallo_de_inicio(email, motivo):
