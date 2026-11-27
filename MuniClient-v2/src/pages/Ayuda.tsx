@@ -28,6 +28,14 @@ const FAQS: FAQ[] = [
     a: 'Los proyectos no se borran. Con «Cerrar proyecto» se indica cómo terminó (Completado o Cancelado), la fecha y el costo reales, un resumen o motivo, las lecciones aprendidas y, si hay, el acta en PDF. Un proyecto cerrado pasa a la pestaña Finalizados y no se edita: para cambiarlo, quien tiene permiso lo reabre con un motivo. El Administrador puede archivar los cerrados para sacarlos de las listas sin perder su historial.',
   },
   {
+    q: '¿Dónde anoto el expediente, el número de SICOP, los hitos y los riesgos?',
+    a: 'En la pestaña Información del proyecto. «Editar ficha» guarda el código o expediente (no se repite entre proyectos), el número de SICOP, la fuente de financiamiento, el distrito, el punto en el mapa (latitud y longitud), el objetivo, los beneficiarios estimados y los indicadores con su meta y lo logrado. El proyecto también se encuentra buscando su código o su número de SICOP. En Hitos se agregan las fechas clave y se marcan cumplidas; en Riesgos se anota qué puede pasar, con su probabilidad e impacto (el nivel se calcula solo), cómo se mitiga y quién está a cargo. Los cambia quien puede editar el proyecto.',
+  },
+  {
+    q: '¿Cómo hago que un tipo de proyecto traiga sus tareas?',
+    a: 'En Configuración › Tipos, debajo de la lista, elija el tipo y agregue sus tareas: a cuántos días del inicio empiezan, cuánto duran y los pasos de su lista de verificación. Al crear un proyecto de ese tipo, el asistente ofrece crearlas y les pone las fechas desde el inicio del proyecto, sin pasar de la entrega. Los proyectos ya creados no cambian. Las fuentes de financiamiento se administran en Configuración › Financiamiento y los distritos, en Configuración › Institución.',
+  },
+  {
     q: '¿Cómo solicito un aumento o rebajo de presupuesto?',
     a: 'En la pestaña Información del proyecto, busque la sección «Presupuesto» y presione «Ajuste». Indique si es aumento o rebajo, el monto y el motivo. Queda registrado en el historial y se le avisa al responsable.',
   },

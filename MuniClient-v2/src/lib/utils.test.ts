@@ -1,5 +1,14 @@
-import { describe, expect, it } from 'vitest'
-import { formatDate, formatearDuracion, formatearFechaLarga, isOverdue } from './utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { formatDate, formatearDuracion, formatearFechaLarga, hoyLocal, isOverdue } from './utils'
+
+describe('hoyLocal', () => {
+  afterEach(() => vi.useRealTimers())
+  it('da la fecha local aunque en UTC ya sea el día siguiente', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 10, 26, 23, 30))
+    expect(hoyLocal()).toBe('2026-11-26')
+  })
+})
 
 describe('formatDate', () => {
   it('pasa de AAAA-MM-DD a DD/MM/AAAA y muestra — si no hay fecha', () => {

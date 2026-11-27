@@ -7,8 +7,9 @@ import {
   getEstados,    createEstado,    updateEstado,    deleteEstado,
   getPrioridades, createPrioridad, updatePrioridad, deletePrioridad,
   getTipos,      createTipo,      updateTipo,      deleteTipo,
+  getFuentes,    createFuente,    updateFuente,    deleteFuente,
 } from '@/lib/api'
-import { type Estado, type Prioridad, type Tipo } from '@/types'
+import { type Estado, type FuenteFinanciamiento, type Prioridad, type Tipo } from '@/types'
 import { cn } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import InstitucionPanel from '@/components/config/InstitucionPanel'
@@ -22,8 +23,9 @@ import RolesPermisosPanel from '@/components/config/RolesPermisosPanel'
 import SolicitudesPanel from '@/components/config/SolicitudesPanel'
 import PrivacidadPanel from '@/components/config/PrivacidadPanel'
 import RecursosPanel from '@/components/config/RecursosPanel'
+import PlantillasPanel from '@/components/config/PlantillasPanel'
 
-const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Recursos', 'Solicitudes', 'Roles y permisos'] as const
+const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Recursos', 'Solicitudes', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -126,7 +128,7 @@ function ItemRow({
                 <Pencil size={13} />
               </button>
               <button aria-label={`Eliminar ${item.name}`}
-                onClick={() => onDelete(item.id, item.name)}
+                onClick={() => onDelete(item.id, item.name).catch(err => toast.error(mensajeDeError(err, 'No se pudo eliminar.')))}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
                 <Trash2 size={13} />
@@ -250,6 +252,7 @@ export default function ConfigPage() {
   const { data: estados = [],     isLoading: loadingEstados, error: errEstados, refetch: refetchEstados } = useQuery<Estado[]>({ queryKey: ['estados'],     queryFn: getEstados })
   const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
   const { data: tipos = [],       isLoading: loadingTipos, error: errTipos, refetch: refetchTipos } = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
+  const { data: fuentes = [], isLoading: loadingFuentes } = useQuery<FuenteFinanciamiento[]>({ queryKey: ['fuentes'], queryFn: getFuentes })
 
   // ── Estados ──
   const estadoItems: GenericItem[] = estados.map(e => ({
@@ -324,6 +327,25 @@ export default function ConfigPage() {
     toast.success('Tipo creado')
   }
 
+  // ── Fuentes de financiamiento ──
+  const fuenteItems: GenericItem[] = fuentes.map(f => ({ id: f.fuente_ID, name: f.name }))
+  const onSaveFuente = async (id: string, name: string) => {
+    await updateFuente(id, { name })
+    qc.invalidateQueries({ queryKey: ['fuentes'] })
+    toast.success('Fuente actualizada')
+  }
+  const onDeleteFuente = async (id: string, name: string) => {
+    if (!(await confirmar({ titulo: `¿Eliminar la fuente «${name}»?` }))) return
+    await deleteFuente(id)
+    qc.invalidateQueries({ queryKey: ['fuentes'] })
+    toast.success('Fuente eliminada')
+  }
+  const onCreateFuente = async (name: string) => {
+    await createFuente({ name })
+    qc.invalidateQueries({ queryKey: ['fuentes'] })
+    toast.success('Fuente creada')
+  }
+
   const errorCatalogos = errEstados ?? errPrioridades ?? errTipos
   if (errorCatalogos) {
     return <ErrorDeCarga error={errorCatalogos} onReintentar={() => { refetchEstados(); refetchPrioridades(); refetchTipos() }} que="los catálogos" />
@@ -355,9 +377,9 @@ export default function ConfigPage() {
               )}
             >
               {t}
-              {(t === 'Estados' || t === 'Prioridades' || t === 'Tipos') && (
+              {(t === 'Estados' || t === 'Prioridades' || t === 'Tipos' || t === 'Financiamiento') && (
                 <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                  {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : tipos.length}
+                  {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : t === 'Tipos' ? tipos.length : fuentes.length}
                 </span>
               )}
             </button>
@@ -409,16 +431,33 @@ export default function ConfigPage() {
               />
             )}
             {tab === 'Tipos' && (
+              <div className="space-y-6">
+                <CrudSection
+                  items={tipoItems}
+                  isLoading={loadingTipos}
+                  textoNuevo="Nuevo tipo..."
+                  textoVacio="No hay tipos registrados"
+                  onSave={onSaveTipo}
+                  onDelete={onDeleteTipo}
+                  onCreate={onCreateTipo}
+                  readOnly={!editaCatalogos}
+                  readOnlyMessage="Su rol no permite editar los catálogos."
+                />
+                <PlantillasPanel tipos={tipos} edita={editaCatalogos} />
+              </div>
+            )}
+            {tab === 'Financiamiento' && (
               <CrudSection
-                items={tipoItems}
-                isLoading={loadingTipos}
-                textoNuevo="Nuevo tipo..."
-                textoVacio="No hay tipos registrados"
-                onSave={onSaveTipo}
-                onDelete={onDeleteTipo}
-                onCreate={onCreateTipo}
+                items={fuenteItems}
+                isLoading={loadingFuentes}
+                textoNuevo="Nueva fuente (Ley 8114, recursos propios…)"
+                textoVacio="No hay fuentes de financiamiento registradas"
+                onSave={onSaveFuente}
+                onDelete={onDeleteFuente}
+                onCreate={onCreateFuente}
                 readOnly={!editaCatalogos}
                 readOnlyMessage="Su rol no permite editar los catálogos."
+                nota="Se elige en la ficha de cada proyecto. Una fuente que ya financia proyectos no se puede borrar."
               />
             )}
             {tab === 'Roles y permisos' && veRoles && <RolesPermisosPanel />}

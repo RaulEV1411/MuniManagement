@@ -5,14 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Check, FolderOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  getTipos, getEstados, getPrioridades, getDepartments, getUsers, createProject,
+  getTipos, getEstados, getPrioridades, getDepartments, getUsers, createProject, getFuentes,
 } from '@/lib/api'
-import { type Tipo, type Estado, type Prioridad, type Department, type User } from '@/types'
+import { type Tipo, type Estado, type Prioridad, type Department, type User, type FuenteFinanciamiento } from '@/types'
 import { cn, formatDate, fullName } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { claseEtiqueta, conColor } from '@/lib/colores'
-import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 import { usePermiso } from '@/hooks/usePermiso'
 
 
@@ -28,6 +28,12 @@ interface FormData {
   departamento_ID: string
   user_ID: string
   es_publico: boolean
+  codigo: string
+  numero_sicop: string
+  fuente_financiamiento: string
+  distrito: string
+  // Si el tipo trae tareas, crearlas con el proyecto.
+  usar_plantilla: boolean
 }
 
 const INITIAL: FormData = {
@@ -42,6 +48,11 @@ const INITIAL: FormData = {
   departamento_ID: '',
   user_ID: '',
   es_publico: false,
+  codigo: '',
+  numero_sicop: '',
+  fuente_financiamiento: '',
+  distrito: '',
+  usar_plantilla: true,
 }
 
 const STEP_LABELS = ['Básico', 'Planificación', 'Asignación']
@@ -99,6 +110,9 @@ export default function ProjectCreatePage() {
   const { data: prioridades = [], error: errPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
   const { data: departments = [], error: errDepartments } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments })
   const { data: users = [], error: errUsers }       = useQuery<User[]>({ queryKey: ['users'], queryFn: getUsers })
+  const { data: fuentes = [] } = useQuery<FuenteFinanciamiento[]>({ queryKey: ['fuentes'], queryFn: getFuentes })
+  const { distritos } = useMarca()
+  const plantillas = tipos.find(t => t.tipos_ID === form.tipos_ID)?.plantillas ?? []
 
   // Lo que el servidor exige, revisado en el paso donde se llena, para no enterarse al final.
   const faltaEnPaso = (paso: number): string | null => {
@@ -153,6 +167,11 @@ export default function ProjectCreatePage() {
         departamento_ID: form.departamento_ID,
         user_ID: form.user_ID,
         es_publico: form.es_publico,
+        codigo: form.codigo.trim(),
+        numero_sicop: form.numero_sicop.trim(),
+        fuente_financiamiento: form.fuente_financiamiento || null,
+        distrito: form.distrito.trim(),
+        usar_plantilla: form.usar_plantilla,
       })
       toast.success('Proyecto creado exitosamente')
       navigate('/dashboard')
@@ -253,12 +272,32 @@ export default function ProjectCreatePage() {
                       className={cn(inputCls, 'resize-none')}
                     />
                   </Field>
-                  <Field label="Tipo de proyecto">
-                    <select value={form.tipos_ID} onChange={e => set('tipos_ID', e.target.value)} className={inputCls}>
-                      <option value="">Seleccionar tipo...</option>
-                      {tipos.map(t => <option key={t.tipos_ID} value={t.tipos_ID}>{t.name}</option>)}
-                    </select>
-                  </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Tipo de proyecto">
+                      <select value={form.tipos_ID} onChange={e => set('tipos_ID', e.target.value)} className={inputCls}>
+                        <option value="">Seleccionar tipo...</option>
+                        {tipos.map(t => <option key={t.tipos_ID} value={t.tipos_ID}>{t.name}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Código o expediente">
+                      <input value={form.codigo} onChange={e => set('codigo', e.target.value)} maxLength={40} placeholder="EXP-2026-014" className={inputCls} />
+                    </Field>
+                  </div>
+                  {plantillas.length > 0 && (
+                    <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">
+                      <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer">
+                        <input type="checkbox" checked={form.usar_plantilla} onChange={e => set('usar_plantilla', e.target.checked)}
+                          className="mt-0.5 h-4 w-4 accent-ocean-500" />
+                        <span>
+                          Crear las {plantillas.length} tareas de este tipo
+                          <span className="block text-xs text-muted-foreground">Con sus fechas contadas desde el inicio del proyecto.</span>
+                        </span>
+                      </label>
+                      <ul className="pl-7 text-xs text-muted-foreground list-disc list-inside">
+                        {plantillas.map(p => <li key={p.plantilla_ID}>{p.nombre}</li>)}
+                      </ul>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -283,6 +322,17 @@ export default function ProjectCreatePage() {
                       className={inputCls}
                     />
                   </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Fuente de financiamiento">
+                      <select value={form.fuente_financiamiento} onChange={e => set('fuente_financiamiento', e.target.value)} className={inputCls}>
+                        <option value="">Sin indicar</option>
+                        {fuentes.map(f => <option key={f.fuente_ID} value={f.fuente_ID}>{f.name}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="N.º de SICOP">
+                      <input value={form.numero_sicop} onChange={e => set('numero_sicop', e.target.value)} maxLength={40} placeholder="2026LA-000012-0002300001" className={inputCls} />
+                    </Field>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Estado">
                       <select value={form.estado_ID} onChange={e => set('estado_ID', e.target.value)} className={inputCls}>
@@ -315,6 +365,16 @@ export default function ProjectCreatePage() {
                       {users.map(u => <option key={u.user_ID} value={u.user_ID}>{fullName(u)}</option>)}
                     </select>
                   </Field>
+                  <Field label="Distrito">
+                    {distritos.length > 0 ? (
+                      <select value={form.distrito} onChange={e => set('distrito', e.target.value)} className={inputCls}>
+                        <option value="">Sin indicar</option>
+                        {distritos.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    ) : (
+                      <input value={form.distrito} onChange={e => set('distrito', e.target.value)} maxLength={80} className={inputCls} />
+                    )}
+                  </Field>
 
                   <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer">
                     <input
@@ -345,6 +405,9 @@ export default function ProjectCreatePage() {
                     )}
                     {selectedDept && <SummaryRow label="Departamento" value={selectedDept.name} />}
                     {selectedUser && <SummaryRow label="Responsable" value={fullName(selectedUser)} />}
+                    {form.codigo.trim() && <SummaryRow label="Código" value={form.codigo.trim()} />}
+                    {form.distrito && <SummaryRow label="Distrito" value={form.distrito} />}
+                    {plantillas.length > 0 && form.usar_plantilla && <SummaryRow label="Tareas" value={`${plantillas.length} de la plantilla`} />}
                   </div>
                 </>
               )}

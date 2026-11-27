@@ -37,6 +37,12 @@ export function formatearFechaLarga(dateStr: string | null | undefined): string 
   return new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(y, m - 1, d))
 }
 
+/** Hoy (AAAA-MM-DD) en la hora local. toISOString da la fecha de UTC, que en Costa Rica cambia a las 18:00. */
+export function hoyLocal(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr + 'T23:59:59').getTime() - Date.now()) / 86400000)
 }
