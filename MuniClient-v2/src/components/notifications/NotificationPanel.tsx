@@ -34,7 +34,8 @@ export default function NotificationPanel({ onClose }: Props) {
   }
 
   return (
-    <div className="flex flex-col max-h-[500px]">
+    // Sin pasarse del alto de la pantalla (en el celular apaisado, la cabecera quedaba afuera).
+    <div className="flex flex-col max-h-[min(500px,calc(100dvh_-_5.5rem_-_env(safe-area-inset-bottom)))]">
       <header className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h3 className="font-semibold text-foreground">Notificaciones</h3>
         {notifs.some(n => !n.leida) && (

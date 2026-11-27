@@ -43,8 +43,12 @@ export function hoyLocal(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** Días de calendario de hoy (local) a la fecha: 0 hoy, 1 mañana, -1 ayer. Antes redondeaba hacia arriba hasta
+ * el fin del día y sumaba uno: «Vence hoy» no salía y lo de ayer todavía no contaba como vencido. */
 export function daysUntil(dateStr: string): number {
-  return Math.ceil((new Date(dateStr + 'T23:59:59').getTime() - Date.now()) / 86400000)
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number)
+  const hoy = new Date()
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86400000)
 }
 
 export function isOverdue(project: { fecha_entrega?: string; estado_ID?: { name: string; categoria?: string } }): boolean {

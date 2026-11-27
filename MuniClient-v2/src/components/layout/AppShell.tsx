@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
+import BarraInferior from './BarraInferior'
 import GlobalSearch from './GlobalSearch'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import OnboardingTour from './OnboardingTour'
@@ -10,6 +10,7 @@ import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { useMarca } from '@/hooks/useMarca'
 import { useAppStore } from '@/store/app'
 import AceptarAviso from '@/components/privacidad/AceptarAviso'
+import { useMedia } from '@/hooks/useMedia'
 
 export default function AppShell() {
   const marca = useMarca()
@@ -18,6 +19,7 @@ export default function AppShell() {
   const [menuEn, setMenuEn] = useState<string | null>(null)
   const menu = menuEn === pathname
   const avisoPendiente = useAppStore(s => !!s.user?.privacidad_pendiente)
+  const ancha = useMedia('(min-width: 1024px)')
 
   return (
     <div className="flex h-full bg-background">
@@ -29,7 +31,8 @@ export default function AppShell() {
       >
         Saltar al contenido
       </a>
-      {/* Desde 1024 px el menú queda fijo a la izquierda; más angosto, se abre como cajón. */}
+      {/* Desde 1024 px el menú queda fijo a la izquierda; más angosto, abajo van los accesos principales
+          y el resto se abre como cajón desde «Más». */}
       <div className="hidden lg:flex h-full">
         <Sidebar />
       </div>
@@ -41,23 +44,15 @@ export default function AppShell() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="flex items-center justify-between lg:justify-end gap-3 px-4 sm:px-6 py-3 border-b border-border bg-card/40 backdrop-blur">
           <div className="flex items-center gap-3 min-w-0 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMenuEn(pathname)}
-              aria-label="Abrir el menú"
-              aria-expanded={menu}
-              className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl border border-border bg-card hover:bg-accent transition"
-            >
-              <Menu className="h-5 w-5 text-foreground" aria-hidden="true" />
-            </button>
             <LogoInstitucion tamano={28} />
             <span className="text-sm font-bold text-ocean-500 dark:text-ocean-200 truncate">{marca.nombre}</span>
           </div>
-          <NotificationBell />
+          {ancha && <NotificationBell />}
         </header>
         <main id="contenido" tabIndex={-1} className="flex-1 overflow-y-auto focus:outline-none">
           <Outlet />
         </main>
+        {!ancha && <BarraInferior onMas={() => setMenuEn(pathname)} masAbierto={menu} />}
       </div>
       <GlobalSearch />
       {/* Primero el aviso de privacidad; el recorrido inicial, después de aceptarlo. */}

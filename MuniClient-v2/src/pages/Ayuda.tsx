@@ -75,6 +75,18 @@ const FAQS: FAQ[] = [
     q: '¿Qué pasa si un campo ya no se necesita?',
     a: 'Desactívelo en Configuración › Campos: deja de pedirse, pero lo que ya se cargó se sigue viendo. Un campo con datos no se borra ni cambia de tipo de dato; si hace falta otro tipo, cree un campo nuevo.',
   },
+  {
+    q: '¿Dónde veo todas mis tareas?',
+    a: 'En «Mis tareas» (menú lateral; en el celular, en la barra de abajo): las tareas abiertas que tiene asignadas o en que colabora, de todos sus proyectos, agrupadas por vencidas, próximos 7 días y más adelante (sin las de proyectos cerrados o archivados). Al tocar una se abre en su proyecto.',
+  },
+  {
+    q: '¿Cómo ordeno la lista de proyectos o de usuarios y elijo qué columnas ver?',
+    a: 'En la vista de lista, toque el título de una columna para ordenar por ella; otra vez, al revés. «Columnas» deja mostrar u ocultar columnas (se recuerda en este navegador) y abajo se elige cuántas filas ver por página. En el celular la lista se ve como tarjetas.',
+  },
+  {
+    q: '¿Qué muestran los rombos y el recuadro del cronograma?',
+    a: 'Cada rombo es un hito del proyecto en su fecha prevista: blanco si está previsto, verde si se cumplió y rojo si está atrasado. Al pasar el puntero o llegar con el teclado a un proyecto se abre un resumen con fechas, avance, responsable, presupuesto, solicitudes abiertas e hitos; Escape lo cierra. En Reportes, el nombre del proyecto muestra el mismo resumen.',
+  },
 ]
 
 export default function AyudaPage() {

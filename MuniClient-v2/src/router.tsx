@@ -22,6 +22,7 @@ import AccesibilidadPage from '@/pages/Accesibilidad'
 import PrivacidadPage from '@/pages/Privacidad'
 import AuditoriaPage from '@/pages/Auditoria'
 import SolicitudesPage from '@/pages/Solicitudes'
+import MisTareasPage from '@/pages/MisTareas'
 
 export const router = createBrowserRouter([
   { path: '/',      element: <Navigate to="/login" replace /> },
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
         { path: '/auditoria',         element: <AuditoriaPage /> },
         { path: '/solicitudes',       element: <SolicitudesPage /> },
         { path: '/timeline',          element: <TimelinePage /> },
+        { path: '/mis-tareas',        element: <MisTareasPage /> },
         { path: '/reports',           element: <ReportsPage /> },
         { path: '/ayuda',             element: <AyudaPage /> },
       ],

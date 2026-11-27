@@ -1,6 +1,6 @@
 """Filtros, orden y totales de proyectos en el servidor. Antes el front bajaba los primeros 200
 y calculaba todo en el navegador, así que con más proyectos los números quedaban incompletos."""
-from django.db.models import Count, Q, Sum
+from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
 from django.utils import timezone
 
 from .models import AjustePresupuesto, Proyectos
@@ -11,6 +11,15 @@ ORDENES = {
     'nombre': ['name'],
     'entrega': ['fecha_entrega', 'name'],
     'prioridad': ['-prioridad_ID__orden', 'fecha_entrega'],
+    # Columnas de la tabla (las anotaciones vienen de views._proyectos_visibles_qs).
+    'codigo': ['codigo', 'name'],
+    # La celda muestra «Vencido» en los atrasados: van juntos, después de los demás.
+    'estado': ['vencido_orden', 'estado_ID__orden', 'name'],
+    'departamento': ['departamento_ID__name', 'name'],
+    'responsable': ['user_ID__first_name', 'user_ID__last_name', 'name'],
+    'avance': ['avance_calc', 'name'],
+    'presupuesto': ['presupuesto_total', 'name'],
+    'ejecutado': ['costo_ejecutado_total', 'name'],
 }
 
 
@@ -56,8 +65,20 @@ def por_categoria(qs):
     return {c: totales.get(c, 0) for c in ('activo', 'pausado', 'finalizado')}
 
 
+def campos_de_orden(ordenes, pedido, por_defecto):
+    """`clave` ordena como dice la tabla; `-clave`, al revés (cada campo invertido). Lo desconocido usa el por defecto."""
+    pedido = str(pedido or '')
+    invertir = pedido.startswith('-')
+    campos = ordenes.get(pedido.lstrip('-'))
+    if campos is None:
+        return ordenes[por_defecto]
+    return [c[1:] if c.startswith('-') else f'-{c}' for c in campos] if invertir else campos
+
+
 def ordenar(qs, params):
-    return qs.order_by(*ORDENES.get(params.get('orden', 'reciente'), ORDENES['reciente']))
+    # El pk al final: con valores repetidos (mismo estado, mismo avance) la paginación no repite ni salta filas.
+    qs = qs.annotate(vencido_orden=Case(When(q_vencidos(), then=Value(1)), default=Value(0), output_field=IntegerField()))
+    return qs.order_by(*campos_de_orden(ORDENES, params.get('orden', 'reciente'), 'reciente'), 'pk')
 
 
 def resumen(qs):

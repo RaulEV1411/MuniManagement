@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { GanttChartSquare, ChevronDown } from 'lucide-react'
-import { getProjects, getDepartments, getEstados } from '@/lib/api'
-import { type Project, type Department, type Estado } from '@/types'
-import { cn, isOverdue } from '@/lib/utils'
+import { getProjects, getDepartments, getEstados, getTodosLosHitos } from '@/lib/api'
+import { type Project, type Department, type Estado, type Hito } from '@/types'
+import { cn, hoyLocal, isOverdue } from '@/lib/utils'
+import { useTooltip } from '@/hooks/useTooltip'
+import ResumenDelProyecto from '@/components/projects/ResumenDelProyecto'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { COLOR_VENCIDO, claseRelleno, colorDeEstado, conColor, textoSobre } from '@/lib/colores'
 import { useTituloDePagina } from '@/hooks/useMarca'
@@ -23,6 +25,92 @@ function diffDays(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000)
 }
 
+const SIN_HITOS: Hito[] = []
+
+const MARCA_DE_HITO = {
+  cumplido: 'bg-emerald-600 border-white',
+  atrasado: 'bg-red-600 border-white',
+  previsto: 'bg-white border-slate-700',
+} as const
+
+function estadoDeHito(h: Hito, hoy: string): keyof typeof MARCA_DE_HITO {
+  return h.fecha_real ? 'cumplido' : h.fecha_prevista < hoy ? 'atrasado' : 'previsto'
+}
+
+function FilaDelCronograma({ p, start, days, hitos }: { p: Project; start: Date; days: number; hitos: Hito[] }) {
+  const { ancla, disparador, describe, burbuja } = useTooltip<HTMLDivElement>()
+  const s  = toDate(p.fecha_inicio)
+  const e  = toDate(p.fecha_entrega)
+  const od = isOverdue(p)
+  const hoy = hoyLocal()
+
+  let leftPct  = 0
+  let widthPct = 5
+  if (s && e) {
+    leftPct  = (diffDays(start, s) / days) * 100
+    widthPct = Math.max((diffDays(s, e) / days) * 100, 2)
+  } else if (s) {
+    leftPct  = (diffDays(start, s) / days) * 100
+    widthPct = 3
+  }
+  leftPct  = Math.max(0, Math.min(leftPct, 98))
+  widthPct = Math.min(widthPct, 100 - leftPct)
+
+  // La burbuja va al lado de la fila y no adentro: aunque esté en un portal, React le pasaría los eventos del
+  // puntero a la fila, y volver de la burbuja a la barra la cerraba.
+  return (
+    <>
+    <div
+      {...disparador}
+      className="relative flex items-center gap-0 h-10 group cursor-pointer rounded-lg focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
+    >
+      {/* Nombre */}
+      <div className="w-32 sm:w-48 flex-shrink-0 pr-3 flex items-center">
+        <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
+          <Link {...describe} to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link>
+        </p>
+      </div>
+
+      {/* Barra */}
+      <div className="flex-1 h-full flex items-center relative">
+        <div className="w-full h-7 relative">
+          <div
+            ref={ancla}
+            className={cn(
+              'absolute h-full rounded-lg flex items-center px-2 transition-all group-hover:opacity-90 overflow-hidden',
+              claseRelleno,
+              p.prioridad_ID && 'border-l-4',
+            )}
+            style={{
+              ...conColor(colorDeEstado(od, p.estado_ID)),
+              color: textoSobre(colorDeEstado(od, p.estado_ID) ?? '#64748b'),
+              left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8,
+              borderLeftColor: p.prioridad_ID?.color,
+            }}
+          >
+            <span className="text-xs font-semibold truncate hidden sm:block">
+              {p.departamento_ID?.name}
+            </span>
+          </div>
+          {/* Hitos: un rombo en su fecha prevista (el detalle va en el tooltip, que también llega con el teclado). */}
+          {hitos.map(h => {
+            const f = toDate(h.fecha_prevista)
+            if (!f) return null
+            const x = Math.max(0, Math.min(100, (diffDays(start, f) / days) * 100))
+            return (
+              <span key={h.hito_ID} aria-hidden data-hito={estadoDeHito(h, hoy)}
+                className={cn('absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 w-2.5 h-2.5 border-2 rounded-[2px] pointer-events-none z-[5]', MARCA_DE_HITO[estadoDeHito(h, hoy)])}
+                style={{ left: `${x}%` }} />
+            )
+          })}
+        </div>
+      </div>
+    </div>
+    {burbuja(<ResumenDelProyecto proyecto={p} hitos={hitos} />)}
+    </>
+  )
+}
+
 export default function TimelinePage() {
   useTituloDePagina('Cronograma')
   const [deptFilter, setDeptFilter] = useState('')
@@ -32,12 +120,19 @@ export default function TimelinePage() {
     queryFn: () => getProjects({ ...(deptFilter && { departamento: deptFilter }), orden: 'entrega' }),
   })
   const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  const { data: hitos = SIN_HITOS } = useQuery<Hito[]>({ queryKey: ['hitos', 'todos'], queryFn: getTodosLosHitos })
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
 
   const filtered = projects
+  const hitosPorProyecto = useMemo(() => {
+    const visibles = new Set(filtered.map(p => p.proyect_ID))
+    const grupos: Record<string, Hito[]> = {}
+    for (const h of hitos) if (visibles.has(h.proyecto)) (grupos[h.proyecto] ??= []).push(h)
+    return grupos
+  }, [filtered, hitos])
 
   const { start, end, days } = useMemo(() => {
     const dates: Date[] = []
@@ -46,6 +141,10 @@ export default function TimelinePage() {
       const e = toDate(p.fecha_entrega)
       if (s) dates.push(s)
       if (e) dates.push(e)
+      for (const h of hitosPorProyecto[p.proyect_ID] ?? []) {
+        const f = toDate(h.fecha_prevista)
+        if (f) dates.push(f)
+      }
     })
     if (dates.length === 0) {
       const today = new Date()
@@ -56,7 +155,7 @@ export default function TimelinePage() {
     const s = addDays(minDate, -3)
     const e = addDays(maxDate, 5)
     return { start: s, end: e, days: Math.max(diffDays(s, e), 1) }
-  }, [filtered])
+  }, [filtered, hitosPorProyecto])
 
   const today = new Date()
   const todayOffset = Math.max(0, Math.min(100, (diffDays(start, today) / days) * 100))
@@ -149,61 +248,9 @@ export default function TimelinePage() {
                 </div>
               )}
 
-              {filtered.map(p => {
-                const s   = toDate(p.fecha_inicio)
-                const e   = toDate(p.fecha_entrega)
-                const od  = isOverdue(p)
-
-                let leftPct  = 0
-                let widthPct = 5
-                if (s && e) {
-                  leftPct  = (diffDays(start, s) / days) * 100
-                  widthPct = Math.max((diffDays(s, e) / days) * 100, 2)
-                } else if (s) {
-                  leftPct  = (diffDays(start, s) / days) * 100
-                  widthPct = 3
-                }
-                leftPct  = Math.max(0, Math.min(leftPct, 98))
-                widthPct = Math.min(widthPct, 100 - leftPct)
-
-                return (
-                  <div
-                    key={p.proyect_ID}
-                    className="relative flex items-center gap-0 h-10 group cursor-pointer rounded-lg focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring"
-                  >
-                    {/* Nombre */}
-                    <div className="w-32 sm:w-48 flex-shrink-0 pr-3 flex items-center">
-                      <p className="text-xs font-medium text-foreground group-hover:text-ocean-500 dark:group-hover:text-ocean-200 transition-colors truncate">
-                        <Link to={`/projects/${p.proyect_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{p.name}</Link>
-                      </p>
-                    </div>
-
-                    {/* Barra */}
-                    <div className="flex-1 h-full flex items-center relative">
-                      <div className="w-full h-7 relative">
-                        <div
-                          className={cn(
-                            'absolute h-full rounded-lg flex items-center px-2 transition-all group-hover:opacity-90 overflow-hidden',
-                            claseRelleno,
-                            p.prioridad_ID && 'border-l-4',
-                          )}
-                          style={{
-                            ...conColor(colorDeEstado(od, p.estado_ID)),
-                            color: textoSobre(colorDeEstado(od, p.estado_ID) ?? '#64748b'),
-                            left: `${leftPct}%`, width: `${widthPct}%`, minWidth: 8,
-                            borderLeftColor: p.prioridad_ID?.color,
-                          }}
-                          title={`${p.name} · ${od ? 'Vencido' : p.estado_ID?.name ?? ''} · prioridad ${p.prioridad_ID?.name ?? '—'}`}
-                        >
-                          <span className="text-xs font-semibold truncate hidden sm:block">
-                            {p.departamento_ID?.name}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+              {filtered.map(p => (
+                <FilaDelCronograma key={p.proyect_ID} p={p} start={start} days={days} hitos={hitosPorProyecto[p.proyect_ID] ?? SIN_HITOS} />
+              ))}
             </div>
 
             {/* Leyenda */}
@@ -220,6 +267,12 @@ export default function TimelinePage() {
                   <span className="text-xs text-muted-foreground">Hoy</span>
                 </div>
               )}
+              {Object.keys(hitosPorProyecto).length > 0 && (['previsto', 'cumplido', 'atrasado'] as const).map(e => (
+                <div key={e} className="flex items-center gap-1.5">
+                  <span aria-hidden className={cn('rotate-45 w-2.5 h-2.5 border-2 rounded-[2px]', MARCA_DE_HITO[e], e !== 'previsto' && 'border-transparent')} />
+                  <span className="text-xs text-muted-foreground">Hito {e}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from django.db.models import Q
 from django.utils import timezone
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from .models import AsignacionRecurso, ChecklistItem, ComentarioTarea, Recurso, Tareas, TaskImage
@@ -49,7 +50,7 @@ def _puede_gestionar_imagenes(user, tarea):
 class TareasViewSet(ModelViewSet):
     queryset = Tareas.objects.prefetch_related(
         'images', 'colaboradores', 'bloqueada_por__estado_ID', 'checklist__hecho_por', 'recursos__recurso', 'documentos', 'comentarios',
-    ).select_related('asignado_a', 'estado_ID', 'prioridad_ID').all()
+    ).select_related('asignado_a', 'estado_ID', 'prioridad_ID', 'proyecto_ID').all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
@@ -61,9 +62,19 @@ class TareasViewSet(ModelViewSet):
         queryset = super().get_queryset().filter(
             proyecto_ID__in=authz.proyectos_visibles(self.request.user).values('pk')
         )
-        proyecto_ID = self.request.query_params.get('proyecto_ID')
+        p = self.request.query_params
+        proyecto_ID = p.get('proyecto_ID')
         if proyecto_ID:
             queryset = queryset.filter(proyecto_ID=proyecto_ID)
+        # «Mis tareas»: las asignadas y aquellas en que colabora, en todos los proyectos que ve.
+        if p.get('mias') in ('1', 'true'):
+            u = self.request.user
+            queryset = queryset.filter(Q(asignado_a=u) | Q(colaboradores=u)).distinct()
+            if p.get('abiertas') in ('1', 'true'):
+                # Tampoco las de proyectos cerrados o archivados: no se pueden tocar hasta reabrirlos.
+                queryset = queryset.exclude(estado_ID__categoria='finalizado').exclude(
+                    proyecto_ID__estado_ID__categoria='finalizado').exclude(proyecto_ID__archivado=True)
+            queryset = queryset.order_by('fecha_entrega', 'name', 'pk')
         return queryset
 
     def perform_create(self, serializer):

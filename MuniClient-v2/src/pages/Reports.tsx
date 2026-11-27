@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { FileDown, FileSpreadsheet, Search, ChevronDown } from 'lucide-react'
 import { getProjects, getDepartments, getEstados, getResumenProyectos, registrarExportacion } from '@/lib/api'
@@ -16,9 +17,24 @@ import { usePermiso } from '@/hooks/usePermiso'
 import { pestanas } from '@/lib/pestanas'
 import { PESTANAS_DE_PROYECTOS, type PestanaProyectos } from '@/lib/estados'
 import { useAppStore } from '@/store/app'
+import { useTooltip } from '@/hooks/useTooltip'
+import ResumenDelProyecto from '@/components/projects/ResumenDelProyecto'
 
 // Costo con los aumentos y rebajos aprobados; si el servidor no lo manda, el costo base.
 const costoTotal = (p: Project) => p.costo_total ?? p.costo ?? 0
+
+function EnlaceConResumen({ proyecto }: { proyecto: Project }) {
+  const { ancla, disparador, describe, burbuja } = useTooltip<HTMLAnchorElement>()
+  return (
+    <>
+      <Link ref={ancla} {...disparador} {...describe} to={`/projects/${proyecto.proyect_ID}`}
+        className="text-sm font-medium text-foreground hover:text-ocean-500 dark:hover:text-ocean-200 hover:underline underline-offset-2">
+        {proyecto.name}
+      </Link>
+      {burbuja(<ResumenDelProyecto proyecto={proyecto} />)}
+    </>
+  )
+}
 
 export default function ReportsPage() {
   const puedeExportar = usePermiso('reportes.exportar')
@@ -283,7 +299,7 @@ export default function ReportsPage() {
                     <tr key={p.proyect_ID} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 text-xs text-muted-foreground">{i + 1}</td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-foreground">{p.name}</p>
+                        <EnlaceConResumen proyecto={p} />
                         {p.user_ID && (
                           <p className="text-xs text-muted-foreground">{p.user_ID.first_name} {p.user_ID.last_name}</p>
                         )}

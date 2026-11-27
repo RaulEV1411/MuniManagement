@@ -14,6 +14,7 @@ import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { useTituloDePagina } from '@/hooks/useMarca'
 import { useAlcance, usePermiso } from '@/hooks/usePermiso'
+import TablaDeDatos, { TamanoDePagina, type Columna } from '@/components/common/TablaDeDatos'
 
 const ROLE_STYLE: Record<string, string> = {
   'Administrador': 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
@@ -99,6 +100,37 @@ function UserListRow({ user }: { user: User }) {
   )
 }
 
+function columnasDeUsuarios(conConexion: boolean): Columna<User>[] {
+  return [
+    {
+      id: 'nombre', titulo: 'Nombre', orden: 'nombre', fija: true, ancho: 'min-w-48 max-w-80',
+      celda: u => (
+        <span className="flex items-center gap-3 min-w-0">
+          <UserAvatar user={u} size="md" />
+          <Link to={`/users/${u.user_ID}`} className="font-semibold text-foreground hover:text-ocean-500 dark:hover:text-ocean-200 truncate">{fullName(u)}</Link>
+        </span>
+      ),
+    },
+    { id: 'correo', titulo: 'Correo', orden: 'correo', celda: u => <span className="text-muted-foreground">{u.email}</span> },
+    {
+      id: 'rol', titulo: 'Rol', orden: 'rol',
+      celda: u => u.role?.name
+        ? <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap', ROLE_STYLE[u.role.name] ?? 'bg-muted text-muted-foreground')}>{u.role.name}</span>
+        : '—',
+    },
+    { id: 'departamento', titulo: 'Departamento', orden: 'departamento', ancho: 'min-w-32 max-w-56', celda: u => u.departamento_ID?.name ?? '—' },
+    {
+      id: 'disponibilidad', titulo: 'Disponibilidad',
+      celda: u => textoDeDisponibilidad(u) ? <Ausente user={u} /> : <span className="text-muted-foreground">Disponible</span>,
+    },
+    // Solo para quien ve la ficha completa (el directorio no trae la última conexión).
+    ...(conConexion ? [{
+      id: 'conexion', titulo: 'Última conexión', orden: 'conexion', primero: 'desc' as const,
+      celda: (u: User) => <span className="text-muted-foreground whitespace-nowrap">{u.ultima_conexion ? formatearFechaHora(u.ultima_conexion) : 'Sin conexiones'}</span>,
+    }] : []),
+  ]
+}
+
 function UserGridCard({ user }: { user: User }) {
   return (
     <motion.div
@@ -149,6 +181,8 @@ export default function UsersPage() {
   const [deptFilter, setDept] = useState('')
   const [view, setView]       = useState<'list' | 'grid'>('list')
   const [pagina, setPagina]   = useState(1)
+  const [orden, setOrden]     = useState('nombre')
+  const [porTabla, setPorTabla] = useState(25)
 
   // Búsqueda, filtros y páginas en el servidor (antes se bajaban los primeros 200).
   const busqueda = useValorDiferido(search.trim())
@@ -156,10 +190,12 @@ export default function UsersPage() {
     ...(busqueda && { search: busqueda }),
     ...(roleFilter && { rol: roleFilter }),
     ...(deptFilter && { departamento: deptFilter }),
+    orden,
   }
-  const POR_PAGINA = 48
+  // La tabla elige 25, 50 o 100; la cuadrícula va de a 48 (llena filas de 2, 3 y 4).
+  const POR_PAGINA = view === 'grid' ? 48 : porTabla
   const { data: paginaActual, isLoading, refetch, isError, error, isPlaceholderData } = useQuery({
-    queryKey: ['users', 'lista', filtros, pagina],
+    queryKey: ['users', 'lista', filtros, pagina, POR_PAGINA],
     queryFn: () => getUsuariosPagina({ ...filtros, page: pagina, page_size: POR_PAGINA }),
     placeholderData: keepPreviousData,
   })
@@ -262,7 +298,7 @@ export default function UsersPage() {
               key={v}
               aria-label={v === 'list' ? 'Vista de lista' : 'Vista de cuadrícula'}
               aria-pressed={view === v}
-              onClick={() => setView(v)}
+              onClick={() => { setView(v); setPagina(1) }}
               className={cn('px-2.5 py-1.5 transition-colors', v === 'grid' ? 'border-l border-border' : '',
                 view === v ? 'bg-ocean-500 text-white' : 'text-muted-foreground hover:bg-accent')}
             >
@@ -312,19 +348,24 @@ export default function UsersPage() {
                 {displayed.map(u => <UserGridCard key={u.user_ID} user={u} />)}
               </motion.div>
             ) : (
-              <motion.div key="list" className="bg-card rounded-2xl border border-border overflow-hidden">
-                {displayed.map(u => <UserListRow key={u.user_ID} user={u} />)}
+              <motion.div key="list">
+                <TablaDeDatos id="usuarios" titulo="Usuarios" filas={displayed} clave={u => u.user_ID}
+                  columnas={columnasDeUsuarios(displayed.some(u => u.ultima_conexion !== undefined))}
+                  orden={orden} onOrden={o => { setOrden(o); setPagina(1) }} tarjeta={u => <UserListRow user={u} />} />
               </motion.div>
             )}
           </AnimatePresence>
         ) : null}
-        {!isLoading && displayed.length > 0 && totalPaginas > 1 && (
-          <nav className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground" aria-label="Páginas de usuarios">
+        {!isLoading && displayed.length > 0 && (totalPaginas > 1 || view === 'list') && (
+          <nav className="flex flex-wrap items-center justify-center gap-3 pt-4 text-xs text-muted-foreground" aria-label="Páginas de usuarios">
+            {view === 'list' && <TamanoDePagina etiqueta="Por página" valor={porTabla} onCambio={n => { setPorTabla(n); setPagina(1) }} />}
+            {totalPaginas > 1 && <>
             <button onClick={() => { setPagina(pagina - 1); document.querySelector('main')?.scrollTo({ top: 0 }) }} disabled={pagina <= 1 || isPlaceholderData}
               className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40">Anterior</button>
             <span aria-current="page">Página {pagina} de {totalPaginas}</span>
             <button onClick={() => { setPagina(pagina + 1); document.querySelector('main')?.scrollTo({ top: 0 }) }} disabled={pagina >= totalPaginas || isPlaceholderData}
               className="px-2.5 py-1 rounded-lg border border-border hover:bg-accent disabled:opacity-40">Siguiente</button>
+            </>}
           </nav>
         )}
         {isLoading || displayed.length > 0 ? null : (

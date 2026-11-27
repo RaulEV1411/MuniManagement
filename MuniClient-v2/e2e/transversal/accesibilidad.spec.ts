@@ -70,6 +70,10 @@ for (const tema of ['claro', 'oscuro'] as const) {
         await page.getByRole('button', { name: vista }).click()
         await sinFallos(page, `proyectos · ${vista}`)
       }
+      await page.getByRole('button', { name: 'Vista de lista' }).click()
+      await page.getByRole('button', { name: 'Columnas' }).click()
+      await sinFallos(page, 'proyectos · columnas de la tabla')
+      await page.keyboard.press('Escape')
       for (const ruta of ['/projects/new', '/timeline', '/reports', '/solicitudes']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
@@ -230,7 +234,7 @@ test.describe('en el celular', { tag: '@a11y' }, () => {
     // El menú lateral no ocupa la pantalla: queda en el cajón.
     await expect(page.getByRole('link', { name: 'Configuración' })).toBeHidden()
 
-    await page.getByRole('button', { name: 'Abrir el menú' }).click()
+    await page.getByRole('navigation', { name: 'Accesos principales' }).getByRole('button', { name: 'Más' }).click()
     const menu = page.getByRole('dialog', { name: 'Menú' })
     await expect(menu).toBeVisible()
     await menu.getByRole('link', { name: 'Usuarios' }).click()
