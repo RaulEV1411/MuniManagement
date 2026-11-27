@@ -347,3 +347,73 @@ export interface CatalogoAuditoria {
   acciones: OpcionAuditoria[]
   resultados: OpcionAuditoria[]
 }
+
+// ── Solicitudes ──────────────────────────────────────────────
+export type EfectoSolicitud = 'plazo' | 'aumento' | 'rebajo' | 'personal' | 'responsable' | 'ninguno'
+export type NivelAprobacion = 'departamento' | 'direccion' | 'alcaldia'
+
+export interface TipoSolicitud {
+  tipo_ID: number
+  nombre: string
+  descripcion: string
+  efecto: EfectoSolicitud
+  efecto_display: string
+  dias_respuesta: number
+  is_system: boolean
+  activo: boolean
+  orden: number
+}
+
+export interface ReglaAprobacion {
+  regla_ID: number
+  tipo: number
+  nivel: NivelAprobacion
+  nivel_display: string
+  desde: number
+}
+
+export interface PasoAprobacion {
+  orden: number
+  nivel: NivelAprobacion
+  nivel_display: string
+  estado: 'pendiente' | 'aprobado' | 'rechazado' | 'omitido'
+  estado_display: string
+  vence: string | null
+  escalado: boolean
+  decidido_por_nombre: string
+  decidido_en: string | null
+  comentario: string
+}
+
+export interface Solicitud {
+  numero: number
+  proyecto: string
+  proyecto_nombre: string
+  tarea: string | null
+  tarea_nombre: string
+  tipo: number
+  tipo_nombre: string
+  efecto: EfectoSolicitud
+  justificacion: string
+  nueva_fecha: string | null
+  fecha_actual: string | null
+  monto: number | null
+  persona: string | null
+  persona_nombre: string
+  rol_proyecto: string | null
+  rol_proyecto_nombre: string
+  hasta: string | null
+  impacto: number
+  estado: 'enviada' | 'en_revision' | 'aprobada' | 'rechazada' | 'retirada'
+  estado_display: string
+  solicitante: string | null
+  solicitante_nombre: string
+  creada_en: string
+  resuelta_en: string | null
+  aplicada: boolean
+  resultado: string
+  pasos: PasoAprobacion[]
+  vence: string | null
+  puedo_decidir: boolean
+  puedo_retirar: boolean
+}

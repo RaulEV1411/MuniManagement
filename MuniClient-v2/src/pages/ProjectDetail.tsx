@@ -35,6 +35,8 @@ import { esNoEncontrado } from '@/lib/errores'
 import RazonModal from '@/components/common/RazonModal'
 import { esFinal, pideMotivo } from '@/lib/estados'
 import { CerrarProyectoDialogo, ReabrirProyectoDialogo, TarjetaDeCierre } from '@/components/projects/CierreProyecto'
+import SolicitudesDelProyecto from '@/components/solicitudes/SolicitudesDelProyecto'
+import NuevaSolicitud from '@/components/solicitudes/NuevaSolicitud'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
@@ -997,7 +999,7 @@ function DropZone({ onFiles, disabled, progress }: {
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
-const TABS = ['Tareas', 'Información', 'Fotos', 'Comentarios', 'Actividad'] as const
+const TABS = ['Tareas', 'Información', 'Solicitudes', 'Fotos', 'Comentarios', 'Actividad'] as const
 type Tab = typeof TABS[number]
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -1058,6 +1060,7 @@ export default function ProjectDetailPage() {
   // Cerrar (con el estado final elegido), reabrir y archivar: los proyectos no se borran.
   const [cerrando, setCerrando] = useState<string | null>(null)
   const [reabriendo, setReabriendo] = useState(false)
+  const [pidiendoAjuste, setPidiendoAjuste] = useState(false)
   const esAdmin = user?.role === 'Administrador'
   const refrescar = async () => {
     await qc.invalidateQueries({ queryKey: ['project', id] })
@@ -1383,6 +1386,10 @@ export default function ProjectDetailPage() {
             )}
 
             {/* ── Información ── */}
+            {tab === 'Solicitudes' && (
+              <SolicitudesDelProyecto project={project} tasks={tasks} puedePedir={!project.cerrado && puede('solicitudes.crear')} />
+            )}
+
             {tab === 'Información' && (
               <div className="max-w-2xl space-y-4">
                 {project.cierre && <TarjetaDeCierre cierre={project.cierre} costoPrevisto={project.costo_total ?? project.costo ?? 0} />}
@@ -1448,6 +1455,7 @@ export default function ProjectDetailPage() {
                     proyectoId={project.proyect_ID}
                     costoBase={project.costo ?? 0}
                     puedeAjustar={puede('presupuesto.ajustar')}
+                    onSolicitar={!project.cerrado && puede('solicitudes.crear') ? () => setPidiendoAjuste(true) : undefined}
                   />
 
                   <EquipoPanel
@@ -1701,6 +1709,11 @@ export default function ProjectDetailPage() {
           onCerrar={() => setCerrando(null)}
           onListo={async () => { setCerrando(null); await refrescar() }}
         />
+      )}
+      {pidiendoAjuste && (
+        <NuevaSolicitud project={project} tasks={tasks} efectoInicial="aumento"
+          onCerrar={() => setPidiendoAjuste(false)}
+          onListo={() => { setPidiendoAjuste(false); qc.invalidateQueries({ queryKey: ['solicitudes'] }) }} />
       )}
       {reabriendo && (
         <ReabrirProyectoDialogo

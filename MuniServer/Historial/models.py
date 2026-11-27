@@ -18,6 +18,7 @@ TIPO_CHOICES = [
     ('reapertura',            'Reapertura'),
     ('archivo',               'Archivo'),
     ('desarchivo',            'Vuelta a las listas'),
+    ('orden_cambio',          'Orden de cambio (solicitud aprobada)'),
 ]
 
 

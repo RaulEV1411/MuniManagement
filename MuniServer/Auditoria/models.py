@@ -23,6 +23,7 @@ MODULOS = [
     ('catalogos', 'Estados, prioridades y tipos'),
     ('configuracion', 'Configuración'),
     ('reportes', 'Reportes'),
+    ('solicitudes', 'Solicitudes'),
     ('auditoria', 'Auditoría'),
     ('otros', 'Otros'),
 ]

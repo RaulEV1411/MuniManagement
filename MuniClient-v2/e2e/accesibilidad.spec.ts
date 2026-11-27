@@ -57,7 +57,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
         await page.getByRole('button', { name: vista }).click()
         await sinFallos(page, `proyectos · ${vista}`)
       }
-      for (const ruta of ['/projects/new', '/users', '/users/new', '/directions', '/departments', '/timeline', '/reports', '/ayuda', '/auditoria']) {
+      for (const ruta of ['/projects/new', '/users', '/users/new', '/directions', '/departments', '/timeline', '/reports', '/ayuda', '/auditoria', '/solicitudes']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
       }
@@ -71,7 +71,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await sinFallos(page, 'perfil · actividad')
 
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Roles y permisos']) {
+      for (const pestana of ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }
@@ -114,6 +114,13 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await page.getByRole('button', { name: 'Cerrar proyecto' }).click()
       await expect(page.getByRole('dialog', { name: 'Cerrar el proyecto' })).toBeVisible()
       await sinFallos(page, 'cerrar el proyecto', '[role=dialog]')
+      await page.keyboard.press('Escape')
+
+      await page.getByRole('tab', { name: /^Solicitudes/ }).click()
+      await sinFallos(page, 'solicitudes del proyecto')
+      await page.getByRole('button', { name: 'Nueva solicitud' }).click()
+      await expect(page.getByRole('dialog', { name: 'Nueva solicitud' })).toBeVisible()
+      await sinFallos(page, 'nueva solicitud', '[role=dialog]')
       await page.keyboard.press('Escape')
       await page.getByRole('tab', { name: /^Tareas/ }).click()
 
