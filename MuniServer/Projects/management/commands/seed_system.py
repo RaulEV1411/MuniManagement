@@ -9,12 +9,12 @@ ADMIN_AUTOMATIC_EMAILS = ['admin@muni.cr', 'admin@muni.local']
 
 
 ESTADOS_FIJOS = [
-    {'name': 'Pendiente',    'color': '#94a3b8', 'orden': 1},
-    {'name': 'En progreso',  'color': '#2563eb', 'orden': 2},
-    {'name': 'En revisión',  'color': '#a855f7', 'orden': 3},
-    {'name': 'Completado',   'color': '#16a34a', 'orden': 4},
-    {'name': 'Pausado',      'color': '#f59e0b', 'orden': 5},
-    {'name': 'Cancelado',    'color': '#dc2626', 'orden': 6},
+    {'name': 'Pendiente',    'color': '#94a3b8', 'orden': 1, 'categoria': 'activo'},
+    {'name': 'En progreso',  'color': '#2563eb', 'orden': 2, 'categoria': 'activo'},
+    {'name': 'En revisión',  'color': '#a855f7', 'orden': 3, 'categoria': 'activo'},
+    {'name': 'Completado',   'color': '#16a34a', 'orden': 4, 'categoria': 'finalizado'},
+    {'name': 'Pausado',      'color': '#f59e0b', 'orden': 5, 'categoria': 'pausado'},
+    {'name': 'Cancelado',    'color': '#dc2626', 'orden': 6, 'categoria': 'finalizado'},
 ]
 
 PRIORIDADES_FIJAS = [
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         for est in ESTADOS_FIJOS:
             Estado.objects.update_or_create(
                 name=est['name'],
-                defaults={'color': est['color'], 'orden': est['orden'], 'is_system': True},
+                defaults={'color': est['color'], 'orden': est['orden'], 'is_system': True, 'categoria': est['categoria']},
             )
         self.stdout.write(self.style.SUCCESS(f"Estados sembrados: {len(ESTADOS_FIJOS)}"))
 

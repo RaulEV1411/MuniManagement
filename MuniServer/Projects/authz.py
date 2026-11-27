@@ -132,9 +132,20 @@ def _calcular_permisos_en_proyecto(user, proyecto):
 
 # ── La regla ─────────────────────────────────────────────────────────────────
 
+# Un proyecto cerrado (estado finalizado) o archivado no se modifica: hay que reabrirlo. Las fotos y
+# los comentarios siguen abiertos (la evidencia final y las consultas llegan después del cierre).
+BLOQUEADOS_AL_CERRAR = {'proyectos.editar', 'tareas.gestionar', 'presupuesto.ajustar', 'equipo.gestionar'}
+
+
+def esta_cerrado(proyecto):
+    return proyecto.archivado or proyecto.estado_ID.categoria == 'finalizado'
+
+
 def puede(user, codigo, proyecto=None):
     """¿Puede hacer `codigo`? Sin proyecto: si lo tiene con algún alcance (para acciones generales)."""
     if not _autenticado(user):
+        return False
+    if proyecto is not None and codigo in BLOQUEADOS_AL_CERRAR and esta_cerrado(proyecto):
         return False
     if es_administrador(user):
         return True
@@ -151,7 +162,7 @@ def puede(user, codigo, proyecto=None):
 
 def mis_permisos_en(user, proyecto):
     """Lista de permisos de proyecto que tiene el usuario en este proyecto (para el front)."""
-    return sorted(c for c in cat.PERMISOS_DE_PROYECTO if puede(user, c, proyecto))
+    return sorted(c for c in [*cat.PERMISOS_DE_PROYECTO, 'proyectos.reabrir'] if puede(user, c, proyecto))
 
 
 def puede_ver(user, proyecto):

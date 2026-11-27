@@ -5,7 +5,6 @@ from django.utils import timezone
 
 from .models import AjustePresupuesto, Proyectos
 
-ESTADOS_CERRADOS = ['Completado', 'Cancelado']
 
 ORDENES = {
     'reciente': ['-created_at'],
@@ -16,7 +15,7 @@ ORDENES = {
 
 
 def q_vencidos():
-    return Q(fecha_entrega__lt=timezone.localdate()) & ~Q(estado_ID__name__in=ESTADOS_CERRADOS)
+    return Q(fecha_entrega__lt=timezone.localdate()) & ~Q(estado_ID__categoria='finalizado')
 
 
 def filtrar(qs, params, user):
@@ -42,7 +41,18 @@ def filtrar(qs, params, user):
         qs = qs.filter(user_ID=params['user_ID'])
     if params.get('mios') in ('1', 'true'):
         qs = qs.filter(user_ID=user)
+    if params.get('categoria') in ('activo', 'pausado', 'finalizado'):
+        qs = qs.filter(estado_ID__categoria=params['categoria'])
+    # Los archivados salen de las listas; se piden aparte.
+    qs = qs.filter(archivado=params.get('archivados') in ('1', 'true'))
     return qs
+
+
+def por_categoria(qs):
+    """Cuántos hay en cada pestaña (Activos, Pausados, Finalizados), sobre el conjunto sin esa pestaña."""
+    base = Proyectos.objects.filter(pk__in=qs.values('pk'))
+    totales = dict(base.values_list('estado_ID__categoria').annotate(n=Count('pk')))
+    return {c: totales.get(c, 0) for c in ('activo', 'pausado', 'finalizado')}
 
 
 def ordenar(qs, params):

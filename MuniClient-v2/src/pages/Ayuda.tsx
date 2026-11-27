@@ -13,7 +13,11 @@ interface FAQ {
 const FAQS: FAQ[] = [
   {
     q: '¿Cómo cambio el estado de un proyecto o tarea?',
-    a: 'Abra el proyecto, vaya a la pestaña Información y haga clic en cualquiera de las «píldoras» de estado (Pendiente, En progreso, etc.). Si elige Cancelado o Pausado, se le pedirá un motivo, que queda en el historial.',
+    a: 'Abra el proyecto, vaya a la pestaña Información y haga clic en cualquiera de las «píldoras» de estado (Pendiente, En progreso, etc.). Si elige Pausado, se le pedirá un motivo, que queda en el historial. Completado y Cancelado abren el cierre del proyecto.',
+  },
+  {
+    q: '¿Cómo cierro un proyecto? ¿Se puede borrar?',
+    a: 'Los proyectos no se borran. Con «Cerrar proyecto» se indica cómo terminó (Completado o Cancelado), la fecha y el costo reales, un resumen o motivo, las lecciones aprendidas y, si hay, el acta en PDF. Un proyecto cerrado pasa a la pestaña Finalizados y no se edita: para cambiarlo, quien tiene permiso lo reabre con un motivo. El Administrador puede archivar los cerrados para sacarlos de las listas sin perder su historial.',
   },
   {
     q: '¿Cómo solicito un aumento o rebajo de presupuesto?',
@@ -33,7 +37,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: '¿Puedo modificar los estados o prioridades?',
-    a: 'No. Los estados (Pendiente, En progreso, En revisión, Completado, Pausado, Cancelado) y las prioridades (Baja, Media, Alta, Urgente) los define el sistema, para que todos los proyectos se lean igual. Los tipos de proyecto sí los administra el Administrador en Configuración.',
+    a: 'Los estados del sistema (Pendiente, En progreso, En revisión, Completado, Pausado, Cancelado) y las prioridades (Baja, Media, Alta, Urgente) no se modifican, para que todos los proyectos se lean igual. El Administrador puede agregar estados propios en Configuración eligiendo su categoría (Activo, Pausado o Finalizado), y también administra los tipos de proyecto.',
   },
 ]
 

@@ -17,6 +17,8 @@ AUDITADOS = {
     'Projects.MiembroProyecto': 'equipo',
     'Projects.RolProyecto': 'roles',
     'Projects.AjustePresupuesto': 'presupuesto',
+    'Projects.CierreProyecto': 'proyectos',
+    'Projects.DocumentoProyecto': 'proyectos',
     'Projects.Estado': 'catalogos',
     'Projects.Prioridad': 'catalogos',
     'Projects.Tipos': 'catalogos',
@@ -69,6 +71,10 @@ def representar(obj):
         return f'{representar(obj.usuario)} en «{obj.proyecto.name}»'
     if tipo == 'Projects.AjustePresupuesto':
         return f'{obj.get_tipo_display()} de {obj.monto} en «{obj.proyecto.name}»'
+    if tipo == 'Projects.CierreProyecto':
+        return f'Cierre de «{obj.proyecto.name}»'
+    if tipo == 'Projects.DocumentoProyecto':
+        return f'{obj.nombre} («{obj.proyecto.name}»)'
     if tipo == 'Projects.ProjectImage':
         return f'Foto de «{obj.proyecto.name}»'
     if tipo == 'Task.TaskImage':

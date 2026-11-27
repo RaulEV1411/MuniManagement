@@ -41,10 +41,11 @@ export function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr + 'T23:59:59').getTime() - Date.now()) / 86400000)
 }
 
-export function isOverdue(project: { fecha_entrega?: string; estado_ID?: { name: string } }): boolean {
+export function isOverdue(project: { fecha_entrega?: string; estado_ID?: { name: string; categoria?: string } }): boolean {
   if (!project.fecha_entrega) return false
+  // Lo cerrado (estado finalizado) no vence. Las tareas usan los mismos estados.
   const status = project.estado_ID?.name
-  if (status === 'Completado' || status === 'Cancelado') return false
+  if (project.estado_ID?.categoria === 'finalizado' || status === 'Completado' || status === 'Cancelado') return false
   return daysUntil(project.fecha_entrega) < 0
 }
 

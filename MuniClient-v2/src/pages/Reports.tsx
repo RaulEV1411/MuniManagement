@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileDown, FileSpreadsheet, Search, ChevronDown } from 'lucide-react'
-import { getProjects, getDepartments, getEstados, registrarExportacion } from '@/lib/api'
+import { getProjects, getDepartments, getEstados, getResumenProyectos, registrarExportacion } from '@/lib/api'
 import { type Project, type Department, type Estado } from '@/types'
 import { cn, formatDate, isOverdue } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -13,6 +13,9 @@ import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, colorDeEstado, conColor } from '@/lib/colores'
 import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 import { usePermiso } from '@/hooks/usePermiso'
+import { pestanas } from '@/lib/pestanas'
+import { PESTANAS_DE_PROYECTOS, type PestanaProyectos } from '@/lib/estados'
+import { useAppStore } from '@/store/app'
 
 // Costo con los aumentos y rebajos aprobados; si el servidor no lo manda, el costo base.
 const costoTotal = (p: Project) => p.costo_total ?? p.costo ?? 0
@@ -25,6 +28,11 @@ export default function ReportsPage() {
   const [search, setSearch]           = useState('')
   const [deptFilter, setDeptFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [pestana, setPestanaElegida] = useState<PestanaProyectos>('activo')
+  const esAdmin = useAppStore(s => s.user?.role === 'Administrador')
+  const pestanasVisibles = PESTANAS_DE_PROYECTOS.filter(p => p.clave !== 'archivados' || esAdmin)
+  const setPestana = (v: PestanaProyectos) => { setPestanaElegida(v); setStatusFilter('') }
+  const tabs = pestanas('reportes', pestanasVisibles.map(p => p.clave), pestana, setPestana)
 
   // Filtra el servidor; el reporte trae todas las páginas del resultado para exportarlo completo.
   const busqueda = useValorDiferido(search.trim())
@@ -34,11 +42,17 @@ export default function ReportsPage() {
     ...(busqueda && { search: busqueda }),
     orden: 'entrega',
   }
-  const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
-    queryKey: ['projects', 'reportes', filtrosServidor],
-    queryFn: () => getProjects(filtrosServidor),
+  const filtrosDeLista = { ...filtrosServidor, ...(pestana === 'archivados' ? { archivados: '1' } : { categoria: pestana }) }
+  const { data: conteo } = useQuery({
+    queryKey: ['projects', 'resumen', 'pestanas', { ...filtrosServidor, orden: undefined }],
+    queryFn: () => getResumenProyectos({ ...filtrosServidor, orden: undefined }),
   })
-  const { data: estados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  const { data: projects = [], isLoading, isError, error, refetch } = useQuery<Project[]>({
+    queryKey: ['projects', 'reportes', filtrosDeLista],
+    queryFn: () => getProjects(filtrosDeLista),
+  })
+  const { data: todosLosEstados = [] } = useQuery<Estado[]>({ queryKey: ['estados'], queryFn: getEstados, staleTime: 300_000 })
+  const estados = todosLosEstados.filter(e => (pestana === 'archivados' ? 'finalizado' : pestana) === (e.categoria ?? 'activo'))
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ['departments'],
     queryFn: getDepartments,
@@ -129,6 +143,7 @@ export default function ReportsPage() {
     formato,
     cantidad: filtered.length,
     filtros: {
+      pestana: pestanasVisibles.find(p => p.clave === pestana)?.nombre ?? '',
       busqueda: search,
       departamento: departments.find(d => d.departamentos_ID === deptFilter)?.name ?? '',
       estado: statusFilter,
@@ -171,8 +186,28 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* ── Pestañas ── */}
+      <div {...tabs.lista} aria-label="Proyectos por estado" className="bg-card border-b border-border px-4 sm:px-6 flex gap-1 overflow-x-auto flex-shrink-0">
+        {pestanasVisibles.map(({ clave, nombre }) => {
+          const n = clave === 'archivados' ? conteo?.archivados : conteo?.por_categoria?.[clave]
+          return (
+            <button
+              key={clave}
+              {...tabs.pestana(clave)}
+              className={cn(
+                'px-3 py-2 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors',
+                pestana === clave ? 'border-ocean-500 text-ocean-500 dark:text-ocean-200' : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {nombre}
+              {n !== undefined && <span className="ml-1.5 text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full tabular-nums">{n}</span>}
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+      <div {...tabs.panel} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 focus:outline-none">
 
         {/* Filtros */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -196,7 +231,7 @@ export default function ReportsPage() {
           <div className="relative">
             <select aria-label="Filtrar por estado" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
               <option value="">Todos los estados</option>
-              {[...estados.map(e => e.name), 'Vencido'].map(s => (
+              {[...estados.map(e => e.name), ...(pestana === 'activo' || pestana === 'pausado' ? ['Vencido'] : [])].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>

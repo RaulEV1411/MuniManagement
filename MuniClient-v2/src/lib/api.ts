@@ -125,7 +125,13 @@ export const getProjectsByUser = (userId: string) => todasDe<Project>(api, '/pro
 export const createProject   = (data: object) => api.post('/projects/proyectosWrite/', data).then(r => r.data)
 export const updateProject   = (id: string, data: object) => api.put(`/projects/proyectosWrite/${seg(id)}/`, data).then(r => r.data)
 export const patchProject    = (id: string, data: object) => api.patch(`/projects/proyectosWrite/${seg(id)}/`, data).then(r => r.data)
-export const deleteProject   = (id: string) => api.delete(`/projects/proyectosWrite/${seg(id)}/`).then(r => r.data)
+// Los proyectos no se borran: se cierran (con el acta, si la hay), se reabren y se archivan.
+export const cerrarProyecto = (id: string, datos: FormData) =>
+  api.post(`/projects/proyectosWrite/${seg(id)}/cerrar/`, datos).then(r => r.data)
+export const reabrirProyecto = (id: string, datos: { estado_ID: string; motivo: string }) =>
+  api.post(`/projects/proyectosWrite/${seg(id)}/reabrir/`, datos).then(r => r.data)
+export const archivarProyecto = (id: string) => api.post(`/projects/proyectosWrite/${seg(id)}/archivar/`).then(r => r.data)
+export const desarchivarProyecto = (id: string) => api.post(`/projects/proyectosWrite/${seg(id)}/desarchivar/`).then(r => r.data)
 export const uploadProjectImage = (projectId: string, file: File) => {
   const fd = new FormData(); fd.append('image', file); fd.append('proyecto_ID', projectId)
   return api.post('/projects/project-images/', fd).then(r => r.data)
@@ -244,6 +250,9 @@ export interface ResumenProyectos {
   costo_total: number
   por_estado: Array<{ estado_ID: string; name: string; color: string; total: number }>
   por_departamento: Array<{ departamento_ID: string; name: string; total: number; completados: number }>
+  // Contadores de las pestañas, con los mismos filtros salvo la pestaña.
+  por_categoria: Record<'activo' | 'pausado' | 'finalizado', number>
+  archivados: number
 }
 
 // ── Institución ───────────────────────────────────────────────

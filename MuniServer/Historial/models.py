@@ -14,6 +14,10 @@ TIPO_CHOICES = [
     ('solicitud_presupuesto', 'Ajuste de presupuesto'),
     ('asignacion',            'Asignación de tarea'),
     ('eliminacion',           'Eliminación'),
+    ('cierre',                'Cierre del proyecto'),
+    ('reapertura',            'Reapertura'),
+    ('archivo',               'Archivo'),
+    ('desarchivo',            'Vuelta a las listas'),
 ]
 
 

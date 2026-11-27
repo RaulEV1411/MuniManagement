@@ -1,17 +1,21 @@
-from MuniServer.subidas import borrar_imagen, error_de_imagen, subir_imagen
+from MuniServer.subidas import borrar_imagen, error_de_documento, error_de_imagen, subir_documento, subir_imagen
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework import status
+from django.db import transaction
 from django.db.models import Prefetch, Q
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
-    AjustePresupuesto, MiembroProyecto, RolProyecto,
+    AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
 )
 from .serializers import (
+    CerrarProyectoSerializer, ReabrirProyectoSerializer,
     EstadoSerializer, PrioridadSerializer, TiposSerializer,
     ProyectosTiposSerializer, ProyectosReadSerializer, ProyectosWriteSerializer,
     ProjectImageSerializer, MiembroProyectoSerializer, RolProyectoSerializer, AjustePresupuestoSerializer,
@@ -23,9 +27,6 @@ from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
 from Notifications.servicios import interesados_del_proyecto, nombre, notificar
 from Configuracion.models import Configuracion
-
-
-ESTADOS_REQUIEREN_MOTIVO = {'Cancelado', 'Pausado'}
 
 
 def _proyectos_visibles_qs(user):
@@ -69,20 +70,33 @@ class ProyectosReadViewSet(ModelViewSet):
         return {**super().get_serializer_context(), 'incluir_mis_permisos': self.action == 'retrieve'}
 
     def get_queryset(self):
+        qs = _proyectos_visibles_qs(self.request.user)
+        if self.action != 'list':
+            # El detalle se abre aunque esté archivado (los filtros de lista no aplican).
+            return qs
         p = self.request.query_params
-        qs = consultas.filtrar(_proyectos_visibles_qs(self.request.user), p, self.request.user)
-        return consultas.ordenar(qs, p)
+        return consultas.ordenar(consultas.filtrar(qs, p, self.request.user), p)
 
     @action(detail=False, methods=['get'])
     def resumen(self, request):
         """Totales para el dashboard, el menú y los reportes, con los mismos filtros que la lista."""
-        qs = consultas.filtrar(authz.proyectos_visibles(request.user), request.query_params, request.user)
-        return Response(consultas.resumen(qs))
+        visibles = authz.proyectos_visibles(request.user)
+        datos = consultas.resumen(consultas.filtrar(visibles, request.query_params, request.user))
+        # Los contadores de las pestañas, sobre los mismos filtros pero sin la pestaña elegida.
+        sin_pestana = request.query_params.copy()
+        sin_pestana.pop('categoria', None)
+        sin_pestana.pop('archivados', None)
+        datos['por_categoria'] = consultas.por_categoria(consultas.filtrar(visibles, sin_pestana, request.user))
+        sin_pestana['archivados'] = '1'
+        datos['archivados'] = consultas.filtrar(visibles, sin_pestana, request.user).count()
+        return Response(datos)
 
 
 class ProyectosWriteViewSet(ModelViewSet):
     serializer_class = ProyectosWriteSerializer
     permission_classes = [IsAuthenticated]
+    # Los proyectos no se borran: se cierran (completado, cancelado u otro), y el Administrador archiva.
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
 
     def get_queryset(self):
         return authz.proyectos_visibles(self.request.user)
@@ -93,9 +107,114 @@ class ProyectosWriteViewSet(ModelViewSet):
             if not authz.puede_ver(self.request.user, obj):
                 raise PermissionDenied('No tiene acceso a este proyecto.')
         else:
+            if authz.esta_cerrado(obj):
+                raise PermissionDenied('El proyecto está cerrado: reábralo para modificarlo.')
             if not authz.puede_editar(self.request.user, obj):
                 raise PermissionDenied('No tiene permisos para modificar este proyecto.')
         return obj
+
+    def _visible(self, pk):
+        """Para cerrar, reabrir y archivar: cada acción revisa su propio permiso."""
+        return get_object_or_404(authz.proyectos_visibles(self.request.user).select_related('estado_ID'), pk=pk)
+
+    def _anotar(self, proyecto, tipo, razon, antes, despues, aviso):
+        HistorialCambios.objects.create(
+            tipo=tipo, proyecto_ID=proyecto, usuario=self.request.user, razon=razon,
+            datos_anteriores=antes, datos_nuevos=despues,
+        )
+        u = self.request.user
+        notificar(
+            interesados_del_proyecto(proyecto), u, 'cambio_estado', f'"{nombre(proyecto.name)}" {aviso}',
+            f'{u.first_name} {u.last_name}: {razon[:200]}', f'/projects/{proyecto.proyect_ID}',
+        )
+
+    @action(detail=True, methods=['post'])
+    def cerrar(self, request, pk=None):
+        """Terminar o cancelar: estado final, fecha y costo reales, motivo, lecciones y el acta (opcional)."""
+        proyecto = self._visible(pk)
+        if authz.esta_cerrado(proyecto):
+            raise ValidationError({'estado_ID': 'El proyecto ya está cerrado.'})
+        if not authz.puede_editar(request.user, proyecto):
+            raise PermissionDenied('No tiene permisos para cerrar este proyecto.')
+        datos = CerrarProyectoSerializer(data=request.data)
+        datos.is_valid(raise_exception=True)
+        acta = request.FILES.get('acta')
+        if acta is not None:
+            error = error_de_documento(acta)
+            if error:
+                raise ValidationError({'acta': error})
+        v = datos.validated_data
+        anterior = proyecto.estado_ID.name
+        with transaction.atomic():
+            cierre = CierreProyecto.objects.create(
+                proyecto=proyecto, estado=v['estado_ID'], fecha_fin_real=v['fecha_fin_real'], costo_real=v['costo_real'],
+                motivo=v['motivo'].strip(), lecciones=v['lecciones'].strip(), cerrado_por=request.user,
+            )
+            proyecto.estado_ID = v['estado_ID']
+            proyecto.save(update_fields=['estado_ID'])
+            if acta is not None:
+                subido = subir_documento(acta, f'munimanagement/proyectos/{proyecto.pk}')
+                DocumentoProyecto.objects.create(
+                    proyecto=proyecto, cierre=cierre, tipo='acta', nombre=(acta.name or 'Acta de cierre')[:120],
+                    url=subido['secure_url'], public_id=subido['public_id'], subido_por=request.user,
+                )
+        self._anotar(
+            proyecto, 'cierre', cierre.motivo, {'estado': anterior},
+            {'estado': v['estado_ID'].name, 'fecha_fin_real': str(cierre.fecha_fin_real), 'costo_real': str(cierre.costo_real)},
+            f'se cerró como {v["estado_ID"].name}',
+        )
+        return Response({'ok': True, 'estado': v['estado_ID'].name}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def reabrir(self, request, pk=None):
+        proyecto = self._visible(pk)
+        if proyecto.archivado:
+            raise ValidationError({'estado_ID': 'Primero hay que devolverlo a las listas (está archivado).'})
+        if not authz.esta_cerrado(proyecto):
+            raise ValidationError({'estado_ID': 'El proyecto no está cerrado.'})
+        if not authz.puede(request.user, 'proyectos.reabrir', proyecto):
+            raise PermissionDenied('Su rol no permite reabrir este proyecto.')
+        datos = ReabrirProyectoSerializer(data=request.data)
+        datos.is_valid(raise_exception=True)
+        v = datos.validated_data
+        anterior = proyecto.estado_ID.name
+        with transaction.atomic():
+            proyecto.cierres.filter(reabierto_en__isnull=True).update(
+                reabierto_en=timezone.now(), reabierto_por=request.user, motivo_reapertura=v['motivo'].strip(),
+            )
+            proyecto.estado_ID = v['estado_ID']
+            proyecto.save(update_fields=['estado_ID'])
+        self._anotar(proyecto, 'reapertura', v['motivo'].strip(), {'estado': anterior}, {'estado': v['estado_ID'].name},
+                     f'se reabrió ({v["estado_ID"].name})')
+        return Response({'ok': True, 'estado': v['estado_ID'].name})
+
+    @action(detail=True, methods=['post'])
+    def archivar(self, request, pk=None):
+        """Solo el Administrador, y solo proyectos cerrados: sale de las listas y conserva todo."""
+        proyecto = self._visible(pk)
+        if not authz.es_administrador(request.user):
+            raise PermissionDenied('Solo el Administrador archiva proyectos.')
+        if proyecto.archivado:
+            raise ValidationError({'archivado': 'Ya está archivado.'})
+        if proyecto.estado_ID.categoria != 'finalizado':
+            raise ValidationError({'archivado': 'Solo se archivan proyectos cerrados.'})
+        proyecto.archivado, proyecto.archivado_en, proyecto.archivado_por = True, timezone.now(), request.user
+        proyecto.save(update_fields=['archivado', 'archivado_en', 'archivado_por'])
+        HistorialCambios.objects.create(tipo='archivo', proyecto_ID=proyecto, usuario=request.user,
+                                        razon=str(request.data.get('motivo', '')).strip()[:500])
+        return Response({'ok': True})
+
+    @action(detail=True, methods=['post'])
+    def desarchivar(self, request, pk=None):
+        proyecto = self._visible(pk)
+        if not authz.es_administrador(request.user):
+            raise PermissionDenied('Solo el Administrador devuelve proyectos a las listas.')
+        if not proyecto.archivado:
+            raise ValidationError({'archivado': 'No está archivado.'})
+        proyecto.archivado, proyecto.archivado_en, proyecto.archivado_por = False, None, None
+        proyecto.save(update_fields=['archivado', 'archivado_en', 'archivado_por'])
+        HistorialCambios.objects.create(tipo='desarchivo', proyecto_ID=proyecto, usuario=request.user)
+        return Response({'ok': True})
 
     def _validar_lugar_y_responsable(self, departamento, responsable, al_crear=False):
         user = self.request.user
@@ -143,7 +262,9 @@ class ProyectosWriteViewSet(ModelViewSet):
                 nuevo_estado = Estado.objects.get(pk=nuevo_estado_id)
             except Estado.DoesNotExist:
                 nuevo_estado = None
-            if nuevo_estado and nuevo_estado.name in ESTADOS_REQUIEREN_MOTIVO:
+            if nuevo_estado and nuevo_estado.categoria == 'finalizado':
+                raise ValidationError({'estado_ID': 'Para terminar o cancelar el proyecto use «Cerrar proyecto».'})
+            if nuevo_estado and nuevo_estado.categoria == 'pausado':
                 if not str(self.request.data.get('razon', '')).strip():
                     raise ValidationError({'razon': f'Se requiere un motivo para pasar a "{nuevo_estado.name}".'})
 
@@ -178,14 +299,6 @@ class ProyectosWriteViewSet(ModelViewSet):
             datos_anteriores=anterior,
             datos_nuevos=nuevo,
         )
-
-    def perform_destroy(self, instance):
-        if not authz.puede(self.request.user, 'proyectos.eliminar', instance):
-            raise PermissionDenied('No tiene permisos para eliminar este proyecto.')
-        datos = {'proyect_ID': str(instance.proyect_ID), 'name': instance.name}
-        instance.delete()
-        # Queda sin proyecto (ya no existe), pero conserva quién y qué se borró.
-        HistorialCambios.objects.create(tipo='eliminacion', usuario=self.request.user, datos_anteriores=datos)
 
 
 class ProyectosTiposViewSet(ModelViewSet):

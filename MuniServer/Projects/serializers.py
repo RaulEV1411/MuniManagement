@@ -1,9 +1,11 @@
 from datetime import date
 
+from django.utils import timezone
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField, ValidationError
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
-    AjustePresupuesto, MiembroProyecto, RolProyecto,
+    AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
 )
 from . import authz
 from .catalogo_permisos import PERMISOS_DE_PROYECTO
@@ -14,8 +16,14 @@ from Users.serializers import UsuarioResumenSerializer
 class EstadoSerializer(ModelSerializer):
     class Meta:
         model = Estado
-        fields = ['estado_ID', 'name', 'color', 'orden', 'is_system']
+        fields = ['estado_ID', 'name', 'color', 'orden', 'is_system', 'categoria']
         read_only_fields = ['is_system']
+
+    def validate_categoria(self, valor):
+        # Cambiarla con proyectos en ese estado los cerraría (o abriría) sin pasar por el cierre.
+        if self.instance is not None and valor != self.instance.categoria and self.instance.proyectos_set.exists():
+            raise ValidationError('Hay proyectos en este estado: no se puede cambiar su categoría.')
+        return valor
 
 
 class PrioridadSerializer(ModelSerializer):
@@ -44,6 +52,14 @@ class ProyectosWriteSerializer(ModelSerializer):
     class Meta:
         model = Proyectos
         fields = '__all__'
+        # Archivar tiene su acción (solo el Administrador).
+        read_only_fields = ['archivado', 'archivado_en', 'archivado_por']
+
+    def validate_estado_ID(self, estado):
+        # Un proyecto nace activo o pausado: a un estado finalizado se llega cerrándolo.
+        if self.instance is None and estado.categoria == 'finalizado':
+            raise ValidationError('Un proyecto nuevo no puede empezar cerrado.')
+        return estado
 
     def create(self, validated_data):
         tipo = validated_data.pop('tipos_ID', None)
@@ -57,6 +73,49 @@ class ProyectosWriteSerializer(ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class DocumentoProyectoSerializer(ModelSerializer):
+    class Meta:
+        model = DocumentoProyecto
+        fields = ['documento_ID', 'tipo', 'nombre', 'url', 'creado_en']
+
+
+class CierreProyectoSerializer(ModelSerializer):
+    estado_nombre = serializers.CharField(source='estado.name', read_only=True)
+    cerrado_por_nombre = SerializerMethodField()
+    documentos = DocumentoProyectoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CierreProyecto
+        fields = [
+            'cierre_ID', 'estado', 'estado_nombre', 'fecha_fin_real', 'costo_real', 'motivo', 'lecciones',
+            'cerrado_por_nombre', 'cerrado_en', 'documentos',
+        ]
+
+    def get_cerrado_por_nombre(self, obj):
+        u = obj.cerrado_por
+        return f'{u.first_name} {u.last_name}'.strip() if u else ''
+
+
+class CerrarProyectoSerializer(serializers.Serializer):
+    estado_ID = serializers.PrimaryKeyRelatedField(queryset=Estado.objects.filter(categoria='finalizado'),
+                                                   error_messages={'does_not_exist': 'Elija un estado de cierre (por ejemplo Completado o Cancelado).'})
+    fecha_fin_real = serializers.DateField()
+    costo_real = serializers.IntegerField(min_value=0)
+    motivo = serializers.CharField(max_length=2000)
+    lecciones = serializers.CharField(max_length=4000, required=False, allow_blank=True, default='')
+
+    def validate_fecha_fin_real(self, valor):
+        if valor > timezone.localdate():
+            raise serializers.ValidationError('La fecha real de fin no puede ser futura.')
+        return valor
+
+
+class ReabrirProyectoSerializer(serializers.Serializer):
+    estado_ID = serializers.PrimaryKeyRelatedField(queryset=Estado.objects.exclude(categoria='finalizado'),
+                                                   error_messages={'does_not_exist': 'Elija un estado activo o pausado.'})
+    motivo = serializers.CharField(max_length=2000)
+
+
 class ProyectosReadSerializer(ModelSerializer):
     departamento_ID = DepartamentosSerializer(read_only=True)
     estado_ID = EstadoSerializer(read_only=True)
@@ -66,10 +125,22 @@ class ProyectosReadSerializer(ModelSerializer):
     costo_total = SerializerMethodField()
     tipos = SerializerMethodField()
     mis_permisos = SerializerMethodField()
+    cerrado = SerializerMethodField()
+    cierre = SerializerMethodField()
 
     class Meta:
         model = Proyectos
         fields = '__all__'
+
+    def get_cerrado(self, obj):
+        return authz.esta_cerrado(obj)
+
+    def get_cierre(self, obj):
+        # Solo en el detalle, como mis_permisos: el cierre vigente (el último sin reabrir).
+        if not self.context.get('incluir_mis_permisos') or not authz.esta_cerrado(obj):
+            return None
+        cierre = obj.cierres.filter(reabierto_en__isnull=True).select_related('estado', 'cerrado_por').prefetch_related('documentos').first()
+        return CierreProyectoSerializer(cierre).data if cierre else None
 
     def get_tipos(self, obj):
         return [{'tipos_ID': str(pt.tipo_id), 'name': pt.tipo.name} for pt in obj.proyectos_tipos_set.all()]

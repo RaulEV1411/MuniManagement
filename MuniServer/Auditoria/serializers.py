@@ -19,7 +19,12 @@ ETIQUETAS = {
     'direccion': 'Dirección', 'jefe': 'Jefatura', 'info': 'Comentario', 'ubicacion': 'Ubicación',
     'logo': 'Logo', 'color_primario': 'Color principal', 'color_acento': 'Color de acento',
     'correo_soporte': 'Correo de soporte', 'telefono_soporte': 'Teléfono de soporte',
-    'horario_soporte': 'Horario de soporte', 'moneda': 'Moneda', 'retencion_auditoria_dias': 'Retención de la auditoría (días)',
+    'horario_soporte': 'Horario de soporte', 'moneda': 'Moneda', 'categoria': 'Categoría',
+    'archivado': 'Archivado', 'archivado_en': 'Archivado el', 'archivado_por': 'Archivado por',
+    'fecha_fin_real': 'Fecha real de fin', 'costo_real': 'Costo real', 'lecciones': 'Lecciones aprendidas',
+    'cerrado_por': 'Cerrado por', 'cerrado_en': 'Cerrado el', 'reabierto_en': 'Reabierto el',
+    'reabierto_por': 'Reabierto por', 'motivo_reapertura': 'Motivo de la reapertura', 'cierre': 'Cierre',
+    'subido_por': 'Subido por', 'estado': 'Estado', 'retencion_auditoria_dias': 'Retención de la auditoría (días)',
 }
 
 

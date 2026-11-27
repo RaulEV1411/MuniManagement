@@ -5,16 +5,18 @@ test.beforeEach(async ({ page }) => {
   await entrar(page)
 })
 
-test('el Kanban tiene una columna por estado de Configuración', async ({ page }) => {
+test('el Kanban tiene una columna por cada estado de la pestaña', async ({ page }) => {
+  const columnas = async () => (await page.locator('span.uppercase.tracking-wider').allTextContents()).map(c => c.toLowerCase())
   await page.goto('/dashboard?vista=kanban')
   await expect(page.getByText('Acera central').first()).toBeVisible()
-  const columnas = (await page.locator('span.uppercase.tracking-wider').allTextContents()).map(c => c.toLowerCase())
-  for (const estado of ['pendiente', 'en progreso', 'en revisión', 'completado', 'pausado', 'cancelado']) {
-    expect(columnas).toContain(estado)
-  }
+  expect(await columnas()).toEqual(expect.arrayContaining(['pendiente', 'en progreso', 'en revisión']))
+  expect(await columnas()).not.toContain('completado')
+  await page.getByRole('tab', { name: /^Finalizados/ }).click()
+  await expect(page.getByText('Alumbrado').first()).toBeVisible()
+  expect(await columnas()).toEqual(expect.arrayContaining(['completado', 'cancelado']))
 })
 
-test('pasar a Cancelado desde el dashboard pide el motivo', async ({ page }) => {
+test('pasar a Pausado desde el dashboard pide el motivo; cerrar no se ofrece ahí', async ({ page }) => {
   await page.goto('/dashboard')
   // Primero la lista inicial; después, la respuesta de la búsqueda (la resuelve el servidor al
   // dejar de escribir). Si no, el menú se abre sobre una fila que enseguida se redibuja.
@@ -25,8 +27,9 @@ test('pasar a Cancelado desde el dashboard pide el motivo', async ({ page }) => 
   await expect(page.getByText('Acera central')).toHaveCount(0)
   await expect(page.getByText('Bacheo norte').first()).toBeVisible()
   await page.getByTitle('Cambiar estado').first().click()
-  await page.getByRole('button', { name: 'Cancelado' }).first().click()
-  const dialogo = page.getByRole('dialog', { name: 'Pasar a Cancelado' })
+  await expect(page.getByRole('button', { name: 'Cancelado' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Pausado' }).first().click()
+  const dialogo = page.getByRole('dialog', { name: 'Pasar a Pausado' })
   await expect(dialogo).toBeVisible()
   await dialogo.locator('textarea').fill('Se reprogramó para el próximo año')
   const guardado = page.waitForResponse(r => r.url().includes('/proyectosWrite/') && r.request().method() === 'PATCH')
