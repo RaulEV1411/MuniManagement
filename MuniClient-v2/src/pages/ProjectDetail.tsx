@@ -31,6 +31,7 @@ import {
   type HistorialEntry,
 } from '@/types'
 import { cn, formatDate, daysUntil, isOverdue, fullName } from '@/lib/utils'
+import { etiquetaParaAsignar } from '@/lib/disponibilidad'
 import { useAppStore } from '@/store/app'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
@@ -446,7 +447,7 @@ function EditTaskModal({
               <label htmlFor="projectdetail-asignado-a" className="text-xs font-semibold text-muted-foreground">Asignado a</label>
               <select id="projectdetail-asignado-a" value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
                 <option value="">Sin asignar</option>
-                {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
+                {users.map(u => <option key={u.user_ID} value={u.user_ID}>{etiquetaParaAsignar(u)}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -618,7 +619,7 @@ function TaskModal({
             <label htmlFor="projectdetail-asignado-a-2" className="text-xs font-semibold text-muted-foreground">Asignado a</label>
             <select id="projectdetail-asignado-a-2" value={form.asignado_a} onChange={e => set('asignado_a', e.target.value)} className={cls}>
               <option value="">Sin asignar</option>
-              {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
+              {users.map(u => <option key={u.user_ID} value={u.user_ID}>{etiquetaParaAsignar(u)}</option>)}
             </select>
           </div>
           <div className="flex justify-end gap-2 pt-2">

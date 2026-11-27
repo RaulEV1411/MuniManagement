@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Building2, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections, getUsers,
+  getDepartments, createDepartment, updateDepartment, deleteDepartment, getDirections, getUsers, patchDepartment,
 } from '@/lib/api'
+import DatosDeUnidad from '@/components/estructura/DatosDeUnidad'
 import { type Department, type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
@@ -117,6 +118,7 @@ function DepartmentRow({
   const [jefeId, setJefeId]   = useState(dept.jefe ?? '')
   const jefe = users.find(u => u.user_ID === dept.jefe)
   const nombreJefe = jefe ? `${jefe.first_name} ${jefe.last_name}` : '—'
+  const suplente = users.find(u => u.user_ID === dept.suplente)
 
   const dirName = directions.find(d => d.direccion_ID === dirId)?.name ?? '—'
 
@@ -194,7 +196,10 @@ function DepartmentRow({
             {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}{u.role?.name ? ` · ${u.role.name}` : ''}</option>)}
           </select>
         ) : (
-          <span className="text-sm text-muted-foreground">{nombreJefe}</span>
+          <span className="text-sm text-muted-foreground">
+            {nombreJefe}
+            {suplente && <span className="block text-xs">Suplente: {suplente.first_name} {suplente.last_name}</span>}
+          </span>
         )}
       </td>
       <td className="px-5 py-3.5 text-right">
@@ -212,6 +217,8 @@ function DepartmentRow({
             </>
           ) : (
             <>
+              <DatosDeUnidad nombre={dept.name} datos={dept} jefe={dept.jefe} users={users} puedeEditar={puedeEditar}
+                guardar={cambios => patchDepartment(dept.departamentos_ID, cambios)} onSaved={onSaved} />
               <button hidden={!puedeEditar} aria-label={`Editar ${dept.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"

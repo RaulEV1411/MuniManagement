@@ -26,17 +26,64 @@ export interface RolProyecto {
   orden: number
 }
 
-export interface Direction {
+/** Lo que comparten direcciones y departamentos además del nombre y la jefatura (tanda D3). */
+export interface DatosDeUnidad {
+  codigo?: string | null
+  descripcion?: string
+  /** Toma la jefatura mientras el jefe tiene una ausencia vigente. */
+  suplente?: string | null
+  presupuesto_anual?: string | null
+  correo?: string
+  telefono?: string
+  metas?: string[]
+}
+
+export interface Direction extends DatosDeUnidad {
   direccion_ID: string
   name: string
   jefe?: string | null
 }
 
-export interface Department {
+export interface Department extends DatosDeUnidad {
   departamentos_ID: string
   name: string
   direccion: Direction | string | null
   jefe?: string | null
+}
+
+export interface Especialidad {
+  especialidad_ID: string
+  name: string
+}
+
+export type TipoAusencia = 'vacaciones' | 'incapacidad' | 'permiso'
+
+/** Si la persona está ausente hoy. El tipo solo llega a quien puede verlo (la incapacidad es dato de salud). */
+export interface Disponibilidad {
+  estado: 'disponible' | 'ausente'
+  hasta: string | null
+  tipo: TipoAusencia | null
+}
+
+export interface CargaDeTrabajo {
+  tareas_abiertas: number
+  tareas_vencidas: number
+  horas_pendientes: number
+  proyectos_a_cargo: number
+}
+
+export interface Ausencia {
+  ausencia_ID: string
+  usuario: string
+  tipo: TipoAusencia | null
+  desde: string
+  hasta: string
+  registrada_por: string | null
+  registrada_por_nombre: string | null
+  creada_en: string
+  vigente: boolean
+  /** Solo al crearla: los proyectos abiertos a cargo de la persona, para sugerir delegarlos. */
+  proyectos_a_cargo?: { proyect_ID: string; name: string }[]
 }
 
 export interface User {
@@ -55,6 +102,13 @@ export interface User {
   is_active?: boolean
   // Solo para quien ve la ficha completa: la última actividad de sus sesiones.
   ultima_conexion?: string | null
+  // Datos de empleado: número e ingreso solo en la ficha completa.
+  numero_empleado?: string | null
+  fecha_ingreso?: string | null
+  extension?: string
+  especialidades?: Especialidad[]
+  disponibilidad?: Disponibilidad
+  carga?: CargaDeTrabajo | null
 }
 
 export type CategoriaEstado = 'activo' | 'pausado' | 'finalizado'

@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GitBranch, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { getDirections, createDirection, updateDirection, deleteDirection, getUsers } from '@/lib/api'
+import { getDirections, createDirection, updateDirection, deleteDirection, getUsers, patchDirection } from '@/lib/api'
+import DatosDeUnidad from '@/components/estructura/DatosDeUnidad'
 import { type Direction, type User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
@@ -85,6 +86,7 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
   const [jefeId, setJefeId]   = useState(direction.jefe ?? '')
   const jefe = users.find(u => u.user_ID === direction.jefe)
   const nombreJefe = jefe ? `${jefe.first_name} ${jefe.last_name}` : '—'
+  const suplente = users.find(u => u.user_ID === direction.suplente)
   const [saving, setSaving]   = useState(false)
 
   const handleSave = async () => {
@@ -147,7 +149,10 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
             {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}{u.role?.name ? ` · ${u.role.name}` : ''}</option>)}
           </select>
         ) : (
-          <span className="text-sm text-muted-foreground">{nombreJefe}</span>
+          <span className="text-sm text-muted-foreground">
+            {nombreJefe}
+            {suplente && <span className="block text-xs">Suplente: {suplente.first_name} {suplente.last_name}</span>}
+          </span>
         )}
       </td>
       <td className="px-5 py-3.5 text-right">
@@ -165,6 +170,8 @@ function DirectionRow({ direction, users, onSaved, onDeleted }: {
             </>
           ) : (
             <>
+              <DatosDeUnidad nombre={direction.name} datos={direction} jefe={direction.jefe} users={users} puedeEditar={puedeEditar}
+                guardar={cambios => patchDirection(direction.direccion_ID, cambios)} onSaved={onSaved} />
               <button hidden={!puedeEditar} aria-label={`Editar ${direction.name}`}
                 onClick={() => setEditing(true)}
                 className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"

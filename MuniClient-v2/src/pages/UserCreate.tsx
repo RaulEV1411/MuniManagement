@@ -28,6 +28,9 @@ export default function UserCreatePage() {
     puesto:          '',
     role:            '',
     departamento_ID: '',
+    numero_empleado: '',
+    extension:       '',
+    fecha_ingreso:   '',
   })
 
   const { data: roles = [], error: errRoles }       = useQuery<Role[]>({ queryKey: ['roles'], queryFn: getRoles })
@@ -58,6 +61,9 @@ export default function UserCreatePage() {
         puesto:          form.puesto || undefined,
         role:            form.role || undefined,
         departamento_ID: form.departamento_ID || undefined,
+        numero_empleado: form.numero_empleado.trim(),
+        extension:       form.extension.trim(),
+        fecha_ingreso:   form.fecha_ingreso || null,
       })
       await qc.invalidateQueries({ queryKey: ['users'] })
       toast.success('Usuario creado exitosamente')
@@ -141,6 +147,20 @@ export default function UserCreatePage() {
               <div className="space-y-1.5">
                 <label htmlFor="usercreate-puesto" className="text-xs font-semibold text-muted-foreground">Puesto *</label>
                 <input id="usercreate-puesto" value={form.puesto} onChange={e => set('puesto', e.target.value)} placeholder="Analista" className={inputCls} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="usercreate-numero-empleado" className="text-xs font-semibold text-muted-foreground">N.º de empleado</label>
+                <input id="usercreate-numero-empleado" maxLength={20} value={form.numero_empleado} onChange={e => set('numero_empleado', e.target.value)} className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="usercreate-extension" className="text-xs font-semibold text-muted-foreground">Extensión</label>
+                <input id="usercreate-extension" inputMode="numeric" maxLength={10} value={form.extension} onChange={e => set('extension', e.target.value)} className={inputCls} />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="usercreate-ingreso" className="text-xs font-semibold text-muted-foreground">Ingreso</label>
+                <input id="usercreate-ingreso" type="date" value={form.fecha_ingreso} onChange={e => set('fecha_ingreso', e.target.value)} className={inputCls} />
               </div>
             </div>
           </div>

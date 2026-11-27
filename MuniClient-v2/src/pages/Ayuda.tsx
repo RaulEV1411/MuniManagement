@@ -36,6 +36,18 @@ const FAQS: FAQ[] = [
     a: 'En Configuración › Tipos, debajo de la lista, elija el tipo y agregue sus tareas: a cuántos días del inicio empiezan, cuánto duran y los pasos de su lista de verificación. Al crear un proyecto de ese tipo, el asistente ofrece crearlas y les pone las fechas desde el inicio del proyecto, sin pasar de la entrega. Los proyectos ya creados no cambian. Las fuentes de financiamiento se administran en Configuración › Financiamiento y los distritos, en Configuración › Institución.',
   },
   {
+    q: '¿Cómo registro unas vacaciones, una incapacidad o un permiso?',
+    a: 'En el perfil de la persona, pestaña Información, sección «Disponibilidad y carga»: elija el tipo y las fechas y pulse «Registrar ausencia». La registra la persona, quien administra su cuenta o su jefatura. Si tiene proyectos abiertos a cargo, el sistema avisa a la jefatura y sugiere delegarlos: en el equipo de cada proyecto, agregue a alguien como Supervisor por esas fechas. Las demás personas solo ven «Ausente hasta el …», sin el motivo. La misma sección muestra su carga: tareas abiertas, vencidas, horas pendientes y proyectos a cargo.',
+  },
+  {
+    q: '¿Quién decide cuando la jefatura está ausente?',
+    a: 'En Departamentos o Direcciones, «Más datos» permite elegir una persona suplente. Mientras la jefatura tiene una ausencia registrada, la suplencia puede lo mismo que ella, pero solo en ese departamento o esa dirección: ve y edita sus proyectos, aprueba sus solicitudes y recibe sus avisos. Al terminar la ausencia, vuelve todo a la normalidad sin hacer nada. Ahí mismo se anotan el código, la descripción, el presupuesto anual, el contacto y las metas del año.',
+  },
+  {
+    q: '¿Cómo hago que una persona que sabe topografía aparezca al asignar tareas?',
+    a: 'Cree la especialidad en Configuración › Especialidades. Después, cada persona la marca en su perfil (Editar). Al asignar una tarea, la lista de personas muestra sus especialidades, sus tareas abiertas y si está ausente. El número de empleado y la fecha de ingreso los anota quien administra las cuentas.',
+  },
+  {
     q: '¿Cómo solicito un aumento o rebajo de presupuesto?',
     a: 'En la pestaña Información del proyecto, busque la sección «Presupuesto» y presione «Ajuste». Indique si es aumento o rebajo, el monto y el motivo. Queda registrado en el historial y se le avisa al responsable.',
   },

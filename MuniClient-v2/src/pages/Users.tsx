@@ -9,6 +9,7 @@ import {
 import { getUsuariosPagina, getDepartments, getRoles, getResumenAuditoria, urlExportarUsuarios } from '@/lib/api'
 import { type User, type Department, type Role } from '@/types'
 import { cn, getInitials, fullName, formatearFechaHora } from '@/lib/utils'
+import { textoDeDisponibilidad } from '@/lib/disponibilidad'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { useTituloDePagina } from '@/hooks/useMarca'
@@ -55,6 +56,12 @@ function UserAvatar({ user, size = 'md' }: { user: User; size?: 'md' | 'lg' }) {
   )
 }
 
+function Ausente({ user, className = '' }: { user: User; className?: string }) {
+  const texto = textoDeDisponibilidad(user)
+  if (!texto) return null
+  return <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200', className)}>{texto}</span>
+}
+
 function UserListRow({ user }: { user: User }) {
   return (
     <motion.div
@@ -70,6 +77,7 @@ function UserListRow({ user }: { user: User }) {
           <Link to={`/users/${user.user_ID}`} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">{fullName(user)}</Link>
         </p>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+        <Ausente user={user} className="inline-block mt-1" />
       </div>
       <div className="hidden md:block flex-shrink-0 min-w-0 max-w-56 text-right">
         <p className="text-xs text-muted-foreground truncate">{user.departamento_ID?.name ?? '—'}</p>
@@ -109,6 +117,7 @@ function UserGridCard({ user }: { user: User }) {
         {user.departamento_ID?.name && (
           <p className="text-xs text-muted-foreground truncate mt-0.5">{user.departamento_ID.name}</p>
         )}
+        <Ausente user={user} className="inline-block mt-1.5" />
       </div>
       {user.role?.name && (
         <span className={cn(
