@@ -13,12 +13,14 @@ from django.utils import timezone
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
     AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
+    TareaPlantilla, FuenteFinanciamiento, HitoProyecto, RiesgoProyecto,
 )
 from .serializers import (
     CerrarProyectoSerializer, ReabrirProyectoSerializer, DocumentoProyectoSerializer,
     EstadoSerializer, PrioridadSerializer, TiposSerializer,
     ProyectosTiposSerializer, ProyectosReadSerializer, ProyectosWriteSerializer,
     ProjectImageSerializer, MiembroProyectoSerializer, RolProyectoSerializer, AjustePresupuestoSerializer,
+    TareaPlantillaSerializer, FuenteFinanciamientoSerializer, HitoProyectoSerializer, RiesgoProyectoSerializer,
 )
 from .permissions import SystemRecordReadOnly, CatalogoSoloAdministrador
 from . import authz, consultas
@@ -34,7 +36,7 @@ def _proyectos_visibles_qs(user):
     from Task.models import Tareas
     ejecutado = Tareas.objects.filter(proyecto_ID=OuterRef('pk')).values('proyecto_ID').annotate(s=Sum('costo_ejecutado')).values('s')
     return authz.proyectos_visibles(user).select_related(
-        'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID'
+        'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID', 'fuente_financiamiento'
     ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo').annotate(
         costo_ejecutado_total=Subquery(ejecutado),
     )
@@ -57,11 +59,81 @@ class PrioridadViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
 
 
 class TiposViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
-    queryset = Tipos.objects.all()
+    queryset = Tipos.objects.prefetch_related('plantillas')
     serializer_class = TiposSerializer
     pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
     mensaje_protegido = 'No se puede borrar: hay proyectos de este tipo.'
+
+
+class TareaPlantillaViewSet(ModelViewSet):
+    """Las tareas que trae cada tipo de proyecto (Configuración › Tipos)."""
+    serializer_class = TareaPlantillaSerializer
+    pagination_class = None
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
+
+    def get_queryset(self):
+        qs = TareaPlantilla.objects.all()
+        if self.request.query_params.get('tipo'):
+            qs = qs.filter(tipo=self.request.query_params['tipo'])
+        return qs
+
+
+class FuenteFinanciamientoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
+    queryset = FuenteFinanciamiento.objects.all()
+    serializer_class = FuenteFinanciamientoSerializer
+    pagination_class = None
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
+    mensaje_protegido = 'No se puede borrar: hay proyectos financiados con esta fuente.'
+
+
+class _DelProyectoViewSet(ModelViewSet):
+    """Hitos y riesgos: los ve quien ve el proyecto; los cambia quien puede editarlo, mientras esté abierto."""
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = self.serializer_class.Meta.model.objects.filter(
+            proyecto__in=authz.proyectos_visibles(self.request.user).values('pk')
+        )
+        if self.request.query_params.get('proyecto'):
+            qs = qs.filter(proyecto=self.request.query_params['proyecto'])
+        return qs
+
+    def _exigir_edicion(self, proyecto):
+        if not authz.puede_ver(self.request.user, proyecto):
+            raise ValidationError({'proyecto': 'Proyecto no encontrado.'})
+        if authz.esta_cerrado(proyecto):
+            raise PermissionDenied('El proyecto está cerrado: reábralo para modificarlo.')
+        if not authz.puede_editar(self.request.user, proyecto):
+            raise PermissionDenied('No tiene permisos para modificar este proyecto.')
+
+    def perform_create(self, serializer):
+        self._exigir_edicion(serializer.validated_data['proyecto'])
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._exigir_edicion(serializer.instance.proyecto)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._exigir_edicion(instance.proyecto)
+        instance.delete()
+
+
+class HitoProyectoViewSet(_DelProyectoViewSet):
+    serializer_class = HitoProyectoSerializer
+
+
+class RiesgoProyectoViewSet(_DelProyectoViewSet):
+    serializer_class = RiesgoProyectoSerializer
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('responsable')
+
+    def perform_create(self, serializer):
+        self._exigir_edicion(serializer.validated_data['proyecto'])
+        serializer.save(creado_por=self.request.user)
 
 
 class ProyectosReadViewSet(ModelViewSet):

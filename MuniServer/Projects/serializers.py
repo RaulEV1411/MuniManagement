@@ -1,11 +1,14 @@
-from datetime import date
+import math
+from datetime import date, timedelta
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField, ValidationError
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
     AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
+    TareaPlantilla, FuenteFinanciamiento, HitoProyecto, RiesgoProyecto,
 )
 from . import authz
 from .catalogo_permisos import PERMISOS_DE_PROYECTO
@@ -33,10 +36,57 @@ class PrioridadSerializer(ModelSerializer):
         read_only_fields = ['is_system']
 
 
+class TareaPlantillaSerializer(ModelSerializer):
+    class Meta:
+        model = TareaPlantilla
+        fields = ['plantilla_ID', 'tipo', 'nombre', 'descripcion', 'dias_desde_inicio', 'duracion_dias', 'pasos', 'orden']
+
+    def validate_tipo(self, tipo):
+        if self.instance is not None and tipo != self.instance.tipo:
+            raise ValidationError('Una tarea de plantilla no se pasa a otro tipo.')
+        return tipo
+
+    def validate_pasos(self, valor):
+        if not isinstance(valor, list) or len(valor) > 30:
+            raise ValidationError('Indique hasta 30 pasos.')
+        pasos = ['' if p is None else str(p).strip() for p in valor]
+        if any(len(p) > 200 for p in pasos):
+            raise ValidationError('Cada paso puede tener hasta 200 caracteres.')
+        return [p for p in pasos if p]
+
+
 class TiposSerializer(ModelSerializer):
+    plantillas = TareaPlantillaSerializer(many=True, read_only=True)
+
     class Meta:
         model = Tipos
-        fields = '__all__'
+        fields = ['tipos_ID', 'name', 'plantillas']
+
+
+class FuenteFinanciamientoSerializer(ModelSerializer):
+    class Meta:
+        model = FuenteFinanciamiento
+        fields = ['fuente_ID', 'name']
+
+
+def crear_tareas_de_plantilla(proyecto, tipo):
+    """Las tareas que trae el tipo, con sus fechas desde el inicio del proyecto (sin pasar de la entrega)."""
+    from Task.models import ChecklistItem, Tareas
+    plantillas = list(tipo.plantillas.all())
+    if not plantillas:
+        return
+    estado = (Estado.objects.filter(name='Pendiente').first()
+              or Estado.objects.filter(categoria='activo').order_by('orden').first())
+    for plantilla in plantillas:
+        inicio = min(proyecto.fecha_inicio + timedelta(days=plantilla.dias_desde_inicio), proyecto.fecha_entrega)
+        fin = max(inicio, min(inicio + timedelta(days=plantilla.duracion_dias - 1), proyecto.fecha_entrega))
+        tarea = Tareas.objects.create(
+            proyecto_ID=proyecto, name=plantilla.nombre, descripcion=plantilla.descripcion,
+            estado_ID=estado, prioridad_ID=proyecto.prioridad_ID, fecha_inicio=inicio, fecha_entrega=fin,
+        )
+        ChecklistItem.objects.bulk_create(
+            ChecklistItem(tarea=tarea, texto=texto, orden=i) for i, texto in enumerate(plantilla.pasos)
+        )
 
 
 class ProjectImageSerializer(ModelSerializer):
@@ -48,12 +98,76 @@ class ProjectImageSerializer(ModelSerializer):
 class ProyectosWriteSerializer(ModelSerializer):
     # El asistente elige un tipo al crear; se guarda en Proyectos_tipos.
     tipos_ID = PrimaryKeyRelatedField(queryset=Tipos.objects.all(), write_only=True, required=False, allow_null=True)
+    # Si el tipo trae tareas, se crean con el proyecto salvo que se pida lo contrario.
+    usar_plantilla = serializers.BooleanField(write_only=True, required=False, default=True)
+
+    CAMPOS_INDICADOR = ('nombre', 'unidad', 'meta', 'logrado')
 
     class Meta:
         model = Proyectos
         fields = '__all__'
         # Archivar tiene su acción (solo el Administrador).
         read_only_fields = ['archivado', 'archivado_en', 'archivado_por']
+        # Que no se repita se revisa en validate_codigo, sin distinguir mayúsculas.
+        extra_kwargs = {'codigo': {'validators': []}}
+
+    def validate_codigo(self, valor):
+        valor = (valor or '').strip()
+        if not valor:
+            return None
+        if Proyectos.objects.filter(codigo__iexact=valor).exclude(pk=getattr(self.instance, 'pk', None)).exists():
+            raise ValidationError('Ya hay un proyecto con ese código.')
+        return valor
+
+    def validate_numero_sicop(self, valor):
+        return valor.strip()
+
+    def validate_distrito(self, valor):
+        from Configuracion.models import Configuracion
+        valor = valor.strip()
+        distritos = Configuracion.actual().distritos
+        # El que ya tenía se conserva aunque lo hayan quitado de la lista: si no, la ficha no se podría guardar.
+        if valor and distritos and valor != getattr(self.instance, 'distrito', None):
+            elegido = next((d for d in distritos if d.casefold() == valor.casefold()), None)
+            if elegido is None:
+                raise ValidationError('Elija uno de los distritos de Configuración › Institución.')
+            return elegido
+        return valor
+
+    def validate_indicadores(self, valor):
+        """Cada indicador: nombre, unidad, meta y lo logrado (números de cero en adelante)."""
+        if not isinstance(valor, list) or len(valor) > 20:
+            raise ValidationError('Indique hasta 20 indicadores.')
+        limpios = []
+        for fila in valor:
+            if not isinstance(fila, dict) or not str(fila.get('nombre', '')).strip():
+                raise ValidationError('Cada indicador necesita un nombre.')
+            numeros = {}
+            for campo in ('meta', 'logrado'):
+                crudo = fila.get(campo)
+                if crudo in (None, ''):
+                    numeros[campo] = None
+                    continue
+                try:
+                    numeros[campo] = float(crudo)
+                except (TypeError, ValueError, OverflowError):
+                    numeros[campo] = math.nan
+                # NaN o infinito no son números para el JSON (el navegador no lo podría leer).
+                if not math.isfinite(numeros[campo]):
+                    raise ValidationError(f'La {campo} de «{fila["nombre"]}» tiene que ser un número.')
+                if numeros[campo] < 0:
+                    raise ValidationError(f'La {campo} de «{fila["nombre"]}» no puede ser negativa.')
+            limpios.append({
+                'nombre': str(fila['nombre']).strip()[:120], 'unidad': str(fila.get('unidad') or '').strip()[:30], **numeros,
+            })
+        return limpios
+
+    def validate(self, attrs):
+        lat = attrs.get('latitud', getattr(self.instance, 'latitud', None))
+        lon = attrs.get('longitud', getattr(self.instance, 'longitud', None))
+        if (lat is None) != (lon is None):
+            raise ValidationError({'latitud': 'Indique la latitud y la longitud, o ninguna de las dos.'})
+        return attrs
 
     def validate_estado_ID(self, estado):
         # Un proyecto nace activo o pausado: a un estado finalizado se llega cerrándolo.
@@ -61,16 +175,71 @@ class ProyectosWriteSerializer(ModelSerializer):
             raise ValidationError('Un proyecto nuevo no puede empezar cerrado.')
         return estado
 
+    @transaction.atomic
     def create(self, validated_data):
         tipo = validated_data.pop('tipos_ID', None)
+        usar_plantilla = validated_data.pop('usar_plantilla', True)
         proyecto = super().create(validated_data)
         if tipo is not None:
             Proyectos_tipos.objects.create(proyecto=proyecto, tipo=tipo)
+            if usar_plantilla:
+                crear_tareas_de_plantilla(proyecto, tipo)
         return proyecto
 
     def update(self, instance, validated_data):
         validated_data.pop('tipos_ID', None)
+        validated_data.pop('usar_plantilla', None)
         return super().update(instance, validated_data)
+
+
+class HitoProyectoSerializer(ModelSerializer):
+    cumplido = SerializerMethodField()
+
+    class Meta:
+        model = HitoProyecto
+        fields = ['hito_ID', 'proyecto', 'nombre', 'descripcion', 'fecha_prevista', 'fecha_real', 'cumplido']
+
+    def get_cumplido(self, obj):
+        return obj.fecha_real is not None
+
+    def validate_proyecto(self, proyecto):
+        if self.instance is not None and proyecto != self.instance.proyecto:
+            raise ValidationError('Un hito no se pasa a otro proyecto.')
+        return proyecto
+
+    def validate_fecha_real(self, valor):
+        if valor and valor > timezone.localdate():
+            raise ValidationError('Un hito no se cumple en el futuro.')
+        return valor
+
+
+class RiesgoProyectoSerializer(ModelSerializer):
+    nivel = serializers.IntegerField(read_only=True)
+    probabilidad_display = serializers.CharField(source='get_probabilidad_display', read_only=True)
+    impacto_display = serializers.CharField(source='get_impacto_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    responsable_info = UsuarioResumenSerializer(source='responsable', read_only=True)
+
+    class Meta:
+        model = RiesgoProyecto
+        fields = [
+            'riesgo_ID', 'proyecto', 'descripcion', 'probabilidad', 'probabilidad_display', 'impacto', 'impacto_display',
+            'nivel', 'mitigacion', 'responsable', 'responsable_info', 'estado', 'estado_display', 'creado_por', 'creado_en',
+        ]
+        read_only_fields = ['creado_por', 'creado_en']
+
+    def validate_proyecto(self, proyecto):
+        if self.instance is not None and proyecto != self.instance.proyecto:
+            raise ValidationError('Un riesgo no se pasa a otro proyecto.')
+        return proyecto
+
+    def validate_responsable(self, usuario):
+        request = self.context.get('request')
+        # Se revisa solo si cambia, como el responsable del proyecto.
+        sin_cambio = self.instance is not None and usuario is not None and usuario.pk == self.instance.responsable_id
+        if usuario is not None and request and not sin_cambio and not authz.usuarios_visibles(request.user).filter(pk=usuario.pk).exists():
+            raise ValidationError('El responsable tiene que ser una persona de su alcance.')
+        return usuario
 
 
 class DocumentoProyectoSerializer(ModelSerializer):
@@ -136,6 +305,7 @@ class ProyectosReadSerializer(ModelSerializer):
     cerrado = SerializerMethodField()
     cierre = SerializerMethodField()
     costo_ejecutado = SerializerMethodField()
+    fuente_financiamiento_nombre = serializers.CharField(source='fuente_financiamiento.name', read_only=True, default=None)
 
     class Meta:
         model = Proyectos

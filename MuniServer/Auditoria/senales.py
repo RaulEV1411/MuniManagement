@@ -22,6 +22,10 @@ AUDITADOS = {
     'Projects.Estado': 'catalogos',
     'Projects.Prioridad': 'catalogos',
     'Projects.Tipos': 'catalogos',
+    'Projects.TareaPlantilla': 'catalogos',
+    'Projects.FuenteFinanciamiento': 'catalogos',
+    'Projects.HitoProyecto': 'proyectos',
+    'Projects.RiesgoProyecto': 'proyectos',
     'Task.Tareas': 'tareas',
     'Task.TaskImage': 'fotos',
     'Task.ChecklistItem': 'tareas',
@@ -93,6 +97,12 @@ def representar(obj):
         return f'{obj.texto[:60]} (tarea «{obj.tarea.name}»)'
     if tipo == 'Task.AsignacionRecurso':
         return f'{obj.recurso.nombre} en la tarea «{obj.tarea.name}»'
+    if tipo == 'Projects.TareaPlantilla':
+        return f'«{obj.nombre}» en la plantilla de «{obj.tipo.name}»'
+    if tipo == 'Projects.HitoProyecto':
+        return f'Hito «{obj.nombre}» de «{obj.proyecto.name}»'
+    if tipo == 'Projects.RiesgoProyecto':
+        return f'Riesgo «{obj.descripcion[:60]}» de «{obj.proyecto.name}»'
     if tipo == 'Projects.DocumentoProyecto':
         return f'{obj.nombre} («{obj.proyecto.name}»)'
     if tipo == 'Projects.ProjectImage':

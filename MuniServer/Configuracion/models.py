@@ -17,6 +17,8 @@ class Configuracion(models.Model):
     telefono_soporte = models.CharField(max_length=40, blank=True, default='')
     horario_soporte = models.CharField(max_length=80, blank=True, default='')
     moneda = models.CharField(max_length=3, default='CRC', validators=[MONEDA])
+    # Los distritos del cantón, para la ubicación de los proyectos. Vacío: se escribe a mano.
+    distritos = models.JSONField(default=list, blank=True)
     # Cuánto se conservan los registros de auditoría y las sesiones cerradas (de 6 meses a 10 años).
     retencion_auditoria_dias = models.PositiveIntegerField(
         default=1825, validators=[MinValueValidator(180), MaxValueValidator(3650)],

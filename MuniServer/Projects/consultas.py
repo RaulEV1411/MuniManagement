@@ -19,13 +19,14 @@ def q_vencidos():
 
 
 def filtrar(qs, params, user):
-    """Mismos criterios que el dashboard: search, estado (o «Vencido»), prioridad, departamento y mios."""
+    """Mismos criterios que el dashboard: search (también por código y SICOP), estado (o «Vencido»), prioridad, departamento y mios."""
     search = params.get('search', '').strip()
     if search:
         qs = qs.filter(
             Q(name__icontains=search) | Q(descripcion__icontains=search)
             | Q(departamento_ID__name__icontains=search)
             | Q(user_ID__first_name__icontains=search) | Q(user_ID__last_name__icontains=search)
+            | Q(codigo__icontains=search) | Q(numero_sicop__icontains=search)
         )
     estado = params.get('estado', '').strip()
     if estado == 'Vencido':
