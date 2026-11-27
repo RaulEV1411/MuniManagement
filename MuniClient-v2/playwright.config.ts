@@ -11,9 +11,15 @@ const API = process.env.E2E_PUERTO_API ?? '8000'
 const WEB = process.env.E2E_PUERTO_WEB ?? '5173'
 // El build servido con `vite preview`, para probar la CSP de producción (e2e/csp.spec.ts).
 const PREVIEW = process.env.E2E_PUERTO_PREVIEW ?? '4173'
+// La gente usa la aplicación en la zona horaria de la institución, que es la del servidor: el navegador y las
+// pruebas, también. Con la de la máquina (UTC en la CI), de 18:00 a 24:00 de Costa Rica «hoy» es mañana, y
+// el servidor rechaza esa fecha por futura. Los workers heredan TZ.
+const ZONA = process.env.ZONA_HORARIA ?? 'America/Costa_Rica'
+process.env.TZ = ZONA
 const tmp = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'e2e/.tmp')
 const entorno = {
   ...process.env,
+  ZONA_HORARIA: ZONA,
   E2E_DB: process.env.E2E_DB ?? path.join(tmp, 'db.sqlite3'),
   E2E_CORREOS: process.env.E2E_CORREOS ?? path.join(tmp, 'correos'),
   VITE_API_URL: '/api/v1',
@@ -51,6 +57,7 @@ export default defineConfig({
     baseURL: `http://localhost:${WEB}`,
     trace: 'retain-on-failure',
     viewport: { width: 1440, height: 900 },
+    timezoneId: ZONA,
   },
   projects: [
     { name: 'modulos', grepInvert: /@global|@a11y/, use: navegador },

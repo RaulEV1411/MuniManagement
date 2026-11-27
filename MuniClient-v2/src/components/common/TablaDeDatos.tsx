@@ -77,22 +77,26 @@ export default function TablaDeDatos<T>({ id, titulo, columnas, filas, clave, or
 
   return (
       <div className="space-y-2">
-        <div className="flex justify-end">
-          <div ref={caja} className="relative">
+        {/* El panel se abre en el flujo, encima de la tabla, y no flotando sobre ella: flotando tapaba los botones
+            de orden del encabezado y quedaban casillas pegadas a ellos (axe, tamaño del objetivo, WCAG 2.5.8). */}
+        <div ref={caja} className="space-y-2">
+          <div className="flex justify-end">
             <button ref={boton} type="button" aria-expanded={menu} aria-controls={`${id}-columnas`} onClick={() => setMenu(m => !m)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border border-border rounded-xl bg-background text-foreground hover:bg-accent">
               <Columns3 size={13} aria-hidden /> Columnas
             </button>
-            <fieldset id={`${id}-columnas`} hidden={!menu} className="absolute right-0 z-40 mt-1 w-56 rounded-xl border border-border bg-card p-3 shadow-lg space-y-1.5">
-              <legend className="sr-only">Columnas visibles</legend>
+          </div>
+          <fieldset id={`${id}-columnas`} hidden={!menu} className="rounded-xl border border-border bg-card px-4 py-3">
+            <legend className="sr-only">Columnas visibles</legend>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
               {columnas.filter(c => !c.fija).map(c => (
-                <label key={c.id} className="flex items-center gap-2 text-sm text-foreground">
+                <label key={c.id} className="inline-flex items-center gap-2 text-sm text-foreground">
                   <input type="checkbox" checked={!ocultas.includes(c.id)} onChange={() => alternar(c.id)} className="h-4 w-4 accent-ocean-500" />
                   {c.titulo}
                 </label>
               ))}
-            </fieldset>
-          </div>
+            </div>
+          </fieldset>
         </div>
         {/* Scroll propio en los dos ejes: el encabezado queda fijo y las columnas que no caben se ven
             deslizando. Los menús de una celda se abren fuera (en un portal) para no recortarse. */}

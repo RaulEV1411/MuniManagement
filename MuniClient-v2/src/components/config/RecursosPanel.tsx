@@ -22,7 +22,11 @@ export default function RecursosPanel() {
   const [nombre, setNombre] = useState('')
   const [tipo, setTipo] = useState<TipoRecurso>('vehiculo')
   const [codigo, setCodigo] = useState('')
-  const recargar = () => qc.invalidateQueries({ queryKey: ['recursos'] })
+  // Sin cancelar, si la lista todavía estaba cargando, la recarga se engancha a esa petición (que no trae lo nuevo).
+  const recargar = async () => {
+    await qc.cancelQueries({ queryKey: ['recursos'] })
+    await qc.invalidateQueries({ queryKey: ['recursos'] })
+  }
   const intentar = async (accion: () => Promise<unknown>, error: string, ok?: string) => {
     try {
       await accion()
