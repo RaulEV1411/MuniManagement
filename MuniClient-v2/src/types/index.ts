@@ -142,6 +142,27 @@ export interface TareaPlantilla {
   orden: number
 }
 
+// ── Campos personalizados (Configuración › Campos) ──
+export type AplicaA = 'proyecto' | 'tarea'
+export type TipoDeDato = 'texto' | 'numero' | 'fecha' | 'lista' | 'si_no'
+export type ValorDeCampo = string | number | boolean
+/** {campo_ID: valor} de un proyecto o una tarea. */
+export type ValoresDeCampos = Record<string, ValorDeCampo>
+
+export interface CampoPersonalizado {
+  campo_ID: string
+  nombre: string
+  aplica_a: AplicaA
+  tipo_dato: TipoDeDato
+  opciones: string[]
+  obligatorio: boolean
+  ayuda: string
+  orden: number
+  activo: boolean
+  // Sin tipos: aplica a todos. Las tareas usan el tipo de su proyecto.
+  tipos: string[]
+}
+
 export interface Tipo {
   tipos_ID: string
   name: string
@@ -235,6 +256,7 @@ export interface Project {
   objetivo?: string
   beneficiarios?: number | null
   indicadores?: Indicador[]
+  campos_extra?: ValoresDeCampos
 }
 
 export type TipoDocumento = 'acta' | 'plano' | 'factura' | 'contrato' | 'informe' | 'foto' | 'otro'
@@ -292,6 +314,7 @@ export interface Task {
   horas_estimadas?: string | null
   horas_reales?: string | null
   etiquetas?: string[]
+  campos_extra?: ValoresDeCampos
   checklist?: ChecklistItem[]
   recursos?: AsignacionRecurso[]
   documentos?: number

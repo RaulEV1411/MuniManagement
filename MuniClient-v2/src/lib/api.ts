@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import type {
+  CampoPersonalizado,
   ActividadUsuario, AjustePresupuesto, CatalogoAuditoria, CatalogoPermisos, Feedback, MiembroProyecto, RegistroAuditoria, ResumenAuditoria,
   Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User, VerificacionAuditoria,
   ReglaAprobacion, Solicitud, TipoSolicitud, ChecklistItem, ComentarioTarea, Recurso, AsignacionRecurso, DocumentoProyecto,
@@ -314,6 +315,10 @@ export const borrarItemChecklist = (id: string) => api.delete(`/task/checklist/$
 export const getComentariosTarea = (tarea: string) => api.get<ComentarioTarea[]>('/task/comentarios/', { params: { tarea } }).then(r => r.data)
 export const crearComentarioTarea = (tarea: string, texto: string) => api.post<ComentarioTarea>('/task/comentarios/', { tarea, texto }).then(r => r.data)
 export const borrarComentarioTarea = (id: string) => api.delete(`/task/comentarios/${seg(id)}/`).then(r => r.data)
+export const getCampos = () => api.get<CampoPersonalizado[]>('/projects/campos/').then(r => r.data)
+export const crearCampo = (datos: Partial<CampoPersonalizado>) => api.post<CampoPersonalizado>('/projects/campos/', datos).then(r => r.data)
+export const actualizarCampo = (id: string, datos: Partial<CampoPersonalizado>) => api.patch<CampoPersonalizado>(`/projects/campos/${seg(id)}/`, datos).then(r => r.data)
+export const borrarCampo = (id: string) => api.delete(`/projects/campos/${seg(id)}/`).then(r => r.data)
 export const getRecursos = () => api.get<Recurso[]>('/task/recursos/').then(r => r.data)
 export const crearRecurso = (datos: Partial<Recurso>) => api.post<Recurso>('/task/recursos/', datos).then(r => r.data)
 export const actualizarRecurso = (id: string, datos: Partial<Recurso>) => api.patch<Recurso>(`/task/recursos/${seg(id)}/`, datos).then(r => r.data)

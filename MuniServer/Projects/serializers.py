@@ -8,9 +8,10 @@ from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, 
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
     AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
-    TareaPlantilla, FuenteFinanciamiento, HitoProyecto, RiesgoProyecto,
+    TareaPlantilla, FuenteFinanciamiento, HitoProyecto, RiesgoProyecto, CampoPersonalizado,
 )
 from . import authz
+from . import campos as campos_personalizados
 from .catalogo_permisos import PERMISOS_DE_PROYECTO
 from Departments.serializers import DepartamentoResumenSerializer
 from Users.serializers import UsuarioResumenSerializer
@@ -67,6 +68,62 @@ class FuenteFinanciamientoSerializer(ModelSerializer):
     class Meta:
         model = FuenteFinanciamiento
         fields = ['fuente_ID', 'name']
+
+
+class CampoPersonalizadoSerializer(ModelSerializer):
+    class Meta:
+        model = CampoPersonalizado
+        fields = ['campo_ID', 'nombre', 'aplica_a', 'tipo_dato', 'opciones', 'obligatorio', 'ayuda', 'orden', 'activo', 'tipos']
+        validators = []  # el nombre repetido se revisa en validate, sin distinguir mayúsculas
+
+    def validate_nombre(self, valor):
+        valor = valor.strip()
+        if not valor:
+            raise ValidationError('Escriba un nombre.')
+        return valor
+
+    def validate_ayuda(self, valor):
+        return valor.strip()
+
+    def validate_opciones(self, valor):
+        if not isinstance(valor, list) or len(valor) > 50:
+            raise ValidationError('Use hasta 50 opciones.')
+        limpias, vistas = [], set()
+        for opcion in valor:
+            texto = '' if isinstance(opcion, (bool, dict, list)) or opcion is None else str(opcion).strip()
+            if not texto:
+                continue
+            if len(texto) > 60:
+                raise ValidationError('Cada opción puede tener hasta 60 caracteres.')
+            if texto.casefold() in vistas:
+                raise ValidationError(f'La opción «{texto}» está repetida.')
+            vistas.add(texto.casefold())
+            limpias.append(texto)
+        return limpias
+
+    def validate(self, attrs):
+        actual = self.instance
+        aplica_a = attrs.get('aplica_a', getattr(actual, 'aplica_a', None))
+        tipo_dato = attrs.get('tipo_dato', getattr(actual, 'tipo_dato', None))
+        nombre = attrs.get('nombre', getattr(actual, 'nombre', ''))
+        if tipo_dato == CampoPersonalizado.LISTA:
+            if not attrs.get('opciones', getattr(actual, 'opciones', None)):
+                raise ValidationError({'opciones': 'Una lista necesita al menos una opción.'})
+        else:
+            attrs['opciones'] = []
+        repetido = CampoPersonalizado.objects.filter(aplica_a=aplica_a, nombre__iexact=nombre)
+        if actual is not None:
+            repetido = repetido.exclude(pk=actual.pk)
+        if repetido.exists():
+            raise ValidationError({'nombre': 'Ya hay otro campo con ese nombre.'})
+        if (actual is not None and (aplica_a != actual.aplica_a or tipo_dato != actual.tipo_dato)
+                and campos_personalizados.en_uso(actual)):
+            raise ValidationError({'tipo_dato': 'Ya tiene datos cargados: no se puede cambiar a qué aplica ni el tipo de dato. Cree otro campo y desactive este.'})
+        if actual is None and 'orden' not in attrs:
+            # Sin orden explícito, los campos salen en el orden en que se crearon.
+            ultimo = CampoPersonalizado.objects.filter(aplica_a=aplica_a).order_by('-orden').values_list('orden', flat=True).first()
+            attrs['orden'] = 0 if ultimo is None else ultimo + 1
+        return attrs
 
 
 def crear_tareas_de_plantilla(proyecto, tipo):
@@ -167,6 +224,15 @@ class ProyectosWriteSerializer(ModelSerializer):
         lon = attrs.get('longitud', getattr(self.instance, 'longitud', None))
         if (lat is None) != (lon is None):
             raise ValidationError({'latitud': 'Indique la latitud y la longitud, o ninguna de las dos.'})
+        # Al crear se exigen los obligatorios; al editar se revisa solo lo que se manda. El tipo no cambia al
+        # editar (update descarta tipos_ID): se usa el que ya tiene.
+        if self.instance is None or 'campos_extra' in attrs:
+            tipo = attrs.get('tipos_ID') if self.instance is None else None
+            tipos = [tipo.pk] if tipo else campos_personalizados.tipos_de(self.instance)
+            attrs['campos_extra'] = campos_personalizados.validar(
+                CampoPersonalizado.PROYECTO, attrs.get('campos_extra', {}), tipos, getattr(self.instance, 'campos_extra', None),
+                al_crear=self.instance is None,
+            )
         return attrs
 
     def validate_estado_ID(self, estado):

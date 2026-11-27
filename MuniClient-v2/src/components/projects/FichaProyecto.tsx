@@ -9,6 +9,10 @@ import { mensajeDeError } from '@/lib/errores'
 import { useMarca } from '@/hooks/useMarca'
 import { cn } from '@/lib/utils'
 import Dialogo from '@/components/common/Dialogo'
+import { EntradasDeCampos } from '@/components/campos/CamposPersonalizados'
+import {
+  cambiosParaEnviar, camposQueAplican, datosConValor, formDeCampos, useCampos, yaTieneValor, type FormDeCampos,
+} from '@/lib/camposPersonalizados'
 
 const numero = (n: number) => new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(n)
 const campo = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
@@ -29,10 +33,12 @@ export default function FichaProyecto({ project, puedeEditar, onGuardado }: {
   onGuardado: () => Promise<unknown> | void
 }) {
   const [editando, setEditando] = useState(false)
+  const { data: campos = [] } = useCampos()
+  const adicionales = datosConValor(campos.filter(c => c.aplica_a === 'proyecto'), project.campos_extra)
   const indicadores = project.indicadores ?? []
   const hayPunto = project.latitud != null && project.longitud != null
   const vacia = !project.codigo && !project.numero_sicop && !project.fuente_financiamiento && !project.distrito && !hayPunto
-    && !project.objetivo && project.beneficiarios == null && indicadores.length === 0
+    && !project.objetivo && project.beneficiarios == null && indicadores.length === 0 && adicionales.length === 0
 
   return (
     <section aria-labelledby="ficha-titulo" className="rounded-2xl border border-border bg-card p-5">
@@ -104,6 +110,14 @@ export default function FichaProyecto({ project, puedeEditar, onGuardado }: {
               </ul>
             </div>
           )}
+          {adicionales.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Datos adicionales</h4>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {adicionales.map(({ campo, texto }) => <Dato key={campo.campo_ID} etiqueta={campo.nombre}>{texto}</Dato>)}
+              </dl>
+            </div>
+          )}
         </div>
       )}
 
@@ -138,6 +152,11 @@ function EditarFicha({ project, onCerrar, onGuardado }: {
     })),
   )
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
+  // Solo lo que se toca: si el catálogo llega después de abrir, lo guardado no se pierde.
+  const { data: campos = [] } = useCampos()
+  const aplicables = camposQueAplican(campos, 'proyecto', (project.tipos ?? []).map(t => t.tipos_ID))
+  const [cambiosExtra, setCambiosExtra] = useState<FormDeCampos>({})
+  const extra = { ...formDeCampos(aplicables, project.campos_extra), ...cambiosExtra }
   const cambiarIndicador = (i: number, k: keyof FilaIndicador, v: string) =>
     setIndicadores(filas => filas.map((f, j) => (j === i ? { ...f, [k]: v } : f)))
   // Con distritos configurados se elige de la lista (y el que ya tenía se mantiene aunque ya no esté);
@@ -168,6 +187,7 @@ function EditarFicha({ project, onCerrar, onGuardado }: {
             nombre: f.nombre.trim(), unidad: f.unidad.trim(),
             meta: f.meta === '' ? null : Number(f.meta), logrado: f.logrado === '' ? null : Number(f.logrado),
           })),
+        ...cambiosParaEnviar(aplicables, extra, cambiosExtra),
       })
       await onGuardado()
       toast.success('Ficha guardada')
@@ -266,6 +286,14 @@ function EditarFicha({ project, onCerrar, onGuardado }: {
               </button>
             )}
           </fieldset>
+
+          {aplicables.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-semibold text-muted-foreground mb-1">Datos adicionales</legend>
+              <EntradasDeCampos campos={aplicables} form={extra} prefijo="ficha-extra" requerido={yaTieneValor(project.campos_extra)}
+                onChange={(id, v) => setCambiosExtra(c => ({ ...c, [id]: v }))} />
+            </fieldset>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onCerrar} className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl">Cancelar</button>

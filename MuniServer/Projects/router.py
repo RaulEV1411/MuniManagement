@@ -5,6 +5,7 @@ from .views import (
     ProyectosTiposViewSet, ProjectImageViewSet,
     MiembroProyectoViewSet, RolProyectoViewSet, AjustePresupuestoViewSet, DocumentoProyectoViewSet,
     TareaPlantillaViewSet, FuenteFinanciamientoViewSet, HitoProyectoViewSet, RiesgoProyectoViewSet,
+    CampoPersonalizadoViewSet,
 )
 
 router_projects = DefaultRouter()
@@ -23,3 +24,4 @@ router_projects.register(r'plantillas', TareaPlantillaViewSet, basename='plantil
 router_projects.register(r'fuentes', FuenteFinanciamientoViewSet, basename='fuentes')
 router_projects.register(r'hitos', HitoProyectoViewSet, basename='hitos')
 router_projects.register(r'riesgos', RiesgoProyectoViewSet, basename='riesgos')
+router_projects.register(r'campos', CampoPersonalizadoViewSet, basename='campos')

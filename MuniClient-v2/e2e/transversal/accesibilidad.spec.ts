@@ -26,10 +26,16 @@ async function esperarAnimaciones(page: Page) {
 
 /** Con un diálogo abierto se analiza solo el diálogo: lo de atrás queda tapado e inactivo. */
 async function sinFallos(page: Page, que: string, dentroDe?: string) {
-  await esperarAnimaciones(page)
-  const axe = new AxeBuilder({ page }).withTags(NORMAS)
-  if (dentroDe) axe.include(dentroDe)
-  const { violations } = await axe.analyze()
+  const analizar = async () => {
+    await esperarAnimaciones(page)
+    const axe = new AxeBuilder({ page }).withTags(NORMAS)
+    if (dentroDe) axe.include(dentroDe)
+    return (await axe.analyze()).violations
+  }
+  let violations = await analizar()
+  // Con movimiento reducido, framer-motion igual anima la opacidad: una fila que entra con fundido mientras
+  // axe analiza da un contraste que no existe. Se repite una vez; un contraste malo de verdad sigue fallando.
+  if (violations.some(v => v.id === 'color-contrast')) violations = await analizar()
   const resumen = violations.map(v => `${v.id}: ${v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | ')}`)
   expect(resumen, `fallos de accesibilidad en ${que}`).toEqual([])
 }
@@ -103,7 +109,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
       test.setTimeout(150_000)
       await entrar(page)
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Especialidades', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
+      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Campos', 'Financiamiento', 'Especialidades', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }

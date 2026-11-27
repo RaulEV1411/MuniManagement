@@ -24,6 +24,7 @@ AUDITADOS = {
     'Projects.Tipos': 'catalogos',
     'Projects.TareaPlantilla': 'catalogos',
     'Projects.FuenteFinanciamiento': 'catalogos',
+    'Projects.CampoPersonalizado': 'catalogos',
     'Projects.HitoProyecto': 'proyectos',
     'Projects.RiesgoProyecto': 'proyectos',
     'Task.Tareas': 'tareas',
