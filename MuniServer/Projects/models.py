@@ -67,6 +67,31 @@ class FuenteFinanciamiento(models.Model):
         ordering = ['name']
 
 
+class CampoPersonalizado(models.Model):
+    """Un dato más que la institución pide en los proyectos o en las tareas, sin tocar código. Los valores
+    quedan en `campos_extra` de cada proyecto o tarea, con el id del campo como clave."""
+    PROYECTO, TAREA = 'proyecto', 'tarea'
+    APLICA_A = [(PROYECTO, 'Proyectos'), (TAREA, 'Tareas')]
+    TEXTO, NUMERO, FECHA, LISTA, SI_NO = 'texto', 'numero', 'fecha', 'lista', 'si_no'
+    TIPOS_DE_DATO = [(TEXTO, 'Texto'), (NUMERO, 'Número'), (FECHA, 'Fecha'), (LISTA, 'Lista'), (SI_NO, 'Sí o no')]
+
+    campo_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=60)
+    aplica_a = models.CharField(max_length=10, choices=APLICA_A)
+    tipo_dato = models.CharField(max_length=10, choices=TIPOS_DE_DATO)
+    opciones = models.JSONField(default=list, blank=True)
+    obligatorio = models.BooleanField(default=False)
+    ayuda = models.CharField(max_length=200, blank=True, default='')
+    orden = models.PositiveSmallIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    # Sin tipos: aplica a todos. Las tareas no tienen tipo: se usa el del proyecto.
+    tipos = models.ManyToManyField(Tipos, blank=True, related_name='campos')
+
+    class Meta:
+        ordering = ['aplica_a', 'orden', 'nombre']
+        constraints = [models.UniqueConstraint(fields=['aplica_a', 'nombre'], name='campo_unico_por_destino')]
+
+
 class Proyectos(models.Model):
     proyect_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     departamento_ID = models.ForeignKey(Departamentos, on_delete=models.PROTECT)
@@ -98,6 +123,8 @@ class Proyectos(models.Model):
     beneficiarios = models.PositiveIntegerField(null=True, blank=True)
     # [{nombre, unidad, meta, logrado}]
     indicadores = models.JSONField(default=list, blank=True)
+    # {campo_ID: valor} de los campos personalizados (ver CampoPersonalizado).
+    campos_extra = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ['-created_at']

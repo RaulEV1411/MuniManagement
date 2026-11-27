@@ -6,14 +6,14 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework import status
 from django.db import transaction
-from django.db.models import OuterRef, Prefetch, Q, Subquery, Sum
+from django.db.models import OuterRef, Prefetch, ProtectedError, Q, Subquery, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from .models import (
     Estado, Prioridad, Tipos, Proyectos, Proyectos_tipos, ProjectImage,
     AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
-    TareaPlantilla, FuenteFinanciamiento, HitoProyecto, RiesgoProyecto,
+    TareaPlantilla, FuenteFinanciamiento, HitoProyecto, RiesgoProyecto, CampoPersonalizado,
 )
 from .serializers import (
     CerrarProyectoSerializer, ReabrirProyectoSerializer, DocumentoProyectoSerializer,
@@ -21,9 +21,11 @@ from .serializers import (
     ProyectosTiposSerializer, ProyectosReadSerializer, ProyectosWriteSerializer,
     ProjectImageSerializer, MiembroProyectoSerializer, RolProyectoSerializer, AjustePresupuestoSerializer,
     TareaPlantillaSerializer, FuenteFinanciamientoSerializer, HitoProyectoSerializer, RiesgoProyectoSerializer,
+    CampoPersonalizadoSerializer,
 )
 from .permissions import SystemRecordReadOnly, CatalogoSoloAdministrador
 from . import authz, consultas
+from . import campos as campos_personalizados
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from Historial.models import HistorialCambios
 from Notifications.models import Notificacion
@@ -85,6 +87,20 @@ class FuenteFinanciamientoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
     pagination_class = None
     permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
     mensaje_protegido = 'No se puede borrar: hay proyectos financiados con esta fuente.'
+
+
+class CampoPersonalizadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
+    queryset = CampoPersonalizado.objects.prefetch_related('tipos')
+    serializer_class = CampoPersonalizadoSerializer
+    pagination_class = None
+    permission_classes = [IsAuthenticated, CatalogoSoloAdministrador]
+    mensaje_protegido = 'Ya tiene datos cargados: desactívelo para que no se pida más.'
+
+    def perform_destroy(self, instance):
+        # Los valores viven en el JSON de cada proyecto o tarea: la base no los protege sola.
+        if campos_personalizados.en_uso(instance):
+            raise ProtectedError(self.mensaje_protegido, set())
+        instance.delete()
 
 
 class _DelProyectoViewSet(ModelViewSet):

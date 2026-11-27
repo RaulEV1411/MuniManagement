@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, SerializerMethodField, ValidationError
 
+from Projects import campos as campos_personalizados
+from Projects.models import CampoPersonalizado
 from Projects.serializers import EstadoSerializer, PrioridadSerializer
 from Users.serializers import UsuarioResumenSerializer
 
@@ -48,6 +50,12 @@ class TareasWriteSerializer(ModelSerializer):
         horas = [datos.get('horas_estimadas'), datos.get('horas_reales')]
         if any(h is not None and h < 0 for h in horas):
             raise ValidationError({'horas_reales': 'Las horas no pueden ser negativas.'})
+        # Los campos de tarea dependen del tipo del proyecto.
+        if self.instance is None or 'campos_extra' in datos:
+            datos['campos_extra'] = campos_personalizados.validar(
+                CampoPersonalizado.TAREA, datos.get('campos_extra', {}), campos_personalizados.tipos_de(proyecto),
+                getattr(self.instance, 'campos_extra', None), al_crear=self.instance is None,
+            )
         return datos
 
 

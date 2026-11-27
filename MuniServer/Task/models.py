@@ -26,6 +26,7 @@ class Tareas(models.Model):
     horas_estimadas = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True)
     horas_reales = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True)
     etiquetas = models.JSONField(default=list, blank=True)
+    campos_extra = models.JSONField(default=dict, blank=True)
 
     class Meta:
         indexes = [
