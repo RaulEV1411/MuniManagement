@@ -127,6 +127,7 @@ class TareasReadSerializer(ModelSerializer):
     bloqueada = SerializerMethodField()
     documentos = SerializerMethodField()
     comentarios = SerializerMethodField()
+    proyecto_nombre = serializers.CharField(source='proyecto_ID.name', read_only=True)
 
     class Meta:
         model = Tareas

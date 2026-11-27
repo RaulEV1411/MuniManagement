@@ -371,6 +371,8 @@ class ProyectosReadSerializer(ModelSerializer):
     cerrado = SerializerMethodField()
     cierre = SerializerMethodField()
     costo_ejecutado = SerializerMethodField()
+    avance = SerializerMethodField()
+    solicitudes_abiertas = serializers.IntegerField(read_only=True, default=None)
     fuente_financiamiento_nombre = serializers.CharField(source='fuente_financiamiento.name', read_only=True, default=None)
 
     class Meta:
@@ -379,6 +381,10 @@ class ProyectosReadSerializer(ModelSerializer):
 
     def get_cerrado(self, obj):
         return authz.esta_cerrado(obj)
+
+    def get_avance(self, obj):
+        valor = getattr(obj, 'avance_calc', None)
+        return None if valor is None else round(valor)
 
     def get_costo_ejecutado(self, obj):
         # Lo ejecutado del proyecto es la suma de lo ejecutado en sus tareas.

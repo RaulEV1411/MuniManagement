@@ -6,7 +6,10 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework import status
 from django.db import transaction
-from django.db.models import OuterRef, Prefetch, ProtectedError, Q, Subquery, Sum
+from django.db.models import (
+    Case, Count, F, FloatField, IntegerField, OuterRef, Prefetch, ProtectedError, Q, Subquery, Sum, Value, When,
+)
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -34,13 +37,38 @@ from Configuracion.models import Configuracion
 
 
 def _proyectos_visibles_qs(user):
-    """Proyectos que el usuario puede ver (queryset filtrado, no list), con lo ejecutado de sus tareas."""
+    """Proyectos que el usuario puede ver (queryset filtrado, no list), con lo ejecutado de sus tareas, el avance
+    y el presupuesto aprobado calculados en la base: así la tabla ordena por ellos sin traer todo."""
+    from Solicitudes.models import Solicitud
     from Task.models import Tareas
-    ejecutado = Tareas.objects.filter(proyecto_ID=OuterRef('pk')).values('proyecto_ID').annotate(s=Sum('costo_ejecutado')).values('s')
+
+    def por_proyecto(qs, valor):
+        return Subquery(qs.filter(proyecto_ID=OuterRef('pk')).values('proyecto_ID').annotate(v=valor).values('v'))
+
+    abiertas = Tareas.objects.exclude(estado_ID__name='Cancelado')
+    ajustes = AjustePresupuesto.objects.filter(proyecto=OuterRef('pk')).values('proyecto').annotate(
+        v=Sum(Case(When(tipo='aumento', then=F('monto')), default=-F('monto'))),
+    ).values('v')
     return authz.proyectos_visibles(user).select_related(
         'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID', 'fuente_financiamiento'
     ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo').annotate(
-        costo_ejecutado_total=Subquery(ejecutado),
+        costo_ejecutado_total=Coalesce(por_proyecto(Tareas.objects, Sum('costo_ejecutado')), 0, output_field=IntegerField()),
+        tareas_total=Coalesce(por_proyecto(abiertas, Count('pk')), 0, output_field=IntegerField()),
+        tareas_hechas=Coalesce(por_proyecto(abiertas.filter(estado_ID__name='Completado'), Count('pk')), 0, output_field=IntegerField()),
+        presupuesto_total=F('costo') + Coalesce(Subquery(ajustes), 0, output_field=IntegerField()),
+        # Las solicitudes se ven con el proyecto (Solicitudes.views._visibles): el conteo no muestra nada de más.
+        solicitudes_abiertas=Coalesce(Subquery(
+            Solicitud.objects.filter(proyecto=OuterRef('pk'), estado__in=Solicitud.ABIERTAS)
+            .values('proyecto').annotate(v=Count('pk')).values('v')
+        ), 0, output_field=IntegerField()),
+    ).annotate(
+        # Como en el portal: completadas sobre las no canceladas, y un proyecto completado vale 100.
+        avance_calc=Case(
+            When(estado_ID__name='Completado', then=Value(100.0)),
+            When(tareas_total=0, then=Value(0.0)),
+            default=F('tareas_hechas') * 100.0 / F('tareas_total'),
+            output_field=FloatField(),
+        ),
     )
 
 

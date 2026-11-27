@@ -25,6 +25,7 @@ from Projects.permissions import CatalogoSoloAdministrador
 from Notifications.servicios import notificar
 from .permissions import UsersPermission, RolesPermission
 from Projects import authz
+from Projects.consultas import campos_de_orden
 from Projects import catalogo_permisos as cat
 from MuniServer.borrado import ProtegidoAlBorrarMixin
 from MuniServer.subidas import borrar_imagen_por_url, error_de_imagen, subir_imagen
@@ -99,6 +100,15 @@ class RolesViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
         })
 
 
+ORDENES_DE_USUARIOS = {
+    'nombre': ['first_name', 'last_name'],
+    'correo': ['email'],
+    'rol': ['role__name', 'first_name', 'last_name'],
+    'departamento': ['departamento_ID__name', 'first_name', 'last_name'],
+    'conexion': ['ultima_conexion', 'first_name', 'last_name'],
+}
+
+
 class UsersViewSet(ModelViewSet):
     serializer_class = UsersSerializer
     permission_classes = [IsAuthenticated, UsersPermission]
@@ -145,7 +155,11 @@ class UsersViewSet(ModelViewSet):
                 qs = qs.filter(departamento_ID=p['departamento'])
             if p.get('especialidad'):
                 qs = qs.filter(especialidades=p['especialidad'])
-            qs = qs.order_by('first_name', 'last_name')
+            ordenes = dict(ORDENES_DE_USUARIOS)
+            # Por última conexión ordena solo quien la ve (la ficha completa): si no, el orden delataría la actividad.
+            if self.get_serializer_class() is not UsersSerializer:
+                ordenes.pop('conexion')
+            qs = qs.order_by(*campos_de_orden(ordenes, p.get('orden'), 'nombre'), 'pk')
         return qs
 
     def _validar_departamento_y_rol(self, datos, anterior=None):
