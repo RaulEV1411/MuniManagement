@@ -25,6 +25,11 @@ api_v1 = [
     path('solicitudes/', include('Solicitudes.urls')),
 ]
 
+# Solo en las pruebas e2e (settings_e2e): cada prueba crea su propio escenario.
+if getattr(settings, 'E2E', False):
+    from .e2e import escenario
+    api_v1.append(path('e2e/escenario/', escenario, name='e2e_escenario'))
+
 urlpatterns = [
     path('api/v1/', include(api_v1)),
 ]

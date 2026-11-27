@@ -1,14 +1,14 @@
-import { expect, test } from '@playwright/test'
-import { FABI, entrar } from './ayuda'
+import { entrar, esperarRespuesta, expect, test } from '../fixtures'
 
-test('un cambio queda en la auditoría con el antes y el después, y la cadena se verifica', async ({ page }) => {
+// Cambia la configuración de la institución (y la deja como estaba): corre al final, de a una.
+test('un cambio queda en la auditoría con el antes y el después, y la cadena se verifica', { tag: ['@global', '@critico'] }, async ({ page }) => {
   await entrar(page)
   await page.goto('/config')
   const horario = page.getByLabel('Horario', { exact: true })
   const original = await horario.inputValue()
   const guardar = async (valor: string) => {
     await horario.fill(valor)
-    const respuesta = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/configuracion/') && r.request().method() === 'PATCH')
+    const respuesta = esperarRespuesta(page, '/configuracion/', 'PATCH')
     await page.getByRole('button', { name: 'Guardar' }).click()
     expect((await respuesta).status()).toBe(200)
   }
@@ -21,6 +21,7 @@ test('un cambio queda en la auditoría con el antes y el después, y la cadena s
   await fila.getByRole('button', { name: /Ver el detalle/ }).click()
   await expect(page.getByText('L-V 7:30–15:30')).toBeVisible()
 
+  // Con dos workers escribiendo a la vez, la cadena tiene que seguir íntegra.
   await page.getByRole('button', { name: 'Verificar integridad' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'La cadena está íntegra' })).toBeVisible()
 
@@ -28,24 +29,20 @@ test('un cambio queda en la auditoría con el antes y el después, y la cadena s
   await guardar(original)
 })
 
-test('cerrar una sesión a distancia saca a la persona de la aplicación', async ({ page, browser }) => {
-  await entrar(page, FABI)
+test('cerrar una sesión a distancia saca a la persona de la aplicación', { tag: ['@muta', '@critico'] }, async ({ page, browser, escenarioConPersona }) => {
+  // Una persona propia: cerrarle las sesiones no saca de la app a las otras pruebas.
+  const persona = escenarioConPersona.persona!
+  await entrar(page, persona.email)
 
   const admin = await (await browser.newContext()).newPage()
   await entrar(admin)
-  await admin.goto('/users')
-  await admin.getByRole('link', { name: 'Fabi Prueba' }).first().click()
+  await admin.goto(`/users/${persona.id}`)
   await admin.getByRole('tab', { name: 'Actividad' }).click()
   const sesiones = admin.getByRole('region', { name: 'Sesiones' })
   await expect(sesiones.getByText('Abierta').first()).toBeVisible()
-  // Pueden quedar sesiones de otras pruebas: se cierran todas.
-  const botones = sesiones.getByRole('button', { name: 'Cerrar sesión' })
-  while (await botones.count()) {
-    const antes = await botones.count()
-    await botones.first().click()
-    await admin.getByRole('dialog').getByRole('button', { name: 'Cerrar sesión' }).click()
-    await expect(botones).toHaveCount(antes - 1)
-  }
+  await sesiones.getByRole('button', { name: 'Cerrar sesión' }).first().click()
+  await admin.getByRole('dialog').getByRole('button', { name: 'Cerrar sesión' }).click()
+  await expect(sesiones.getByRole('button', { name: 'Cerrar sesión' })).toHaveCount(0)
 
   // Sigue usando la app (sin recargar): la próxima petición la manda al login con el aviso.
   await page.getByRole('link', { name: 'Usuarios' }).click()

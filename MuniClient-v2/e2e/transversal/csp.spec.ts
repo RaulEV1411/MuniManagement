@@ -1,13 +1,13 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { expect, test, type Page } from '@playwright/test'
-import { CLAVE, ANA } from './ayuda'
+import type { Page } from '@playwright/test'
+import { CLAVE, ANA, expect, test } from '../fixtures'
 
 // La CSP de producción vive en el Caddyfile y Vite en desarrollo no la aplica: acá se sirve el build
 // (vite preview) con esa misma cabecera y se recorren las pantallas buscando violaciones.
 const raiz = path.dirname(fileURLToPath(import.meta.url))
-const CSP = readFileSync(path.join(raiz, '..', 'Caddyfile'), 'utf8').match(/Content-Security-Policy "([^"]+)"/)![1]
+const CSP = readFileSync(path.join(raiz, '..', '..', 'Caddyfile'), 'utf8').match(/Content-Security-Policy "([^"]+)"/)![1]
 const BASE = `http://localhost:${process.env.E2E_PUERTO_PREVIEW ?? '4173'}`
 
 async function conCsp(page: Page) {
@@ -23,13 +23,14 @@ async function conCsp(page: Page) {
   })
   const errores: string[] = []
   page.on('pageerror', e => errores.push(e.message))
-  page.on('console', m => { if (m.type() === 'error') errores.push(m.text()) })
+  // El 401 de un access vencido (con E2E_ACCESS_SEGUNDOS corto) lo renueva la app: no es un error de la página.
+  page.on('console', m => { if (m.type() === 'error' && !m.text().includes('status of 401')) errores.push(m.text()) })
   return errores
 }
 
 const violaciones = (page: Page) => page.evaluate(() => (window as unknown as { __violaciones: string[] }).__violaciones)
 
-test('el build no viola la CSP de producción', async ({ page }) => {
+test('el build no viola la CSP de producción', { tag: ['@lectura', '@critico'] }, async ({ page }) => {
   test.setTimeout(60_000)
   const errores = await conCsp(page)
   await page.goto(`${BASE}/publico`)
@@ -41,6 +42,8 @@ test('el build no viola la CSP de producción', async ({ page }) => {
   await page.fill('input[type=password]', CLAVE)
   await page.click('button[type=submit]')
   await page.waitForURL('**/dashboard')
+  // Por la búsqueda: los escenarios de otras pruebas no la corren de la primera página.
+  await page.goto(`${BASE}/dashboard?q=Acera%20central`)
   await page.getByRole('link', { name: 'Acera central' }).first().click()
   await page.getByRole('button', { name: 'Editar proyecto' }).click()
   await expect(page.getByRole('dialog', { name: 'Editar proyecto' })).toBeVisible()

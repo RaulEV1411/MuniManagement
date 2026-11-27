@@ -1,8 +1,8 @@
 import { readFileSync } from 'fs'
-import { expect, test } from '@playwright/test'
-import { FABI, entrar } from './ayuda'
+import { FABI, entrar, esperarRespuesta, expect, test } from '../fixtures'
 
-test('el aviso es público, se publica con sus encargados y se acepta al entrar', async ({ page, browser }) => {
+// Publica una versión nueva del aviso, que todas las sesiones siguientes tienen que aceptar: corre al final.
+test('el aviso es público, se publica con sus encargados y se acepta al entrar', { tag: ['@global', '@critico'] }, async ({ page, browser }) => {
   await page.goto('/privacidad')
   await expect(page.getByRole('heading', { name: 'Aviso de privacidad', level: 1 })).toBeVisible()
   await expect(page.getByText('Quién más trata sus datos')).toBeVisible()
@@ -17,7 +17,7 @@ test('el aviso es público, se publica con sus encargados y se acepta al entrar'
   await admin.getByLabel('Qué datos').last().fill('Nombre y correo')
   await admin.getByLabel('Para qué').last().fill('Enviar avisos')
   await admin.getByLabel('País').last().fill('Estados Unidos')
-  const guardado = admin.waitForResponse(r => r.status() !== 401 && r.url().includes('/configuracion/') && r.request().method() === 'PATCH')
+  const guardado = esperarRespuesta(admin, '/configuracion/', 'PATCH')
   await admin.getByRole('button', { name: 'Guardar y publicar' }).click()
   expect((await guardado).status()).toBe(200)
 
@@ -33,7 +33,7 @@ test('el aviso es público, se publica con sus encargados y se acepta al entrar'
   await expect(aviso).toHaveCount(0)
 })
 
-test('cada persona descarga sus datos', async ({ page }) => {
+test('cada persona descarga sus datos', { tag: '@lectura' }, async ({ page }) => {
   await entrar(page, FABI)
   await page.goto('/users')
   await page.getByRole('link', { name: 'Fabi Prueba' }).first().click()

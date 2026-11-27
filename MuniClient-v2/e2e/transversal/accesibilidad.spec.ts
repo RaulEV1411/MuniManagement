@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
-import { entrar } from './ayuda'
+import type { Page } from '@playwright/test'
+import { entrar, expect, test } from '../fixtures'
 
 // WCAG 2.2 AA con axe-core: ninguna página principal puede tener fallos, en modo claro ni oscuro.
 const NORMAS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
@@ -35,7 +35,7 @@ async function sinFallos(page: Page, que: string, dentroDe?: string) {
 }
 
 for (const tema of ['claro', 'oscuro'] as const) {
-  test.describe(`modo ${tema}`, () => {
+  test.describe(`modo ${tema}`, { tag: '@a11y' }, () => {
     test.use({ colorScheme: tema === 'oscuro' ? 'dark' : 'light', reducedMotion: 'reduce' })
     test.beforeEach(async ({ page }) => {
       if (tema === 'oscuro') {
@@ -44,7 +44,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
     })
 
     test('páginas públicas', async ({ page }) => {
-      test.setTimeout(90_000)
+      test.setTimeout(120_000)
       for (const ruta of ['/login', '/login?sesion=terminada', '/olvide-clave', '/publico', '/accesibilidad', '/privacidad']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
@@ -55,33 +55,19 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await sinFallos(page, 'detalle público')
     })
 
-    test('pantallas internas, vistas y pestañas', async ({ page }) => {
-      // Recorre todas las pantallas, vistas y pestañas (con la máquina cargada tarda más de 2 min).
-      test.setTimeout(300_000)
+    // Las pantallas internas, por área: cada prueba entra por su cuenta, así se reparten entre los workers
+    // y una falla dice en qué módulo está.
+    test('proyectos: vistas, pestañas, cronograma y reportes', async ({ page }) => {
+      test.setTimeout(150_000)
       await entrar(page)
       for (const vista of ['Vista de lista', 'Vista de cuadrícula', 'Vista de tablero']) {
         await page.getByRole('button', { name: vista }).click()
         await sinFallos(page, `proyectos · ${vista}`)
       }
-      for (const ruta of ['/projects/new', '/users', '/users/new', '/directions', '/departments', '/timeline', '/reports', '/ayuda', '/auditoria', '/solicitudes']) {
+      for (const ruta of ['/projects/new', '/timeline', '/reports', '/solicitudes']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
       }
-      await page.goto('/users')
-      await page.getByRole('button', { name: 'Vista de cuadrícula' }).click()
-      await sinFallos(page, 'usuarios · cuadrícula')
-      await page.getByRole('link', { name: 'Beto Prueba' }).click()
-      await sinFallos(page, 'perfil')
-      await page.getByRole('tab', { name: 'Actividad' }).click()
-      await expect(page.getByRole('heading', { name: 'Sesiones' })).toBeVisible()
-      await sinFallos(page, 'perfil · actividad')
-
-      await page.goto('/config')
-      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
-        await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
-        await sinFallos(page, `configuración · ${pestana}`)
-      }
-
       await page.goto('/dashboard')
       await page.getByRole('link', { name: 'Acera central' }).first().click()
       for (const pestana of ['Tareas', 'Información', 'Solicitudes', 'Documentos', 'Fotos', 'Comentarios', 'Actividad']) {
@@ -90,8 +76,36 @@ for (const tema of ['claro', 'oscuro'] as const) {
       }
     })
 
+    test('usuarios, perfil y estructura', async ({ page }) => {
+      test.setTimeout(150_000)
+      await entrar(page)
+      for (const ruta of ['/users/new', '/directions', '/departments', '/ayuda', '/auditoria']) {
+        await page.goto(ruta)
+        await sinFallos(page, ruta)
+      }
+      await page.goto('/users')
+      await sinFallos(page, '/users')
+      await page.getByRole('button', { name: 'Vista de cuadrícula' }).click()
+      await sinFallos(page, 'usuarios · cuadrícula')
+      await page.getByRole('link', { name: 'Beto Prueba' }).click()
+      await sinFallos(page, 'perfil')
+      await page.getByRole('tab', { name: 'Actividad' }).click()
+      await expect(page.getByRole('heading', { name: 'Sesiones' })).toBeVisible()
+      await sinFallos(page, 'perfil · actividad')
+    })
+
+    test('configuración', async ({ page }) => {
+      test.setTimeout(150_000)
+      await entrar(page)
+      await page.goto('/config')
+      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
+        await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
+        await sinFallos(page, `configuración · ${pestana}`)
+      }
+    })
+
     test('diálogos abiertos', async ({ page }) => {
-      test.setTimeout(60_000)
+      test.setTimeout(120_000)
       await entrar(page)
       await page.getByText('Buscar...').click()
       await expect(page.getByRole('dialog', { name: 'Buscar proyectos y usuarios' })).toBeVisible()
@@ -148,7 +162,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
   })
 }
 
-test('se usa con el teclado: saltar el menú, abrir un proyecto, pestañas y diálogos', async ({ page }) => {
+test('se usa con el teclado: saltar el menú, abrir un proyecto, pestañas y diálogos', { tag: '@a11y' }, async ({ page }) => {
   await entrar(page)
   await expect(page.getByRole('link', { name: 'Acera central' }).first()).toBeVisible()
 
@@ -185,7 +199,7 @@ test('se usa con el teclado: saltar el menú, abrir un proyecto, pestañas y di�
   await expect(editar).toBeFocused()
 })
 
-test.describe('en el celular', () => {
+test.describe('en el celular', { tag: '@a11y' }, () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 
   test('el menú es un cajón, nada se corta a lo ancho y pasa axe', async ({ page }) => {
