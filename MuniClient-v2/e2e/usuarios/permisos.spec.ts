@@ -38,7 +38,9 @@ test('el equipo de un proyecto: agregar con vencimiento, verlo y quitarlo', { ta
   const dialogo = page.getByRole('dialog', { name: 'Agregar al equipo' })
   await dialogo.getByLabel('Persona').selectOption({ label: 'Jorge Prueba · Jefe de Departamento' })
   await dialogo.getByLabel('Rol en el proyecto').selectOption({ label: 'Observador' })
-  const enDosDias = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10)
+  // En la fecha local, como el servidor: toISOString da la de UTC, que en Costa Rica ya es mañana después de las 18:00.
+  const d = new Date(Date.now() + 2 * 86_400_000)
+  const enDosDias = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   await dialogo.getByLabel('Hasta (opcional)').fill(enDosDias)
   await dialogo.getByLabel('Motivo (opcional)').fill('Revisión de planos')
   const creado = esperarRespuesta(page, '/projects/miembros/', 'POST')
