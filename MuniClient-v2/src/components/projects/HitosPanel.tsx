@@ -21,6 +21,8 @@ export default function HitosPanel({ proyectoId, puedeEditar }: { proyectoId: st
   const intentar = async (accion: () => Promise<unknown>, error: string) => {
     try {
       await accion()
+      // Sin cancelar, si la lista todavía estaba cargando, la recarga se engancha a esa petición (que no trae lo nuevo).
+      await qc.cancelQueries({ queryKey })
       await qc.invalidateQueries({ queryKey })
       return true
     } catch (err) {

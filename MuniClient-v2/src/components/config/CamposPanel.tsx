@@ -22,7 +22,11 @@ export default function CamposPanel() {
   const [editando, setEditando] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
   const nombreDeTipo = (id: string) => tipos.find(t => t.tipos_ID === id)?.name ?? 'Tipo borrado'
-  const recargar = () => qc.invalidateQueries({ queryKey: ['campos'] })
+  // Sin cancelar, si la lista todavía estaba cargando, la recarga se engancha a esa petición (que no trae lo nuevo).
+  const recargar = async () => {
+    await qc.cancelQueries({ queryKey: ['campos'] })
+    await qc.invalidateQueries({ queryKey: ['campos'] })
+  }
 
   const intentar = async (accion: () => Promise<unknown>, error: string) => {
     try {
