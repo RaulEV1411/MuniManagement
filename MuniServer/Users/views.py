@@ -133,8 +133,8 @@ class UsersViewSet(ModelViewSet):
             p = self.request.query_params
             if not gestiona or p.get('incluir_inactivos') not in ('1', 'true'):
                 qs = qs.filter(is_active=True)
-            if p.get('search', '').strip():
-                q = p['search'].strip()
+            # Cada palabra en algún dato: así «Ana Rodríguez» encuentra a Ana por nombre y apellido.
+            for q in p.get('search', '').split()[:5]:
                 qs = qs.filter(
                     Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
                     | Q(puesto__icontains=q) | Q(departamento_ID__name__icontains=q)

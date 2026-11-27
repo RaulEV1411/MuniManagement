@@ -12,7 +12,9 @@ test('la búsqueda consulta al dejar de escribir, no por cada tecla', { tag: '@l
   await expect(page.getByRole('heading', { name: 'Acera central' })).toBeVisible()
   const busquedas: string[] = []
   page.on('request', r => { if (r.url().includes('/api/v1/public/projects/?search=')) busquedas.push(r.url()) })
+  const respuesta = page.waitForResponse(r => r.url().includes('/api/v1/public/projects/?search=puente'))
   await page.getByPlaceholder(/Buscar por nombre/).pressSequentially('puente', { delay: 40 })
+  await respuesta
   await expect(page.getByRole('heading', { name: 'Puente río' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Acera central' })).toHaveCount(0)
   expect(busquedas.length).toBe(1)

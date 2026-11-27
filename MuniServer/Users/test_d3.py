@@ -81,6 +81,15 @@ class EmpleadoTests(Escenario, APITestCase):
         self.assertFalse(Ausencia.objects.filter(usuario=self.dueno).exists())
 
 
+class BusquedaTests(Escenario, APITestCase):
+    def test_busca_por_nombre_completo(self):
+        crear_usuario('Funcionario', self.depto_a, first_name='Marta', last_name='Quesada Ulate')
+        r = self.como(self.admin).get(f'{API}/users/', {'search': 'marta  ulate'})
+        self.assertEqual([u['last_name'] for u in r.data['results']], ['Quesada Ulate'])
+        r = self.como(self.admin).get(f'{API}/users/', {'search': 'Marta Solano'})
+        self.assertEqual(r.data['results'], [])
+
+
 class AusenciasTests(Escenario, APITestCase):
     def registrar(self, quien, persona, tipo='vacaciones', desde=None, hasta=None):
         desde = desde or hoy()
