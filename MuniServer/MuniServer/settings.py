@@ -152,6 +152,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_PAGINATION_CLASS': 'MuniServer.paginacion.Paginacion',
+    'EXCEPTION_HANDLER': 'MuniServer.excepciones.manejar',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',

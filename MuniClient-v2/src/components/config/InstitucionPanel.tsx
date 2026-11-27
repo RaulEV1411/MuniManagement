@@ -37,6 +37,7 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
   const esAdmin = usePermiso('configuracion.gestionar')
   const [form, setForm] = useState<Campos>(() => ({ ...inicial }))
   const [guardando, setGuardando] = useState(false)
+  const [distritos, setDistritos] = useState(() => (inicial.distritos ?? []).join('\n'))
   const archivo = useRef<HTMLInputElement>(null)
   const set = (k: keyof Campos, v: string) => setForm(f => ({ ...f, [k]: v }))
 
@@ -50,7 +51,10 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
     setGuardando(true)
     try {
       const { nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias } = form
-      actualizar(await updateConfiguracion({ nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias }))
+      actualizar(await updateConfiguracion({
+        nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias,
+        distritos: distritos.split('\n').map(d => d.trim()).filter(Boolean),
+      }))
       toast.success('Datos de la institución guardados')
     } catch (err) {
       toast.error(mensajeDeError(err, 'No se pudieron guardar los datos'))
@@ -164,6 +168,18 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
             {MONEDAS.map(([codigo, nombre]) => <option key={codigo} value={codigo}>{codigo} · {nombre}</option>)}
           </select>
         </div>
+      </section>
+
+      <section className="bg-card border border-border rounded-2xl p-5 space-y-3" aria-labelledby="inst-distritos-titulo">
+        <h2 id="inst-distritos-titulo" className="text-sm font-bold text-foreground">Distritos</h2>
+        <div className="space-y-1.5 max-w-sm">
+          <label htmlFor="inst-distritos" className="text-xs font-semibold text-muted-foreground">Distritos del cantón (uno por línea)</label>
+          <textarea id="inst-distritos" rows={5} value={distritos} onChange={e => setDistritos(e.target.value)} disabled={!esAdmin}
+            aria-describedby="inst-distritos-ayuda" className={`${cls} resize-y`} />
+        </div>
+        <p id="inst-distritos-ayuda" className="text-xs text-muted-foreground">
+          Se eligen en la ficha de cada proyecto. Si la lista queda vacía, el distrito se escribe a mano.
+        </p>
       </section>
 
       <section className="bg-card border border-border rounded-2xl p-5 space-y-3" aria-labelledby="inst-auditoria-titulo">

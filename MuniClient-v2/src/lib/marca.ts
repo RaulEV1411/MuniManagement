@@ -13,6 +13,8 @@ export interface Marca {
   moneda: string
   // Días que se conservan la auditoría y las sesiones cerradas.
   retencion_auditoria_dias: number
+  // Distritos del cantón para la ubicación de los proyectos (vacío: se escriben a mano).
+  distritos: string[]
   // Aviso de privacidad (Ley 8968): texto propio, encargados y versión.
   aviso_privacidad: string
   encargados: Encargado[]
@@ -147,7 +149,7 @@ export function formatearMonto(monto: number, moneda = 'CRC'): string {
 
 export const MARCA_POR_DEFECTO: Marca = {
   nombre: 'Municipalidad', ubicacion: '', logo: '', color_primario: '#0C3857', color_acento: '#F3951B',
-  correo_soporte: '', telefono_soporte: '', horario_soporte: '', moneda: 'CRC', retencion_auditoria_dias: 1825,
+  correo_soporte: '', telefono_soporte: '', horario_soporte: '', moneda: 'CRC', retencion_auditoria_dias: 1825, distritos: [],
   aviso_privacidad: '', encargados: [], privacidad_version: 1, privacidad_actualizada: null,
 }
 

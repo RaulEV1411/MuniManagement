@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { createMiembro, deleteMiembro, getMiembros, getRolesProyecto, getUsers, updateMiembro } from '@/lib/api'
 import type { MiembroProyecto, RolProyecto, User } from '@/types'
 import { mensajeDeError } from '@/lib/errores'
-import { formatDate, fullName } from '@/lib/utils'
+import { formatDate, fullName, hoyLocal } from '@/lib/utils'
 import Dialogo from '@/components/common/Dialogo'
 import { confirmar } from '@/lib/confirmar'
 import { useAppStore } from '@/store/app'
@@ -21,7 +21,6 @@ interface Props {
   canManage: boolean
 }
 
-const hoy = () => new Date().toISOString().slice(0, 10)
 const cls = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary'
 
 function vigencia(m: MiembroProyecto) {
@@ -84,7 +83,7 @@ export default function EquipoPanel({ proyectoId, responsable, conTareas, canMan
         )}
         {activos.map(m => {
             const porVencer = m.hasta !== null && m.dias_restantes !== null && m.dias_restantes <= 3
-            const programado = m.desde > hoy()
+            const programado = m.desde > hoyLocal()
             return (
               <li key={m.miembro_ID} className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-background px-3 py-2">
                 <div className="min-w-0">
@@ -170,7 +169,7 @@ function FormularioMiembro({ proyectoId, miembro, roles, candidatos, onCerrar, o
 }) {
   const [usuario, setUsuario] = useState(miembro?.usuario ?? '')
   const [rol, setRol] = useState(miembro?.rol ?? roles.find(r => r.nombre === 'Supervisor')?.rol_proyecto_ID ?? '')
-  const [desde, setDesde] = useState(miembro?.desde ?? hoy())
+  const [desde, setDesde] = useState(miembro?.desde ?? hoyLocal())
   const [hasta, setHasta] = useState(miembro?.hasta ?? '')
   const [motivo, setMotivo] = useState(miembro?.motivo ?? '')
   const guardar = useMutation({

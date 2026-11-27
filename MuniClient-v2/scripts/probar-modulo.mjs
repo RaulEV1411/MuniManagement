@@ -10,7 +10,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const MODULOS = {
-  proyectos: { backend: ['Projects.tests', 'Projects.test_ciclo_vida', 'Historial'], e2e: ['e2e/proyectos'] },
+  proyectos: { backend: ['Projects.tests', 'Projects.test_ciclo_vida', 'Projects.test_ficha', 'Historial'], e2e: ['e2e/proyectos'] },
   tareas: { backend: ['Task'], e2e: ['e2e/tareas'] },
   solicitudes: { backend: ['Solicitudes'], e2e: ['e2e/solicitudes'] },
   permisos: { backend: ['Projects.test_permisos', 'Users'], e2e: ['e2e/usuarios/permisos.spec.ts'] },

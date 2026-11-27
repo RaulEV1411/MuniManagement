@@ -77,9 +77,63 @@ export interface Prioridad {
   is_system?: boolean
 }
 
+export interface TareaPlantilla {
+  plantilla_ID: string
+  tipo: string
+  nombre: string
+  descripcion: string
+  dias_desde_inicio: number
+  duracion_dias: number
+  pasos: string[]
+  orden: number
+}
+
 export interface Tipo {
   tipos_ID: string
   name: string
+  // Las tareas que se crean solas con un proyecto de este tipo.
+  plantillas?: TareaPlantilla[]
+}
+
+export interface FuenteFinanciamiento {
+  fuente_ID: string
+  name: string
+}
+
+export interface Indicador {
+  nombre: string
+  unidad: string
+  meta: number | null
+  logrado: number | null
+}
+
+export interface Hito {
+  hito_ID: string
+  proyecto: string
+  nombre: string
+  descripcion: string
+  fecha_prevista: string
+  fecha_real: string | null
+  cumplido: boolean
+}
+
+export interface Riesgo {
+  riesgo_ID: string
+  proyecto: string
+  descripcion: string
+  // 1 baja, 2 media, 3 alta.
+  probabilidad: 1 | 2 | 3
+  probabilidad_display: string
+  impacto: 1 | 2 | 3
+  impacto_display: string
+  // Probabilidad por impacto: de 1 a 9.
+  nivel: number
+  mitigacion: string
+  responsable: string | null
+  responsable_info: User | null
+  estado: 'abierto' | 'mitigado' | 'ocurrido' | 'cerrado'
+  estado_display: string
+  creado_en: string
 }
 
 export interface ProjectImage {
@@ -115,6 +169,18 @@ export interface Project {
   cierre?: CierreProyecto | null
   // La suma de lo ejecutado en sus tareas.
   costo_ejecutado?: number
+  // Ficha (todo opcional).
+  codigo?: string | null
+  numero_sicop?: string
+  fuente_financiamiento?: string | null
+  fuente_financiamiento_nombre?: string | null
+  distrito?: string
+  // Decimales en texto, como los manda Django.
+  latitud?: string | null
+  longitud?: string | null
+  objetivo?: string
+  beneficiarios?: number | null
+  indicadores?: Indicador[]
 }
 
 export type TipoDocumento = 'acta' | 'plano' | 'factura' | 'contrato' | 'informe' | 'foto' | 'otro'

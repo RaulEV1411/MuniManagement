@@ -3,6 +3,7 @@ import type {
   ActividadUsuario, AjustePresupuesto, CatalogoAuditoria, CatalogoPermisos, Feedback, MiembroProyecto, RegistroAuditoria, ResumenAuditoria,
   Role, RolProyecto, HistorialEntry, Notificacion, Project, PublicProject, Task, User, VerificacionAuditoria,
   ReglaAprobacion, Solicitud, TipoSolicitud, ChecklistItem, ComentarioTarea, Recurso, AsignacionRecurso, DocumentoProyecto,
+  FuenteFinanciamiento, Hito, Riesgo, TareaPlantilla,
 } from '@/types'
 import type { Marca } from './marca'
 
@@ -245,6 +246,21 @@ export const getTipos        = ()             => api.get('/projects/tipos/').the
 export const createTipo      = (data: object) => api.post('/projects/tipos/', data).then(r => r.data)
 export const updateTipo      = (id: string, d: object) => api.put(`/projects/tipos/${seg(id)}/`, d).then(r => r.data)
 export const deleteTipo      = (id: string)   => api.delete(`/projects/tipos/${seg(id)}/`).then(r => r.data)
+export const crearPlantilla = (datos: Partial<TareaPlantilla>) => api.post<TareaPlantilla>('/projects/plantillas/', datos).then(r => r.data)
+export const actualizarPlantilla = (id: string, datos: Partial<TareaPlantilla>) => api.patch<TareaPlantilla>(`/projects/plantillas/${seg(id)}/`, datos).then(r => r.data)
+export const borrarPlantilla = (id: string) => api.delete(`/projects/plantillas/${seg(id)}/`).then(r => r.data)
+export const getFuentes = () => api.get<FuenteFinanciamiento[]>('/projects/fuentes/').then(r => r.data)
+export const createFuente = (data: object) => api.post('/projects/fuentes/', data).then(r => r.data)
+export const updateFuente = (id: string, d: object) => api.put(`/projects/fuentes/${seg(id)}/`, d).then(r => r.data)
+export const deleteFuente = (id: string) => api.delete(`/projects/fuentes/${seg(id)}/`).then(r => r.data)
+export const getHitos = (proyecto: string) => api.get<Hito[]>('/projects/hitos/', { params: { proyecto } }).then(r => r.data)
+export const crearHito = (datos: Partial<Hito>) => api.post<Hito>('/projects/hitos/', datos).then(r => r.data)
+export const actualizarHito = (id: string, datos: Partial<Hito>) => api.patch<Hito>(`/projects/hitos/${seg(id)}/`, datos).then(r => r.data)
+export const borrarHito = (id: string) => api.delete(`/projects/hitos/${seg(id)}/`).then(r => r.data)
+export const getRiesgos = (proyecto: string) => api.get<Riesgo[]>('/projects/riesgos/', { params: { proyecto } }).then(r => r.data)
+export const crearRiesgo = (datos: Partial<Riesgo>) => api.post<Riesgo>('/projects/riesgos/', datos).then(r => r.data)
+export const actualizarRiesgo = (id: string, datos: Partial<Riesgo>) => api.patch<Riesgo>(`/projects/riesgos/${seg(id)}/`, datos).then(r => r.data)
+export const borrarRiesgo = (id: string) => api.delete(`/projects/riesgos/${seg(id)}/`).then(r => r.data)
 
 export interface ResumenProyectos {
   total: number

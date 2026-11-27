@@ -98,7 +98,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
       test.setTimeout(150_000)
       await entrar(page)
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
+      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }
@@ -129,6 +129,16 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await page.getByRole('button', { name: 'Agregar persona' }).click()
       await expect(page.getByRole('dialog', { name: 'Agregar al equipo' })).toBeVisible()
       await sinFallos(page, 'agregar al equipo', '[role=dialog]')
+      await page.keyboard.press('Escape')
+
+      await page.getByRole('button', { name: 'Editar ficha' }).click()
+      await expect(page.getByRole('dialog', { name: 'Editar ficha' })).toBeVisible()
+      await sinFallos(page, 'editar ficha', '[role=dialog]')
+      await page.keyboard.press('Escape')
+
+      await page.getByRole('region', { name: 'Riesgos' }).getByRole('button', { name: 'Riesgo', exact: true }).click()
+      await expect(page.getByRole('dialog', { name: 'Nuevo riesgo' })).toBeVisible()
+      await sinFallos(page, 'nuevo riesgo', '[role=dialog]')
       await page.keyboard.press('Escape')
 
       await page.getByRole('button', { name: 'Cerrar proyecto' }).click()

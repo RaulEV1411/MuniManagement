@@ -21,12 +21,24 @@ class ConfiguracionSerializer(serializers.ModelSerializer):
         model = Configuracion
         fields = [
             'nombre', 'ubicacion', 'logo', 'color_primario', 'color_acento',
-            'correo_soporte', 'telefono_soporte', 'horario_soporte', 'moneda', 'retencion_auditoria_dias',
+            'correo_soporte', 'telefono_soporte', 'horario_soporte', 'moneda', 'retencion_auditoria_dias', 'distritos',
             'aviso_privacidad', 'encargados', 'privacidad_version', 'privacidad_actualizada', 'actualizado',
         ]
         read_only_fields = ['logo', 'actualizado', 'privacidad_version', 'privacidad_actualizada']
 
     CAMPOS_ENCARGADO = ('nombre', 'datos', 'finalidad', 'pais')
+
+    def validate_distritos(self, valor):
+        if not isinstance(valor, list) or len(valor) > 100:
+            raise serializers.ValidationError('Indique hasta 100 distritos.')
+        limpios = []
+        for nombre in valor:
+            nombre = str(nombre).strip()
+            if len(nombre) > 80:
+                raise serializers.ValidationError('Cada distrito puede tener hasta 80 caracteres.')
+            if nombre and nombre.casefold() not in {d.casefold() for d in limpios}:
+                limpios.append(nombre)
+        return limpios
 
     def validate_encargados(self, valor):
         """Quién más trata los datos: una fila por proveedor con nombre, qué datos, para qué y en qué país."""

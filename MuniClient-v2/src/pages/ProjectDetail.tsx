@@ -21,6 +21,9 @@ import {
 import StatusStepper from '@/components/projects/StatusStepper'
 import BudgetSection from '@/components/projects/BudgetSection'
 import EquipoPanel from '@/components/projects/EquipoPanel'
+import FichaProyecto from '@/components/projects/FichaProyecto'
+import HitosPanel from '@/components/projects/HitosPanel'
+import RiesgosPanel from '@/components/projects/RiesgosPanel'
 
 import {
   type Project, type Task, type TaskImage, type Feedback,
@@ -1266,7 +1269,8 @@ export default function ProjectDetailPage() {
 
       {/* ── Header ── */}
       <div className="bg-card border-b border-border px-4 sm:px-6 flex-shrink-0" style={{ minHeight: 72 }}>
-        <div className="flex items-start gap-3 py-4">
+        {/* En el celular los botones bajan a otra línea: si no, el nombre queda tapado. */}
+        <div className="flex flex-wrap items-start gap-3 py-4">
           <button aria-label="Volver"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex-shrink-0 mt-0.5 active:scale-[0.98]"
@@ -1274,9 +1278,9 @@ export default function ProjectDetailPage() {
             <ArrowLeft size={16} />
           </button>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 basis-56">
             <div className="flex items-start gap-2 flex-wrap">
-              <h1 className="text-lg font-bold text-foreground leading-tight">{project.name}</h1>
+              <h1 className="text-lg font-bold text-foreground leading-tight break-words min-w-0">{project.name}</h1>
               {project.estado_ID?.name && (
                 <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 mt-1', claseEtiqueta)} style={conColor(colorDeEstado(false, project.estado_ID))}>
                   {project.estado_ID.name}
@@ -1312,7 +1316,7 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
             {puede('tareas.gestionar') && <button
               onClick={() => setShowTaskModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-ocean-500 hover:bg-ocean-600 text-white text-xs font-semibold rounded-xl transition-all active:scale-[0.98]"
@@ -1507,6 +1511,15 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
 
+                <FichaProyecto
+                  project={project}
+                  puedeEditar={!project.cerrado && puede('proyectos.editar')}
+                  onGuardado={() => Promise.all([
+                    qc.invalidateQueries({ queryKey: ['project', id] }),
+                    qc.invalidateQueries({ queryKey: ['projects'] }),
+                  ])}
+                />
+
                 <div className="mt-4 space-y-4">
                   <div>
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Estado</h3>
@@ -1531,6 +1544,9 @@ export default function ProjectDetailPage() {
                     ejecutado={project.costo_ejecutado}
                     onSolicitar={!project.cerrado && puede('solicitudes.crear') ? () => setPidiendoAjuste(true) : undefined}
                   />
+
+                  <HitosPanel proyectoId={project.proyect_ID} puedeEditar={!project.cerrado && puede('proyectos.editar')} />
+                  <RiesgosPanel proyectoId={project.proyect_ID} puedeEditar={!project.cerrado && puede('proyectos.editar')} />
 
                   <EquipoPanel
                     proyectoId={project.proyect_ID}

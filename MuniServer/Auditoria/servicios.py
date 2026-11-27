@@ -178,7 +178,8 @@ _POR_RUTA = {
 }
 _POR_SUBRUTA = {
     'roles': 'roles', 'miembros': 'equipo', 'roles-proyecto': 'roles', 'ajustes-presupuesto': 'presupuesto',
-    'estados': 'catalogos', 'prioridades': 'catalogos', 'tipos': 'catalogos',
+    'estados': 'catalogos', 'prioridades': 'catalogos', 'tipos': 'catalogos', 'plantillas': 'catalogos',
+    'fuentes': 'catalogos', 'recursos': 'catalogos',
     'project-images': 'fotos', 'task-images': 'fotos', 'upload-photo': 'usuarios',
 }
 
