@@ -368,6 +368,7 @@ class ProyectosReadSerializer(ModelSerializer):
     costo_total = SerializerMethodField()
     tipos = SerializerMethodField()
     mis_permisos = SerializerMethodField()
+    puede_despublicar = SerializerMethodField()
     cerrado = SerializerMethodField()
     cierre = SerializerMethodField()
     costo_ejecutado = SerializerMethodField()
@@ -399,6 +400,12 @@ class ProyectosReadSerializer(ModelSerializer):
 
     def get_tipos(self, obj):
         return [{'tipos_ID': str(pt.tipo_id), 'name': pt.tipo.name} for pt in obj.proyectos_tipos_set.all()]
+
+    def get_puede_despublicar(self, obj):
+        # Solo en el detalle: un proyecto cerrado no se edita, pero lo publicado se puede bajar del portal.
+        if not self.context.get('incluir_mis_permisos') or 'request' not in self.context or not obj.es_publico:
+            return None
+        return authz.puede_despublicar(self.context['request'].user, obj)
 
     def get_mis_permisos(self, obj):
         # Solo en el detalle: calcularlo en cada fila de una lista costaría consultas por proyecto.

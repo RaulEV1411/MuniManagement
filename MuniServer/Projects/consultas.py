@@ -1,9 +1,25 @@
 """Filtros, orden y totales de proyectos en el servidor. Antes el front bajaba los primeros 200
 y calculaba todo en el navegador, así que con más proyectos los números quedaban incompletos."""
-from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
+from django.db.models import Case, Count, F, IntegerField, OuterRef, Q, Subquery, Sum, Value, When
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import AjustePresupuesto, Proyectos
+
+
+def con_presupuesto(qs):
+    """Lo ejecutado (la suma de sus tareas) y el presupuesto aprobado (el costo más los ajustes), calculados en
+    la base. Lo usan la lista interna y el portal, así los dos muestran lo mismo."""
+    from Task.models import Tareas
+    ejecutado = Tareas.objects.filter(proyecto_ID=OuterRef('pk')).values('proyecto_ID').annotate(
+        v=Sum('costo_ejecutado')).values('v')
+    ajustes = AjustePresupuesto.objects.filter(proyecto=OuterRef('pk')).values('proyecto').annotate(
+        v=Sum(Case(When(tipo='aumento', then=F('monto')), default=-F('monto'))),
+    ).values('v')
+    return qs.annotate(
+        costo_ejecutado_total=Coalesce(Subquery(ejecutado), 0, output_field=IntegerField()),
+        presupuesto_total=F('costo') + Coalesce(Subquery(ajustes), 0, output_field=IntegerField()),
+    )
 
 
 ORDENES = {

@@ -22,9 +22,19 @@ class ConfiguracionSerializer(serializers.ModelSerializer):
         fields = [
             'nombre', 'ubicacion', 'logo', 'color_primario', 'color_acento',
             'correo_soporte', 'telefono_soporte', 'horario_soporte', 'moneda', 'retencion_auditoria_dias', 'distritos',
+            'mapa_latitud', 'mapa_longitud', 'mapa_zoom', 'licencia_datos', 'licencia',
             'aviso_privacidad', 'encargados', 'privacidad_version', 'privacidad_actualizada', 'actualizado',
         ]
         read_only_fields = ['logo', 'actualizado', 'privacidad_version', 'privacidad_actualizada']
+
+    licencia = serializers.DictField(read_only=True)
+
+    def validate(self, datos):
+        lat = datos.get('mapa_latitud', getattr(self.instance, 'mapa_latitud', None))
+        lng = datos.get('mapa_longitud', getattr(self.instance, 'mapa_longitud', None))
+        if (lat is None) != (lng is None):
+            raise serializers.ValidationError({'mapa_latitud': 'Indique la latitud y la longitud del centro, o ninguna de las dos.'})
+        return datos
 
     CAMPOS_ENCARGADO = ('nombre', 'datos', 'finalidad', 'pais')
 

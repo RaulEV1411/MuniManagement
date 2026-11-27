@@ -203,11 +203,11 @@ def esta_cerrado(proyecto):
     return proyecto.archivado or proyecto.estado_ID.categoria == 'finalizado'
 
 
-def puede(user, codigo, proyecto=None):
+def puede(user, codigo, proyecto=None, aunque_cerrado=False):
     """¿Puede hacer `codigo`? Sin proyecto: si lo tiene con algún alcance (para acciones generales)."""
     if not _autenticado(user):
         return False
-    if proyecto is not None and codigo in BLOQUEADOS_AL_CERRAR and esta_cerrado(proyecto):
+    if proyecto is not None and not aunque_cerrado and codigo in BLOQUEADOS_AL_CERRAR and esta_cerrado(proyecto):
         return False
     if _puede_por_si(user, codigo, proyecto):
         return True
@@ -242,6 +242,11 @@ def puede_ver(user, proyecto):
 
 def puede_editar(user, proyecto):
     return puede(user, 'proyectos.editar', proyecto)
+
+
+def puede_despublicar(user, proyecto):
+    """Quitarlo del portal: quien edita el proyecto, aunque esté cerrado. Lo demás del proyecto sigue bloqueado."""
+    return puede(user, 'proyectos.editar', proyecto, aunque_cerrado=True)
 
 
 def puede_delegar(user, proyecto):

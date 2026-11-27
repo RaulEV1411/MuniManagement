@@ -85,7 +85,7 @@ class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
         self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').data['avance'], 100)
 
         # 7. Cancelar es cerrar el proyecto: no con un PATCH, sí con el cierre y su motivo; queda en
-        #    el historial y el proyecto sale del portal.
+        #    el historial y el portal lo sigue mostrando, con el motivo (tanda T: rinde cuentas de lo cancelado).
         jefe = self.como(self.jefe_a)
         self.assertEqual(jefe.patch(f'{API}/projects/proyectosWrite/{pid}/', {'estado_ID': str(cancelado.pk), 'razon': 'x'}, format='json').status_code, 400)
         cierre = {'estado_ID': str(cancelado.pk), 'fecha_fin_real': timezone.localdate().isoformat(), 'costo_real': 0}
@@ -94,7 +94,9 @@ class CicloDeVidaDeUnProyectoTests(Escenario, APITestCase):
         self.assertEqual(r.status_code, 201, r.data)
         self.assertTrue(HistorialCambios.objects.filter(proyecto_ID=pid, tipo='cierre', razon='Sin terreno').exists())
         self.client.force_authenticate(None)
-        self.assertEqual(self.client.get(f'{API}/public/projects/{pid}/').status_code, 404)
+        publico = self.client.get(f'{API}/public/projects/{pid}/').data
+        self.assertEqual(publico['estado']['name'], 'Cancelado')
+        self.assertEqual(publico['cierre']['motivo'], 'Sin terreno')
 
         tipos = set(HistorialCambios.objects.filter(proyecto_ID=pid).values_list('tipo', flat=True))
         self.assertTrue({'creacion', 'cambio_estado_tarea', 'orden_cambio', 'cierre'} <= tipos, tipos)
