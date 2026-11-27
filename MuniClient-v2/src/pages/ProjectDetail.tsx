@@ -48,6 +48,10 @@ import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
 import { pestanas } from '@/lib/pestanas'
 import { confirmar } from '@/lib/confirmar'
+import { EntradasDeCampos } from '@/components/campos/CamposPersonalizados'
+import {
+  cambiosParaEnviar, camposParaEnviar, camposQueAplican, formDeCampos, useCampos, yaTieneValor, type FormDeCampos,
+} from '@/lib/camposPersonalizados'
 
 // Lo que puede hacer quien mira el proyecto (mis_permisos del servidor) y quién es: los botones que el
 // servidor rechazaría no se muestran. El servidor igual valida cada acción.
@@ -303,10 +307,11 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 // ── Razón modal (genérico) ───────────────────────────────────────────────────
 // ── Edit task modal ──────────────────────────────────────────────────────────
 function EditTaskModal({
-  task, estados, prioridades, users, projectId, otrasTareas, onClose, onSaved,
+  task, estados, prioridades, users, projectId, otrasTareas, tiposDelProyecto, onClose, onSaved,
 }: {
   task: Task
   otrasTareas: Task[]
+  tiposDelProyecto: string[]
   estados: Estado[]
   prioridades: Prioridad[]
   users: UserModel[]
@@ -334,6 +339,11 @@ function EditTaskModal({
   const [colaboradores, setColaboradores] = useState<string[]>((task.colaboradores ?? []).map(c => c.user_ID))
   const [bloqueos, setBloqueos] = useState<string[]>((task.bloqueada_por ?? []).map(b => b.tareas_ID))
   const alternar = (lista: string[], id: string) => (lista.includes(id) ? lista.filter(x => x !== id) : [...lista, id])
+  // Solo lo que se toca: si el catálogo llega después de abrir, lo guardado no se pierde.
+  const { data: campos = [] } = useCampos()
+  const aplicables = camposQueAplican(campos, 'tarea', tiposDelProyecto)
+  const [cambiosExtra, setCambiosExtra] = useState<FormDeCampos>({})
+  const extra = { ...formDeCampos(aplicables, task.campos_extra), ...cambiosExtra }
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
@@ -356,6 +366,7 @@ function EditTaskModal({
         etiquetas:    form.etiquetas.split(',').map(e => e.trim()).filter(Boolean),
         colaboradores,
         bloqueada_por: bloqueos,
+        ...cambiosParaEnviar(aplicables, extra, cambiosExtra),
         razon,
       })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
@@ -468,6 +479,13 @@ function EditTaskModal({
               <label htmlFor="tarea-etiquetas" className="text-xs font-semibold text-muted-foreground">Etiquetas (separadas por coma)</label>
               <input id="tarea-etiquetas" value={form.etiquetas} onChange={e => set('etiquetas', e.target.value)} placeholder="vial, urgente" className={cls} />
             </div>
+            {aplicables.length > 0 && (
+              <fieldset className="space-y-1.5">
+                <legend className="text-xs font-semibold text-muted-foreground">Datos adicionales</legend>
+                <EntradasDeCampos campos={aplicables} form={extra} prefijo="tarea-extra" requerido={yaTieneValor(task.campos_extra)}
+                  onChange={(id, v) => setCambiosExtra(c => ({ ...c, [id]: v }))} />
+              </fieldset>
+            )}
             <fieldset className="space-y-1.5">
               <legend className="text-xs font-semibold text-muted-foreground">Colaboradores</legend>
               <div className="max-h-28 overflow-y-auto grid grid-cols-2 gap-1 border border-border rounded-xl p-2">
@@ -524,9 +542,10 @@ function EditTaskModal({
 
 // ── Task modal ───────────────────────────────────────────────────────────────
 function TaskModal({
-  projectId, estados, prioridades, users, onClose, onCreated,
+  projectId, estados, prioridades, users, tiposDelProyecto, onClose, onCreated,
 }: {
   projectId: string
+  tiposDelProyecto: string[]
   estados: Estado[]
   prioridades: Prioridad[]
   users: UserModel[]
@@ -543,6 +562,9 @@ function TaskModal({
     estado_ID: estados[0]?.estado_ID ?? '',
     asignado_a: '',
   })
+  const { data: campos = [] } = useCampos()
+  const aplicables = camposQueAplican(campos, 'tarea', tiposDelProyecto)
+  const [extra, setExtra] = useState<FormDeCampos>({})
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
@@ -555,7 +577,9 @@ function TaskModal({
     }
     setLoading(true)
     try {
-      await createTask({ ...form, proyecto_ID: projectId, asignado_a: form.asignado_a || null })
+      await createTask({
+        ...form, proyecto_ID: projectId, asignado_a: form.asignado_a || null, campos_extra: camposParaEnviar(aplicables, extra),
+      })
       toast.success('Tarea creada')
       onCreated()
       onClose()
@@ -622,6 +646,13 @@ function TaskModal({
               {users.map(u => <option key={u.user_ID} value={u.user_ID}>{etiquetaParaAsignar(u)}</option>)}
             </select>
           </div>
+          {aplicables.length > 0 && (
+            <fieldset className="space-y-1.5">
+              <legend className="text-xs font-semibold text-muted-foreground">Datos adicionales</legend>
+              <EntradasDeCampos campos={aplicables} form={extra} prefijo="nueva-tarea-extra"
+                onChange={(id, v) => setExtra(c => ({ ...c, [id]: v }))} />
+            </fieldset>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl transition-colors">
@@ -1833,6 +1864,7 @@ export default function ProjectDetailPage() {
             estados={estados}
             prioridades={prioridades}
             users={users}
+            tiposDelProyecto={(project?.tipos ?? []).map(t => t.tipos_ID)}
             onClose={() => setShowTaskModal(false)}
             onCreated={() => qc.invalidateQueries({ queryKey: ['tasks', id] })}
           />
@@ -1860,6 +1892,7 @@ export default function ProjectDetailPage() {
             prioridades={prioridades}
             users={users}
             projectId={id!}
+            tiposDelProyecto={(project?.tipos ?? []).map(t => t.tipos_ID)}
             onClose={() => setEditingTask(null)}
             onSaved={() => setEditingTask(null)}
           />

@@ -10,6 +10,8 @@ import {
 import { type Tipo, type Estado, type Prioridad, type Department, type User, type FuenteFinanciamiento } from '@/types'
 import { cn, formatDate, fullName } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
+import { EntradasDeCampos } from '@/components/campos/CamposPersonalizados'
+import { camposParaEnviar, camposQueAplican, obligatorioFaltante, useCampos, type FormDeCampos } from '@/lib/camposPersonalizados'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { claseEtiqueta, conColor } from '@/lib/colores'
 import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
@@ -113,6 +115,9 @@ export default function ProjectCreatePage() {
   const { data: fuentes = [] } = useQuery<FuenteFinanciamiento[]>({ queryKey: ['fuentes'], queryFn: getFuentes })
   const { distritos } = useMarca()
   const plantillas = tipos.find(t => t.tipos_ID === form.tipos_ID)?.plantillas ?? []
+  const { data: campos = [] } = useCampos()
+  const adicionales = camposQueAplican(campos, 'proyecto', form.tipos_ID ? [form.tipos_ID] : [])
+  const [extra, setExtra] = useState<FormDeCampos>({})
 
   // Lo que el servidor exige, revisado en el paso donde se llena, para no enterarse al final.
   const faltaEnPaso = (paso: number): string | null => {
@@ -128,6 +133,8 @@ export default function ProjectCreatePage() {
     if (paso === 2) {
       if (!form.departamento_ID) return 'Seleccione un departamento'
       if (!form.user_ID) return 'Seleccione un responsable'
+      const falta = obligatorioFaltante(adicionales, extra)
+      if (falta) return falta
     }
     return null
   }
@@ -172,6 +179,7 @@ export default function ProjectCreatePage() {
         fuente_financiamiento: form.fuente_financiamiento || null,
         distrito: form.distrito.trim(),
         usar_plantilla: form.usar_plantilla,
+        campos_extra: camposParaEnviar(adicionales, extra),
       })
       toast.success('Proyecto creado exitosamente')
       navigate('/dashboard')
@@ -375,6 +383,14 @@ export default function ProjectCreatePage() {
                       <input value={form.distrito} onChange={e => set('distrito', e.target.value)} maxLength={80} className={inputCls} />
                     )}
                   </Field>
+
+                  {adicionales.length > 0 && (
+                    <fieldset className="space-y-2">
+                      <legend className="text-xs font-semibold text-muted-foreground mb-1">Datos adicionales</legend>
+                      <EntradasDeCampos campos={adicionales} form={extra} prefijo="nuevo-extra"
+                        onChange={(id, v) => setExtra(c => ({ ...c, [id]: v }))} />
+                    </fieldset>
+                  )}
 
                   <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer">
                     <input

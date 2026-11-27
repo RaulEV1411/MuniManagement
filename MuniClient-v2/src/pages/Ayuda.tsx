@@ -67,6 +67,14 @@ const FAQS: FAQ[] = [
     q: '¿Puedo modificar los estados o prioridades?',
     a: 'Los estados del sistema (Pendiente, En progreso, En revisión, Completado, Pausado, Cancelado) y las prioridades (Baja, Media, Alta, Urgente) no se modifican, para que todos los proyectos se lean igual. El Administrador puede agregar estados propios en Configuración eligiendo su categoría (Activo, Pausado o Finalizado), y también administra los tipos de proyecto.',
   },
+  {
+    q: '¿Cómo pido un dato que el sistema no trae?',
+    a: 'En Configuración › Campos, el Administrador crea el campo: dónde se pide (proyectos o tareas), el tipo de dato (texto, número, fecha, lista o sí o no), si es obligatorio y para qué tipos de proyecto. Aparece en «Datos adicionales» al crear el proyecto o la tarea, en «Editar ficha» y en la edición de la tarea. Las tareas usan el tipo de su proyecto.',
+  },
+  {
+    q: '¿Qué pasa si un campo ya no se necesita?',
+    a: 'Desactívelo en Configuración › Campos: deja de pedirse, pero lo que ya se cargó se sigue viendo. Un campo con datos no se borra ni cambia de tipo de dato; si hace falta otro tipo, cree un campo nuevo.',
+  },
 ]
 
 export default function AyudaPage() {

@@ -25,8 +25,9 @@ import SolicitudesPanel from '@/components/config/SolicitudesPanel'
 import PrivacidadPanel from '@/components/config/PrivacidadPanel'
 import RecursosPanel from '@/components/config/RecursosPanel'
 import PlantillasPanel from '@/components/config/PlantillasPanel'
+import CamposPanel from '@/components/config/CamposPanel'
 
-const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Especialidades', 'Recursos', 'Solicitudes', 'Roles y permisos'] as const
+const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Campos', 'Financiamiento', 'Especialidades', 'Recursos', 'Solicitudes', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -424,6 +425,7 @@ export default function ConfigPage() {
             {tab === 'Solicitudes' && <SolicitudesPanel />}
             {tab === 'Privacidad' && <PrivacidadPanel />}
             {tab === 'Recursos' && <RecursosPanel />}
+            {tab === 'Campos' && <CamposPanel />}
             {tab === 'Estados' && (
               <CrudSection
                 items={estadoItems}

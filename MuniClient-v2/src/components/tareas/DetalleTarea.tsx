@@ -12,6 +12,7 @@ import { mensajeDeError } from '@/lib/errores'
 import { useMoneda } from '@/hooks/useMarca'
 import Dialogo from '@/components/common/Dialogo'
 import Documentos from '@/components/documentos/Documentos'
+import { datosConValor, useCampos } from '@/lib/camposPersonalizados'
 
 const campo = 'px-2.5 py-1.5 text-sm bg-background border border-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60'
 const titulo = 'text-xs font-bold text-foreground uppercase tracking-wider'
@@ -40,6 +41,8 @@ export default function DetalleTarea({ task, projectId, gestiona, puedeSubir, mo
   const { formatear } = useMoneda()
   const trabaja = task.asignado_a?.user_ID === usuarioId || !!task.colaboradores?.some(c => c.user_ID === usuarioId)
   const actualiza = !cerrado && (gestiona || trabaja)
+  const { data: campos = [] } = useCampos()
+  const adicionales = datosConValor(campos.filter(c => c.aplica_a === 'tarea'), task.campos_extra)
   const [avance, setAvance] = useState(task.avance ?? 0)
   const [horas, setHoras] = useState(task.horas_reales ?? '')
   const [nuevoPaso, setNuevoPaso] = useState('')
@@ -110,6 +113,13 @@ export default function DetalleTarea({ task, projectId, gestiona, puedeSubir, mo
               <ul className="flex flex-wrap gap-1.5" aria-label="Etiquetas">
                 {task.etiquetas.map(e => <li key={e} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{e}</li>)}
               </ul>
+            )}
+            {adicionales.length > 0 && (
+              <dl aria-label="Datos adicionales" className="grid grid-cols-2 gap-3 text-sm">
+                {adicionales.map(({ campo, texto }) => (
+                  <div key={campo.campo_ID}><dt className="text-xs text-muted-foreground">{campo.nombre}</dt><dd className="font-semibold text-foreground break-words">{texto}</dd></div>
+                ))}
+              </dl>
             )}
           </Seccion>
 
