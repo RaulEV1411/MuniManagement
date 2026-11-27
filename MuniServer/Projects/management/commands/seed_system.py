@@ -1,11 +1,11 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from Auditoria.models import CadenaAuditoria
 from Projects.catalogo_permisos import PERMISOS_POR_DEFECTO, ROLES_DE_PROYECTO
 from Projects.models import Estado, Prioridad, RolProyecto
-from Users.models import Roles, Users
-
-
-ADMIN_AUTOMATIC_EMAILS = ['admin@muni.cr', 'admin@muni.local']
+from Solicitudes.catalogo import TIPOS_INICIALES
+from Solicitudes.models import ReglaAprobacion, TipoSolicitud
+from Users.models import Roles
 
 
 ESTADOS_FIJOS = [
@@ -29,7 +29,7 @@ ROLES_FIJOS = list(PERMISOS_POR_DEFECTO)
 
 
 class Command(BaseCommand):
-    help = 'Crea los Estados, Prioridades y Roles fijos del sistema (idempotente).'
+    help = 'Crea los estados, prioridades, roles y tipos de solicitud con que arranca el sistema (idempotente).'
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -47,18 +47,13 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Prioridades sembradas: {len(PRIORIDADES_FIJAS)}"))
 
-        # Si ya tiene permisos (ajustados desde la matriz), no se pisan.
+        # Los permisos por defecto van solo al crear el rol: después son los de la matriz, aunque la institución
+        # deje un rol sin ninguno.
         for nombre in ROLES_FIJOS:
-            rol, _ = Roles.objects.get_or_create(name=nombre, defaults={'is_system': True})
-            cambios = []
+            rol, _ = Roles.objects.get_or_create(name=nombre, defaults={'is_system': True, 'permisos': dict(PERMISOS_POR_DEFECTO[nombre])})
             if not rol.is_system:
                 rol.is_system = True
-                cambios.append('is_system')
-            if not rol.permisos:
-                rol.permisos = dict(PERMISOS_POR_DEFECTO[nombre])
-                cambios.append('permisos')
-            if cambios:
-                rol.save(update_fields=cambios)
+                rol.save(update_fields=['is_system'])
         self.stdout.write(self.style.SUCCESS(f"Roles sembrados: {len(ROLES_FIJOS)}"))
 
         for r in ROLES_DE_PROYECTO:
@@ -68,16 +63,16 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Roles de proyecto sembrados: {len(ROLES_DE_PROYECTO)}"))
 
+        # Una sola vez, en una base sin tipos: después son de la institución, que cambia sus reglas y montos.
+        if not TipoSolicitud.objects.exists():
+            for orden, (nombre, efecto, descripcion, reglas) in enumerate(TIPOS_INICIALES, start=1):
+                tipo = TipoSolicitud.objects.create(nombre=nombre, efecto=efecto, descripcion=descripcion, is_system=True, orden=orden)
+                for nivel, desde in reglas:
+                    ReglaAprobacion.objects.create(tipo=tipo, nivel=nivel, desde=desde)
+            self.stdout.write(self.style.SUCCESS(f"Tipos de solicitud sembrados: {len(TIPOS_INICIALES)}"))
+
+        # El primer eslabón de la cadena de la auditoría.
+        CadenaAuditoria.objects.get_or_create(pk=1)
+
         from Configuracion.models import Configuracion
         Configuracion.actual()
-
-        try:
-            rol_admin = Roles.objects.get(name='Administrador')
-        except Roles.DoesNotExist:
-            rol_admin = None
-        if rol_admin:
-            promovidos = Users.objects.filter(email__in=ADMIN_AUTOMATIC_EMAILS).exclude(role=rol_admin)
-            count = promovidos.count()
-            if count:
-                promovidos.update(role=rol_admin)
-                self.stdout.write(self.style.SUCCESS(f"Usuarios promovidos a Administrador: {count}"))
