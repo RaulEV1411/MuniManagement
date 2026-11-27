@@ -17,7 +17,7 @@ test('el aviso es público, se publica con sus encargados y se acepta al entrar'
   await admin.getByLabel('Qué datos').last().fill('Nombre y correo')
   await admin.getByLabel('Para qué').last().fill('Enviar avisos')
   await admin.getByLabel('País').last().fill('Estados Unidos')
-  const guardado = admin.waitForResponse(r => r.url().includes('/configuracion/') && r.request().method() === 'PATCH')
+  const guardado = admin.waitForResponse(r => r.status() !== 401 && r.url().includes('/configuracion/') && r.request().method() === 'PATCH')
   await admin.getByRole('button', { name: 'Guardar y publicar' }).click()
   expect((await guardado).status()).toBe(200)
 

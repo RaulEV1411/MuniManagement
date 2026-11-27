@@ -21,7 +21,7 @@ test('pasar a Pausado desde el dashboard pide el motivo; cerrar no se ofrece ah�
   // Primero la lista inicial; después, la respuesta de la búsqueda (la resuelve el servidor al
   // dejar de escribir). Si no, el menú se abre sobre una fila que enseguida se redibuja.
   await expect(page.getByText('Acera central').first()).toBeVisible()
-  const filtrado = page.waitForResponse(r => r.url().includes('/proyectosRead/') && r.url().includes('search=Bacheo'))
+  const filtrado = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/proyectosRead/') && r.url().includes('search=Bacheo'))
   await page.getByPlaceholder('Buscar proyectos...').fill('Bacheo')
   await filtrado
   await expect(page.getByText('Acera central')).toHaveCount(0)
@@ -32,7 +32,7 @@ test('pasar a Pausado desde el dashboard pide el motivo; cerrar no se ofrece ah�
   const dialogo = page.getByRole('dialog', { name: 'Pasar a Pausado' })
   await expect(dialogo).toBeVisible()
   await dialogo.locator('textarea').fill('Se reprogramó para el próximo año')
-  const guardado = page.waitForResponse(r => r.url().includes('/proyectosWrite/') && r.request().method() === 'PATCH')
+  const guardado = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/proyectosWrite/') && r.request().method() === 'PATCH')
   await page.getByRole('button', { name: 'Confirmar' }).click()
   expect((await guardado).status()).toBe(200)
 })
@@ -46,7 +46,7 @@ test('el tablero de tareas muestra todos los estados y cambia el estado con PATC
   for (const estado of ['pendiente', 'en progreso', 'en revisión', 'completado', 'pausado']) expect(grupos).toContain(estado)
   await expect(page.getByText(/1\/5 tareas/)).toBeVisible()
   const selector = page.locator('select').filter({ has: page.locator('option', { hasText: 'Completado' }) }).first()
-  const patch = page.waitForResponse(r => r.url().includes('/task/tareas/') && r.request().method() === 'PATCH')
+  const patch = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/task/tareas/') && r.request().method() === 'PATCH')
   await selector.selectOption({ label: 'Completado' })
   expect((await patch).status()).toBe(200)
 })
@@ -61,7 +61,7 @@ test('la notificación se puede marcar como leída', async ({ page }) => {
   await page.getByRole('button', { name: /notificaci(ón|ones)/i }).first().click()
   const marcar = page.getByRole('button', { name: 'Marcar como leída' }).first()
   await expect(marcar).toBeVisible()
-  const patch = page.waitForResponse(r => r.url().includes('/notificaciones/') && r.request().method() === 'PATCH')
+  const patch = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/notificaciones/') && r.request().method() === 'PATCH')
   await marcar.click()
   expect((await patch).status()).toBe(200)
 })

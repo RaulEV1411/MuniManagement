@@ -35,21 +35,28 @@ def _formato_de(archivo):
 
 
 MAX_BYTES_DOCUMENTO = 10 * 1024 * 1024
-FORMATOS_DOCUMENTO = {'pdf', 'jpg', 'png', 'webp'}
+FORMATOS_DOCUMENTO = {'pdf', 'jpg', 'png', 'webp', 'docx', 'xlsx', 'pptx'}
+# Los de Office son un ZIP por dentro: se acepta el ZIP solo con la extensión de Word, Excel o PowerPoint.
+OFFICE = {'docx', 'xlsx', 'pptx'}
 
 
 def _formato_documento(archivo):
     cabecera = archivo.read(16)
     archivo.seek(0)
-    return 'pdf' if cabecera.startswith(b'%PDF-') else _formato(cabecera)
+    if cabecera.startswith(b'%PDF-'):
+        return 'pdf'
+    if cabecera.startswith(b'PK\x03\x04'):
+        extension = (archivo.name or '').rsplit('.', 1)[-1].lower()
+        return extension if extension in OFFICE else None
+    return _formato(cabecera)
 
 
 def error_de_documento(archivo):
-    """Actas y documentos: PDF o imagen, hasta 10 MB (el tipo se mira en los primeros bytes)."""
+    """Documentos: PDF, Word, Excel, PowerPoint o imagen, hasta 10 MB (el tipo se mira en los primeros bytes)."""
     if archivo.size > MAX_BYTES_DOCUMENTO:
         return 'El documento pesa más de 10 MB.'
     if _formato_documento(archivo) not in FORMATOS_DOCUMENTO:
-        return 'Solo se aceptan documentos PDF o imágenes JPG, PNG o WebP.'
+        return 'Solo se aceptan PDF, Word, Excel, PowerPoint o imágenes JPG, PNG o WebP.'
     return None
 
 
@@ -60,7 +67,7 @@ def subir_documento(archivo, carpeta):
         ruta = default_storage.save(f'{carpeta}/{uuid.uuid4().hex}.{formato}', archivo)
         return {'secure_url': f'{settings.MEDIA_URL}{ruta}', 'public_id': ruta}
     import cloudinary.uploader
-    return cloudinary.uploader.upload(archivo, folder=carpeta, resource_type='raw' if formato == 'pdf' else 'image')
+    return cloudinary.uploader.upload(archivo, folder=carpeta, resource_type='image' if formato in FORMATOS_LOCALES else 'raw')
 
 
 def _es_local():

@@ -40,7 +40,7 @@ PERMISOS = {
     'proyectos.editar': ('Editar proyectos', True, True),
     'proyectos.reabrir': ('Reabrir proyectos cerrados', True, False),
     'tareas.gestionar': ('Crear, editar y borrar tareas', True, True),
-    'fotos.subir': ('Subir y borrar fotos', True, True),
+    'fotos.subir': ('Subir y borrar fotos y documentos', True, True),
     'presupuesto.ajustar': ('Registrar ajustes de presupuesto', True, True),
     'equipo.gestionar': ('Agregar y quitar personas del equipo de un proyecto', True, True),
     'equipo.integrar': ('Puede integrar el equipo de proyectos de otros', False, False),

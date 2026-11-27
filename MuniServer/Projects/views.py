@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework import status
 from django.db import transaction
-from django.db.models import Prefetch, Q
+from django.db.models import OuterRef, Prefetch, Q, Subquery, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -15,7 +15,7 @@ from .models import (
     AjustePresupuesto, MiembroProyecto, RolProyecto, CierreProyecto, DocumentoProyecto,
 )
 from .serializers import (
-    CerrarProyectoSerializer, ReabrirProyectoSerializer,
+    CerrarProyectoSerializer, ReabrirProyectoSerializer, DocumentoProyectoSerializer,
     EstadoSerializer, PrioridadSerializer, TiposSerializer,
     ProyectosTiposSerializer, ProyectosReadSerializer, ProyectosWriteSerializer,
     ProjectImageSerializer, MiembroProyectoSerializer, RolProyectoSerializer, AjustePresupuestoSerializer,
@@ -30,10 +30,14 @@ from Configuracion.models import Configuracion
 
 
 def _proyectos_visibles_qs(user):
-    """Proyectos que el usuario puede ver (queryset filtrado, no list)."""
+    """Proyectos que el usuario puede ver (queryset filtrado, no list), con lo ejecutado de sus tareas."""
+    from Task.models import Tareas
+    ejecutado = Tareas.objects.filter(proyecto_ID=OuterRef('pk')).values('proyecto_ID').annotate(s=Sum('costo_ejecutado')).values('s')
     return authz.proyectos_visibles(user).select_related(
         'departamento_ID__direccion', 'estado_ID', 'prioridad_ID', 'user_ID'
-    ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo')
+    ).prefetch_related('images', 'ajustes_presupuesto', 'proyectos_tipos_set__tipo').annotate(
+        costo_ejecutado_total=Subquery(ejecutado),
+    )
 
 
 class EstadoViewSet(ProtegidoAlBorrarMixin, ModelViewSet):
@@ -520,3 +524,65 @@ class AjustePresupuestoViewSet(ModelViewSet):
         if proyecto and not authz.puede(self.request.user, 'presupuesto.ajustar', proyecto):
             raise PermissionDenied('No puede borrar ajustes de un proyecto que no gestiona.')
         instance.delete()
+
+
+class DocumentoProyectoViewSet(ModelViewSet):
+    """Documentos del proyecto o de una tarea (PDF, Office o imagen, hasta 10 MB), con su categoría.
+    Los sube y borra quien puede subir fotos, o quien trabaja en la tarea; su autor también los borra."""
+
+    serializer_class = DocumentoProyectoSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = DocumentoProyecto.objects.filter(
+            proyecto__in=authz.proyectos_visibles(self.request.user).values('pk')
+        ).select_related('subido_por', 'tarea')
+        p = self.request.query_params
+        if p.get('proyecto'):
+            qs = qs.filter(proyecto=p['proyecto'])
+        if p.get('tarea'):
+            qs = qs.filter(tarea=p['tarea'])
+        elif p.get('solo_proyecto') in ('1', 'true'):
+            qs = qs.filter(tarea__isnull=True)
+        return qs
+
+    def _puede(self, proyecto, tarea):
+        from Task.views import trabaja_en
+        user = self.request.user
+        return authz.puede(user, 'fotos.subir', proyecto) or (tarea is not None and trabaja_en(user, tarea))
+
+    def create(self, request, *args, **kwargs):
+        from Task.models import Tareas
+        archivo = request.FILES.get('archivo')
+        if not archivo:
+            raise ValidationError({'archivo': 'Elija el archivo.'})
+        tarea = Tareas.objects.filter(pk=request.data.get('tarea')).select_related('proyecto_ID').first() if request.data.get('tarea') else None
+        proyecto = tarea.proyecto_ID if tarea else Proyectos.objects.filter(pk=request.data.get('proyecto')).first()
+        if proyecto is None or not authz.puede_ver(request.user, proyecto):
+            raise ValidationError({'proyecto': 'Proyecto no encontrado.'})
+        if not self._puede(proyecto, tarea):
+            raise PermissionDenied('No tiene permisos para subir documentos aquí.')
+        tipo = request.data.get('tipo', 'otro')
+        if tipo not in dict(DocumentoProyecto.TIPOS):
+            raise ValidationError({'tipo': 'Elija una categoría.'})
+        error = error_de_documento(archivo)
+        if error:
+            raise ValidationError({'archivo': error})
+        subido = subir_documento(archivo, f'munimanagement/proyectos/{proyecto.pk}')
+        nombre_doc = (str(request.data.get('nombre', '')).strip() or archivo.name or 'Documento')[:120]
+        documento = DocumentoProyecto.objects.create(
+            proyecto=proyecto, tarea=tarea, tipo=tipo, nombre=nombre_doc,
+            url=subido['secure_url'], public_id=subido['public_id'], subido_por=request.user,
+        )
+        return Response(DocumentoProyectoSerializer(documento).data, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        if instance.subido_por_id != self.request.user.pk and not self._puede(instance.proyecto, instance.tarea):
+            raise PermissionDenied('No tiene permisos para borrar este documento.')
+        if instance.tipo == 'acta' and instance.cierre_id and instance.cierre.reabierto_en is None:
+            raise PermissionDenied('El acta de cierre no se borra mientras el cierre esté vigente.')
+        borrar_imagen(instance.public_id)
+        instance.delete()
+

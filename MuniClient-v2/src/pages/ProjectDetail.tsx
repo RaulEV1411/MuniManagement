@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Edit2, Trash2, Plus, ChevronDown, ChevronRight, Flag, RotateCcw, Archive, ArchiveRestore,
+  ArrowLeft, Edit2, Trash2, Plus, ChevronDown, ChevronRight, Flag, RotateCcw, Archive, ArchiveRestore, Lock,
   Calendar, DollarSign, Building2, User as UserIcon, Clock, CheckCircle2,
   MessageSquare, AlertCircle, X, ImageIcon, Upload, ZoomIn, Activity, Search,
 } from 'lucide-react'
@@ -36,6 +36,8 @@ import RazonModal from '@/components/common/RazonModal'
 import { esFinal, pideMotivo } from '@/lib/estados'
 import { CerrarProyectoDialogo, ReabrirProyectoDialogo, TarjetaDeCierre } from '@/components/projects/CierreProyecto'
 import SolicitudesDelProyecto from '@/components/solicitudes/SolicitudesDelProyecto'
+import DetalleTarea from '@/components/tareas/DetalleTarea'
+import Documentos from '@/components/documentos/Documentos'
 import NuevaSolicitud from '@/components/solicitudes/NuevaSolicitud'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
 import { useMoneda, useTituloDePagina } from '@/hooks/useMarca'
@@ -45,7 +47,7 @@ import { confirmar } from '@/lib/confirmar'
 
 // Lo que puede hacer quien mira el proyecto (mis_permisos del servidor) y quién es: los botones que el
 // servidor rechazaría no se muestran. El servidor igual valida cada acción.
-const PermisosDelProyecto = createContext<{ puede: (codigo: string) => boolean; usuarioId: string }>({ puede: () => false, usuarioId: '' })
+const PermisosDelProyecto = createContext<{ puede: (codigo: string) => boolean; usuarioId: string; abrirTarea: (id: string) => void }>({ puede: () => false, usuarioId: '', abrirTarea: () => undefined })
 const usePermisosDelProyecto = () => useContext(PermisosDelProyecto)
 
 
@@ -297,9 +299,10 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 // ── Razón modal (genérico) ───────────────────────────────────────────────────
 // ── Edit task modal ──────────────────────────────────────────────────────────
 function EditTaskModal({
-  task, estados, prioridades, users, projectId, onClose, onSaved,
+  task, estados, prioridades, users, projectId, otrasTareas, onClose, onSaved,
 }: {
   task: Task
+  otrasTareas: Task[]
   estados: Estado[]
   prioridades: Prioridad[]
   users: UserModel[]
@@ -319,7 +322,14 @@ function EditTaskModal({
     estado_ID:    task.estado_ID?.estado_ID ?? '',
     prioridad_ID: task.prioridad_ID?.prioridad_ID ?? '',
     asignado_a:   task.asignado_a?.user_ID ?? '',
+    costo:        String(task.costo ?? 0),
+    costo_ejecutado: String(task.costo_ejecutado ?? 0),
+    horas_estimadas: task.horas_estimadas ?? '',
+    etiquetas:    (task.etiquetas ?? []).join(', '),
   })
+  const [colaboradores, setColaboradores] = useState<string[]>((task.colaboradores ?? []).map(c => c.user_ID))
+  const [bloqueos, setBloqueos] = useState<string[]>((task.bloqueada_por ?? []).map(b => b.tareas_ID))
+  const alternar = (lista: string[], id: string) => (lista.includes(id) ? lista.filter(x => x !== id) : [...lista, id])
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
@@ -336,6 +346,12 @@ function EditTaskModal({
         estado_ID:    form.estado_ID || undefined,
         prioridad_ID: form.prioridad_ID || undefined,
         asignado_a:   form.asignado_a || null,
+        costo:        Number(form.costo) || 0,
+        costo_ejecutado: Number(form.costo_ejecutado) || 0,
+        horas_estimadas: form.horas_estimadas === '' ? null : form.horas_estimadas,
+        etiquetas:    form.etiquetas.split(',').map(e => e.trim()).filter(Boolean),
+        colaboradores,
+        bloqueada_por: bloqueos,
         razon,
       })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
@@ -430,6 +446,48 @@ function EditTaskModal({
                 {users.map(u => <option key={u.user_ID} value={u.user_ID}>{u.first_name} {u.last_name}</option>)}
               </select>
             </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="tarea-costo" className="text-xs font-semibold text-muted-foreground">Presupuesto</label>
+                <input id="tarea-costo" type="number" min={0} value={form.costo} onChange={e => set('costo', e.target.value)} className={cls} />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="tarea-ejecutado" className="text-xs font-semibold text-muted-foreground">Ejecutado</label>
+                <input id="tarea-ejecutado" type="number" min={0} value={form.costo_ejecutado} onChange={e => set('costo_ejecutado', e.target.value)} className={cls} />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="tarea-horas" className="text-xs font-semibold text-muted-foreground">Horas estimadas</label>
+                <input id="tarea-horas" type="number" min={0} step={0.5} value={form.horas_estimadas} onChange={e => set('horas_estimadas', e.target.value)} className={cls} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="tarea-etiquetas" className="text-xs font-semibold text-muted-foreground">Etiquetas (separadas por coma)</label>
+              <input id="tarea-etiquetas" value={form.etiquetas} onChange={e => set('etiquetas', e.target.value)} placeholder="vial, urgente" className={cls} />
+            </div>
+            <fieldset className="space-y-1.5">
+              <legend className="text-xs font-semibold text-muted-foreground">Colaboradores</legend>
+              <div className="max-h-28 overflow-y-auto grid grid-cols-2 gap-1 border border-border rounded-xl p-2">
+                {users.filter(u => u.user_ID !== form.asignado_a).map(u => (
+                  <label key={u.user_ID} className="flex items-center gap-2 text-xs text-foreground">
+                    <input type="checkbox" checked={colaboradores.includes(u.user_ID)} onChange={() => setColaboradores(l => alternar(l, u.user_ID))} />
+                    {u.first_name} {u.last_name}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {otrasTareas.length > 0 && (
+              <fieldset className="space-y-1.5">
+                <legend className="text-xs font-semibold text-muted-foreground">Depende de (no se termina antes)</legend>
+                <div className="max-h-28 overflow-y-auto grid grid-cols-2 gap-1 border border-border rounded-xl p-2">
+                  {otrasTareas.map(o => (
+                    <label key={o.tareas_ID} className="flex items-center gap-2 text-xs text-foreground">
+                      <input type="checkbox" checked={bloqueos.includes(o.tareas_ID)} onChange={() => setBloqueos(l => alternar(l, o.tareas_ID))} />
+                      {o.name}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={onClose}
                 className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-xl transition-colors">
@@ -732,10 +790,11 @@ function TaskCard({
   onEdit: (task: Task) => void
 }) {
   const qc = useQueryClient()
-  const { puede, usuarioId } = usePermisosDelProyecto()
+  const { puede, usuarioId, abrirTarea } = usePermisosDelProyecto()
   const gestiona = puede('tareas.gestionar')
-  // Quien tiene la tarea asignada puede cambiarle el estado aunque no gestione las tareas.
-  const puedeCambiarEstado = gestiona || task.asignado_a?.user_ID === usuarioId
+  // Quien responde por la tarea o colabora en ella puede cambiarle el estado aunque no gestione las tareas.
+  const puedeCambiarEstado = gestiona || task.asignado_a?.user_ID === usuarioId || !!task.colaboradores?.some(c => c.user_ID === usuarioId)
+  const pasos = task.checklist ?? []
   const [updating, setUpdating]   = useState(false)
   const [showPhotos, setShowPhotos] = useState(false)
   const imageCount = task.images?.length ?? 0
@@ -775,7 +834,10 @@ function TaskCard({
         className="flex items-start gap-3 px-4 py-3 bg-card border border-border rounded-xl group cursor-grab active:cursor-grabbing active:opacity-60 active:scale-[0.98] transition-all"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground leading-snug">{task.name}</p>
+          <button type="button" onClick={() => abrirTarea(task.tareas_ID)}
+            className="text-sm font-medium text-foreground leading-snug text-left hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+            {task.name}
+          </button>
           {task.descripcion && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.descripcion}</p>
           )}
@@ -795,6 +857,9 @@ function TaskCard({
                 {task.prioridad_ID.name}
               </span>
             )}
+            {!!task.avance && <span className="text-xs text-muted-foreground tabular-nums">{task.avance} %</span>}
+            {pasos.length > 0 && <span className="text-xs text-muted-foreground">{pasos.filter(i => i.hecho).length}/{pasos.length} pasos</span>}
+            {task.bloqueada && <span className="flex items-center gap-1 text-xs font-semibold text-sunset-900 dark:text-sunset-100"><Lock size={10} aria-hidden="true" /> Depende de otra</span>}
             {task.asignado_a && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground" title={`${task.asignado_a.first_name} ${task.asignado_a.last_name}`}>
                 {task.asignado_a.user_photo ? (
@@ -999,7 +1064,7 @@ function DropZone({ onFiles, disabled, progress }: {
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
-const TABS = ['Tareas', 'Información', 'Solicitudes', 'Fotos', 'Comentarios', 'Actividad'] as const
+const TABS = ['Tareas', 'Información', 'Solicitudes', 'Documentos', 'Fotos', 'Comentarios', 'Actividad'] as const
 type Tab = typeof TABS[number]
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -1027,10 +1092,12 @@ export default function ProjectDetailPage() {
   })
   useTituloDePagina(project?.name ?? 'Proyecto')
   const misPermisos = project?.mis_permisos
+  const [tareaAbierta, setTareaAbierta] = useState<string | null>(null)
   const permisos = useMemo(() => ({
     puede: (codigo: string) => !!misPermisos?.includes(codigo),
     usuarioId: user?.user_ID ?? '',
-  }), [misPermisos, user?.user_ID])
+    abrirTarea: setTareaAbierta,
+  }), [misPermisos, user?.user_ID, setTareaAbierta])
   const puede = permisos.puede
 
   const { data: tasks = [], isLoading: loadingTasks } = useQuery<Task[]>({
@@ -1386,6 +1453,12 @@ export default function ProjectDetailPage() {
             )}
 
             {/* ── Información ── */}
+            {tab === 'Documentos' && (
+              <div className="max-w-3xl">
+                <Documentos proyectoId={project.proyect_ID} puedeSubir={puede('fotos.subir')} usuarioId={user?.user_ID ?? ''} />
+              </div>
+            )}
+
             {tab === 'Solicitudes' && (
               <SolicitudesDelProyecto project={project} tasks={tasks} puedePedir={!project.cerrado && puede('solicitudes.crear')} />
             )}
@@ -1455,6 +1528,7 @@ export default function ProjectDetailPage() {
                     proyectoId={project.proyect_ID}
                     costoBase={project.costo ?? 0}
                     puedeAjustar={puede('presupuesto.ajustar')}
+                    ejecutado={project.costo_ejecutado}
                     onSolicitar={!project.cerrado && puede('solicitudes.crear') ? () => setPidiendoAjuste(true) : undefined}
                   />
 
@@ -1700,6 +1774,18 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* ── Modales ── */}
+      {tareaAbierta && tasks.find(t => t.tareas_ID === tareaAbierta) && (
+        <DetalleTarea
+          task={tasks.find(t => t.tareas_ID === tareaAbierta)!}
+          projectId={project.proyect_ID}
+          gestiona={puede('tareas.gestionar')}
+          puedeSubir={puede('fotos.subir')}
+          moderaComentarios={puede('comentarios.moderar')}
+          usuarioId={user?.user_ID ?? ''}
+          cerrado={!!project.cerrado}
+          onCerrar={() => setTareaAbierta(null)}
+        />
+      )}
       {cerrando !== null && (
         <CerrarProyectoDialogo
           project={project}
@@ -1751,6 +1837,7 @@ export default function ProjectDetailPage() {
       <AnimatePresence>
         {editingTask && estados.length > 0 && prioridades.length > 0 && (
           <EditTaskModal
+            otrasTareas={tasks.filter(t => t.tareas_ID !== editingTask.tareas_ID)}
             task={editingTask}
             estados={estados}
             prioridades={prioridades}

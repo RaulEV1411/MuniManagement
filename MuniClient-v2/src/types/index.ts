@@ -113,13 +113,21 @@ export interface Project {
   archivado_en?: string | null
   // Solo en el detalle de un proyecto cerrado.
   cierre?: CierreProyecto | null
+  // La suma de lo ejecutado en sus tareas.
+  costo_ejecutado?: number
 }
 
+export type TipoDocumento = 'acta' | 'plano' | 'factura' | 'contrato' | 'informe' | 'foto' | 'otro'
 export interface DocumentoProyecto {
   documento_ID: string
-  tipo: 'acta' | 'otro'
+  proyecto?: string
+  tarea?: string | null
+  tipo: TipoDocumento
+  tipo_display?: string
   nombre: string
   url: string
+  subido_por?: string | null
+  subido_por_nombre?: string
   creado_en: string
 }
 
@@ -154,6 +162,61 @@ export interface Task {
   proyecto_ID: string
   asignado_a: Pick<User, 'user_ID' | 'first_name' | 'last_name' | 'user_photo'> | null
   images: TaskImage[]
+  costo?: number
+  costo_ejecutado?: number
+  colaboradores?: Pick<User, 'user_ID' | 'first_name' | 'last_name' | 'user_photo'>[]
+  bloqueada_por?: Array<{ tareas_ID: string; name: string; estado_ID: Estado }>
+  bloqueada?: boolean
+  avance?: number
+  // Decimales: llegan como texto ("12.5").
+  horas_estimadas?: string | null
+  horas_reales?: string | null
+  etiquetas?: string[]
+  checklist?: ChecklistItem[]
+  recursos?: AsignacionRecurso[]
+  documentos?: number
+  comentarios?: number
+}
+
+export interface ChecklistItem {
+  item_ID: string
+  tarea: string
+  texto: string
+  hecho: boolean
+  orden: number
+  hecho_por_nombre: string
+  hecho_en: string | null
+}
+
+export interface ComentarioTarea {
+  comentario_ID: string
+  tarea: string
+  autor: Pick<User, 'user_ID' | 'first_name' | 'last_name' | 'user_photo'> | null
+  texto: string
+  creado_en: string
+}
+
+export type TipoRecurso = 'vehiculo' | 'maquinaria' | 'equipo' | 'material' | 'otro'
+export interface Recurso {
+  recurso_ID: string
+  nombre: string
+  tipo: TipoRecurso
+  tipo_display: string
+  codigo: string
+  descripcion: string
+  activo: boolean
+}
+
+export interface AsignacionRecurso {
+  asignacion_ID: string
+  tarea: string
+  recurso: string
+  recurso_info: Recurso
+  cantidad: string
+  desde: string | null
+  hasta: string | null
+  nota: string
+  cruces?: string[]
 }
 
 export interface Feedback {

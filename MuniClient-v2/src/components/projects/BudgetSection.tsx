@@ -18,10 +18,12 @@ interface Props {
   puedeAjustar?: boolean
   /** Sin permiso para ajustar directo: pedir el ajuste con una solicitud. */
   onSolicitar?: () => void
+  /** Lo ejecutado del proyecto (la suma de sus tareas). */
+  ejecutado?: number
 }
 
 
-export default function BudgetSection({ proyectoId, tareaId, costoBase, compact, puedeAjustar = true, onSolicitar }: Props) {
+export default function BudgetSection({ proyectoId, tareaId, costoBase, compact, puedeAjustar = true, onSolicitar, ejecutado }: Props) {
   const { formatear, simbolo } = useMoneda()
   const qc = useQueryClient()
   const queryKey = ['ajustes', proyectoId ?? '', tareaId ?? '']
@@ -68,6 +70,7 @@ export default function BudgetSection({ proyectoId, tareaId, costoBase, compact,
           <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-base'}`}>Presupuesto</h3>
           <p className="text-xs text-muted-foreground">
             Base {formatear(costoBase)} · Total actual <strong className="text-foreground">{formatear(total)}</strong>
+            {ejecutado !== undefined && <> · Ejecutado {formatear(ejecutado)}{total > 0 ? ` (${Math.round((ejecutado / total) * 100)} %)` : ''}</>}
           </p>
         </div>
         <button

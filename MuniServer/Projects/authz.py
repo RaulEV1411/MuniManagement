@@ -102,8 +102,8 @@ def es_dueno(user, proyecto):
 
 
 def es_asignado(user, proyecto):
-    """Tiene al menos una tarea asignada en el proyecto."""
-    return proyecto.tareas_set.filter(asignado_a=user).exists()
+    """Responde por una tarea del proyecto o colabora en una."""
+    return proyecto.tareas_set.filter(Q(asignado_a=user) | Q(colaboradores=user)).exists()
 
 
 def permisos_en_proyecto(user, proyecto):
@@ -247,7 +247,7 @@ def proyectos_visibles(user):
     if alcance == cat.PROPIO or 'proyectos.ver' in _permisos_rol_proyecto(cat.RESPONSABLE):
         q |= Q(user_ID=user)
     if 'proyectos.ver' in _permisos_rol_proyecto(cat.COLABORADOR):
-        q |= Q(tareas__asignado_a=user)
+        q |= Q(tareas__asignado_a=user) | Q(tareas__colaboradores=user)
     return qs.filter(q).distinct()
 
 
@@ -268,6 +268,7 @@ def usuarios_visibles(user):
     mis_proyectos = Proyectos.objects.filter(
         Q(user_ID=user)
         | Q(tareas__asignado_a=user)
+        | Q(tareas__colaboradores=user)
         | (Q(miembros__usuario=user) & membresia_vigente('miembros__'))
     ).values('pk')
     return qs.filter(
@@ -277,6 +278,7 @@ def usuarios_visibles(user):
         | Q(departamento_ID__direccion__jefe=user)
         | Q(proyectos__in=mis_proyectos)
         | Q(tareas_asignadas__proyecto_ID__in=mis_proyectos)
+        | Q(tareas_colaboracion__proyecto_ID__in=mis_proyectos)
         | (Q(membresias__proyecto__in=mis_proyectos) & membresia_vigente('membresias__'))
     ).distinct()
 

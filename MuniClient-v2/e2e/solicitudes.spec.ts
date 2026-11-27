@@ -13,7 +13,7 @@ test('una prórroga pedida por quien tiene la tarea la aprueba la jefatura y se 
   const fecha = new Date(Date.now() + 20 * 86_400_000).toLocaleDateString('en-CA')
   await dialogo.getByLabel(/Nueva fecha de entrega/).fill(fecha)
   await dialogo.getByLabel('Justificación').fill('Llovió toda la semana y el terreno no deja excavar')
-  const enviada = page.waitForResponse(r => r.url().includes('/solicitudes/solicitudes/') && r.request().method() === 'POST')
+  const enviada = page.waitForResponse(r => r.status() !== 401 && r.url().includes('/solicitudes/solicitudes/') && r.request().method() === 'POST')
   await dialogo.getByRole('button', { name: 'Enviar solicitud' }).click()
   expect((await enviada).status()).toBe(201)
   await expect(page.getByText('Prórroga de plazo').first()).toBeVisible()
