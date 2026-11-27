@@ -40,7 +40,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
     })
 
     test('páginas públicas', async ({ page }) => {
-      for (const ruta of ['/login', '/login?sesion=terminada', '/olvide-clave', '/publico', '/accesibilidad']) {
+      for (const ruta of ['/login', '/login?sesion=terminada', '/olvide-clave', '/publico', '/accesibilidad', '/privacidad']) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
       }
@@ -71,7 +71,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
       await sinFallos(page, 'perfil · actividad')
 
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos']) {
+      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Solicitudes', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }

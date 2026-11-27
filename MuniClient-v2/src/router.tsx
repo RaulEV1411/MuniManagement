@@ -19,6 +19,7 @@ import AyudaPage from '@/pages/Ayuda'
 import OlvideClavePage from '@/pages/OlvideClave'
 import DefinirClavePage from '@/pages/DefinirClave'
 import AccesibilidadPage from '@/pages/Accesibilidad'
+import PrivacidadPage from '@/pages/Privacidad'
 import AuditoriaPage from '@/pages/Auditoria'
 import SolicitudesPage from '@/pages/Solicitudes'
 
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
   { path: '/publico',                  element: <PublicProjectsPage /> },
   { path: '/publico/proyectos/:id',    element: <PublicProjectDetailPage /> },
   { path: '/accesibilidad',            element: <AccesibilidadPage /> },
+  { path: '/privacidad',               element: <PrivacidadPage /> },
   {
     element: <Guard />,
     children: [{

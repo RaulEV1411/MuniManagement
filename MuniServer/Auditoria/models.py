@@ -45,6 +45,7 @@ ACCIONES = [
     ('fallo_inicio', 'Intento fallido de inicio'),
     ('exportar', 'Exportó'),
     ('depurar', 'Depuró registros vencidos'),
+    ('anonimizar', 'Anonimizó'),
 ]
 
 RESULTADOS = [

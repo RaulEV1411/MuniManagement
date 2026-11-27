@@ -25,6 +25,8 @@ import { pestanas } from '@/lib/pestanas'
 import { usePermiso } from '@/hooks/usePermiso'
 import PermisosDeUsuario from '@/components/users/PermisosDeUsuario'
 import ActividadDeUsuario from '@/components/users/ActividadDeUsuario'
+import MisDatos from '@/components/users/MisDatos'
+import { TIPOS_IDENTIFICACION, formatearIdentificacion } from '@/lib/identificacion'
 
 
 const AVATAR_COLORS = [
@@ -71,6 +73,7 @@ function EditModal({
   const [form, setForm] = useState({
     first_name:    user.first_name,
     last_name:     user.last_name,
+    tipo_identificacion: user.tipo_identificacion ?? 'fisica',
     cedula:        String(user.cedula ?? ''),
     email:         user.email,
     phone_number:  String(user.phone_number ?? ''),
@@ -87,11 +90,12 @@ function EditModal({
       await updateUser(user.user_ID, {
         first_name:   form.first_name,
         last_name:    form.last_name,
-        phone_number: form.phone_number ? parseInt(form.phone_number) : undefined,
+        phone_number: form.phone_number.trim(),
         puesto:       form.puesto,
         // Cédula, correo, rol y departamento solo los cambia la alcaldía.
         ...(puedeEditarTodo && {
-          cedula:          form.cedula ? parseInt(form.cedula) : undefined,
+          tipo_identificacion: form.tipo_identificacion,
+          cedula:          form.cedula.trim(),
           email:           form.email,
           role:            form.role || undefined,
           departamento_ID: form.departamento_ID || undefined,
@@ -134,9 +138,17 @@ function EditModal({
               <input id="userprofile-apellido" value={form.last_name} onChange={e => set('last_name', e.target.value)} className={inputCls} />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="userprofile-cedula" className="text-xs font-semibold text-muted-foreground">Cédula</label>
-            <input id="userprofile-cedula" type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="userprofile-tipo-id" className="text-xs font-semibold text-muted-foreground">Tipo de identificación</label>
+              <select id="userprofile-tipo-id" value={form.tipo_identificacion} onChange={e => set('tipo_identificacion', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')}>
+                {TIPOS_IDENTIFICACION.map(t => <option key={t.codigo} value={t.codigo}>{t.nombre}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="userprofile-cedula" className="text-xs font-semibold text-muted-foreground">Número</label>
+              <input id="userprofile-cedula" autoComplete="off" value={form.cedula} onChange={e => set('cedula', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            </div>
           </div>
           <div className="space-y-1.5">
             <label htmlFor="userprofile-correo-electronico" className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
@@ -145,7 +157,7 @@ function EditModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label htmlFor="userprofile-telefono" className="text-xs font-semibold text-muted-foreground">Teléfono</label>
-              <input id="userprofile-telefono" type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
+              <input id="userprofile-telefono" type="tel" autoComplete="off" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="userprofile-puesto" className="text-xs font-semibold text-muted-foreground">Puesto</label>
@@ -268,6 +280,7 @@ export default function UserProfilePage() {
   const gestiona = usePermiso('usuarios.gestionar')
   const veRoles = usePermiso('roles.gestionar')
   const veAuditoria = usePermiso('auditoria.ver')
+  const esAdmin = yo?.role === 'Administrador'
   // La actividad (sesiones y acciones) la ve la propia persona y quien tiene la auditoría.
   const veActividad = esPropio || veAuditoria
   const visibles = veActividad ? TABS : TABS.filter(t => t !== 'Actividad')
@@ -476,7 +489,7 @@ export default function UserProfilePage() {
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">{puedeEditar ? 'Datos personales' : 'Datos'}</h3>
                   {/* Cédula, cumpleaños y teléfono solo los ven la persona y la alcaldía (el servidor ni los manda). */}
-                  {puedeEditar && <InfoRow icon={CreditCard} label="Cédula"      value={user.cedula} />}
+                  {puedeEditar && <InfoRow icon={CreditCard} label="Identificación" value={formatearIdentificacion(user.tipo_identificacion, user.cedula)} />}
                   {puedeEditar && <InfoRow icon={Calendar}   label="Cumpleaños"  value={formatDate(user.birthday)} />}
                   <InfoRow icon={Shield}     label="Rol"         value={user.role?.name} />
                   <InfoRow icon={Building2}  label="Departamento" value={user.departamento_ID?.name} />
@@ -484,10 +497,11 @@ export default function UserProfilePage() {
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Contacto</h3>
                   <InfoRow icon={Mail}       label="Correo electrónico" value={user.email} />
-                  {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number ? String(user.phone_number) : null} />}
+                  {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number || null} />}
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>
                 {(esPropio || gestiona || veRoles) && <PermisosDeUsuario usuarioId={user.user_ID} />}
+                {(esPropio || esAdmin) && <MisDatos usuario={user} propio={esPropio} esAdmin={esAdmin} />}
               </div>
             )}
 

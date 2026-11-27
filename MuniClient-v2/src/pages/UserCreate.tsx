@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { useTituloDePagina } from '@/hooks/useMarca'
+import { TIPOS_IDENTIFICACION } from '@/lib/identificacion'
 
 export default function UserCreatePage() {
   useTituloDePagina('Nuevo usuario')
@@ -20,6 +21,7 @@ export default function UserCreatePage() {
   const [form, setForm] = useState({
     first_name:      '',
     last_name:       '',
+    tipo_identificacion: 'fisica',
     cedula:          '',
     email:           '',
     phone_number:    '',
@@ -38,7 +40,7 @@ export default function UserCreatePage() {
     if (!form.first_name.trim()) { toast.error('El nombre es requerido'); return }
     if (!form.last_name.trim())  { toast.error('El apellido es requerido'); return }
     if (!form.email.trim())      { toast.error('El correo electrónico es obligatorio'); return }
-    if (!form.cedula.trim())     { toast.error('La cédula es requerida'); return }
+    if (!form.cedula.trim())     { toast.error('La identificación es requerida'); return }
     if (!form.phone_number.trim()) { toast.error('El teléfono es requerido'); return }
     if (!form.puesto.trim())     { toast.error('El puesto es requerido'); return }
     if (!form.role)              { toast.error('Seleccione un rol'); return }
@@ -49,9 +51,10 @@ export default function UserCreatePage() {
       const newUser = await createUser({
         first_name:      form.first_name,
         last_name:       form.last_name,
-        cedula:          form.cedula ? parseInt(form.cedula) : undefined,
+        tipo_identificacion: form.tipo_identificacion,
+        cedula:          form.cedula.trim(),
         email:           form.email,
-        phone_number:    form.phone_number ? parseInt(form.phone_number) : undefined,
+        phone_number:    form.phone_number.trim(),
         puesto:          form.puesto || undefined,
         role:            form.role || undefined,
         departamento_ID: form.departamento_ID || undefined,
@@ -112,9 +115,19 @@ export default function UserCreatePage() {
                 <input id="usercreate-apellido" value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Pérez" className={inputCls} />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label htmlFor="usercreate-cedula" className="text-xs font-semibold text-muted-foreground">Cédula *</label>
-              <input id="usercreate-cedula" type="number" value={form.cedula} onChange={e => set('cedula', e.target.value)} placeholder="112345678" className={inputCls} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="usercreate-tipo-id" className="text-xs font-semibold text-muted-foreground">Tipo de identificación *</label>
+                <select id="usercreate-tipo-id" value={form.tipo_identificacion} onChange={e => set('tipo_identificacion', e.target.value)} className={inputCls}>
+                  {TIPOS_IDENTIFICACION.map(t => <option key={t.codigo} value={t.codigo}>{t.nombre}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="usercreate-cedula" className="text-xs font-semibold text-muted-foreground">Número *</label>
+                <input id="usercreate-cedula" inputMode={form.tipo_identificacion === 'pasaporte' ? 'text' : 'numeric'} autoComplete="off"
+                  value={form.cedula} onChange={e => set('cedula', e.target.value)}
+                  placeholder={TIPOS_IDENTIFICACION.find(t => t.codigo === form.tipo_identificacion)?.ejemplo} className={inputCls} />
+              </div>
             </div>
             <div className="space-y-1.5">
               <label htmlFor="usercreate-correo-electronico" className="text-xs font-semibold text-muted-foreground">Correo electrónico *</label>
@@ -123,7 +136,7 @@ export default function UserCreatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label htmlFor="usercreate-telefono" className="text-xs font-semibold text-muted-foreground">Teléfono *</label>
-                <input id="usercreate-telefono" type="number" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="88887777" className={inputCls} />
+                <input id="usercreate-telefono" type="tel" autoComplete="off" value={form.phone_number} onChange={e => set('phone_number', e.target.value)} placeholder="88887777" className={inputCls} />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="usercreate-puesto" className="text-xs font-semibold text-muted-foreground">Puesto *</label>

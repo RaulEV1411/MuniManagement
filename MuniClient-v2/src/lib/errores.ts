@@ -5,7 +5,7 @@ const CAMPOS: Record<string, string> = {
   name: 'Nombre', descripcion: 'Descripción', fecha_inicio: 'Fecha de inicio', fecha_entrega: 'Fecha de entrega',
   costo: 'Costo', estado_ID: 'Estado', prioridad_ID: 'Prioridad', departamento_ID: 'Departamento',
   user_ID: 'Responsable', asignado_a: 'Responsable', razon: 'Motivo', motivo: 'Motivo', monto: 'Monto',
-  first_name: 'Nombre', last_name: 'Apellido', email: 'Correo', cedula: 'Cédula', phone_number: 'Teléfono',
+  first_name: 'Nombre', last_name: 'Apellido', email: 'Correo', cedula: 'Identificación', tipo_identificacion: 'Tipo de identificación', phone_number: 'Teléfono',
   birthday: 'Fecha de nacimiento', puesto: 'Puesto', role: 'Rol', supervisor: 'Supervisor', jefe: 'Jefe',
   direccion: 'Dirección', proyecto_ID: 'Proyecto', proyecto: 'Proyecto', tarea: 'Tarea',
 }

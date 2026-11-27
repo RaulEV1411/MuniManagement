@@ -219,6 +219,10 @@ export const completarOnboarding = () =>
   api.post('/users/completar-onboarding/').then(r => r.data)
 export const logout = () =>
   api.post('/users/logout/').then(r => r.data)
+export const aceptarPrivacidad = (version: number) => api.post('/users/aceptar-privacidad/', { version }).then(r => r.data)
+export const getMisDatos = (userId: string) => api.get(`/users/users/${seg(userId)}/datos/`).then(r => r.data as Record<string, unknown>)
+export const anonimizarUsuario = (userId: string, motivo: string) => api.post(`/users/users/${seg(userId)}/anonimizar/`, { motivo }).then(r => r.data)
+export const urlExportarUsuarios = () => `${BASE_URL}/users/users/exportar/`
 export const getMe = () => api.get('/users/me/').then(r => r.data)
 
 // ── Vista pública ─────────────────────────────────────────────

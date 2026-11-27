@@ -44,13 +44,15 @@ export interface User {
   first_name: string
   last_name: string
   email: string
-  cedula: number
-  phone_number: number
+  tipo_identificacion?: string
+  cedula: string
+  phone_number: string
   puesto: string
   birthday: string
   user_photo: string | null
   role: Role
   departamento_ID: Department
+  is_active?: boolean
   // Solo para quien ve la ficha completa: la última actividad de sus sesiones.
   ultima_conexion?: string | null
 }

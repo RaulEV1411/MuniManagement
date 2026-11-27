@@ -21,6 +21,13 @@ class Configuracion(models.Model):
     retencion_auditoria_dias = models.PositiveIntegerField(
         default=1825, validators=[MinValueValidator(180), MaxValueValidator(3650)],
     )
+    # Aviso de privacidad (Ley 8968): texto propio de la institución y los encargados que tratan datos
+    # por su cuenta ({nombre, datos, finalidad, pais}). Cambiar cualquiera sube la versión, y cada
+    # persona lo vuelve a aceptar al entrar.
+    aviso_privacidad = models.TextField(blank=True, default='')
+    encargados = models.JSONField(default=list, blank=True)
+    privacidad_version = models.PositiveIntegerField(default=1)
+    privacidad_actualizada = models.DateTimeField(null=True, blank=True)
     actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:

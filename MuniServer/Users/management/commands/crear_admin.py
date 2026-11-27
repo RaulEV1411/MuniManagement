@@ -15,8 +15,8 @@ class Command(BaseCommand):
         parser.add_argument('--email', required=True)
         parser.add_argument('--nombre', required=True)
         parser.add_argument('--apellido', required=True)
-        parser.add_argument('--cedula', required=True, type=int)
-        parser.add_argument('--telefono', type=int, default=0)
+        parser.add_argument('--cedula', required=True, help='Cédula física de 9 dígitos')
+        parser.add_argument('--telefono', default='')
         parser.add_argument('--direccion', default='Alcaldía', help='Se crea si no existe.')
         parser.add_argument('--departamento', default='Despacho de la Alcaldía', help='Se crea si no existe.')
 

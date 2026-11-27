@@ -66,6 +66,11 @@ def borrar_cookies_de_sesion(response):
     response.delete_cookie(REFRESH, path=RUTA_REFRESH, samesite='Lax')
 
 
+def _version_del_aviso():
+    from Configuracion.models import Configuracion
+    return Configuracion.actual().privacidad_version
+
+
 def datos_de_sesion(request, user):
     """Lo que el front necesita de la persona con sesión, más el token CSRF."""
     role = user.role if user.role_id else None
@@ -80,5 +85,7 @@ def datos_de_sesion(request, user):
         'user_photo': user.user_photo or '',
         'departamento_ID': str(user.departamento_ID_id) if user.departamento_ID_id else '',
         'onboarding_completado': bool(user.onboarding_completado),
+        # Aviso de privacidad sin aceptar (o con una versión nueva): el front lo pide antes de seguir.
+        'privacidad_pendiente': user.privacidad_version < _version_del_aviso(),
         'csrf_token': get_token(request._request if hasattr(request, '_request') else request),
     }

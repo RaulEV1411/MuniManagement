@@ -9,12 +9,19 @@ export const BETO = 'beto@muni.test'    // Funcionario (se usa para recuperar la
 export const FABI = 'fabi@muni.test'    // Funcionaria (sin permiso de crear proyectos por defecto)
 export const JORGE = 'jorge@muni.test'  // Jefe del departamento de Obras (aprueba solicitudes)
 
-export async function entrar(page: Page, email = ANA, clave = CLAVE) {
+export async function entrar(page: Page, email = ANA, clave = CLAVE, { aceptarAviso = true } = {}) {
   await page.goto('/login')
   await page.fill('input[type=email]', email)
   await page.fill('input[type=password]', clave)
+  const login = page.waitForResponse(r => r.url().includes('/users/login/'))
   await page.click('button[type=submit]')
+  const datos = await (await login).json()
   await page.waitForURL('**/dashboard')
+  // Si una prueba publicó una versión nueva del aviso de privacidad, se acepta para seguir.
+  if (datos.privacidad_pendiente && aceptarAviso) {
+    await page.getByRole('dialog', { name: 'Aviso de privacidad' }).getByRole('button', { name: 'Leí el aviso y acepto' }).click()
+    await expect(page.getByRole('dialog', { name: 'Aviso de privacidad' })).toHaveCount(0)
+  }
 }
 
 /** El último enlace para definir la contraseña que mandó Django (backend de correo en archivos). */

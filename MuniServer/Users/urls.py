@@ -2,7 +2,7 @@ from django.urls import path, include
 from .router import router_users
 from .views import (
     LoginView, LogoutView, DefinirClaveView, OlvideClaveView, RenovarSesionView,
-    change_password, upload_user_photo, completar_onboarding, me,
+    change_password, upload_user_photo, completar_onboarding, me, aceptar_privacidad,
 )
 
 urlpatterns = [
@@ -16,4 +16,5 @@ urlpatterns = [
     path('upload-photo/<uuid:user_id>/', upload_user_photo, name='upload_user_photo'),
     path('completar-onboarding/', completar_onboarding, name='completar_onboarding'),
     path('me/', me, name='me'),
+    path('aceptar-privacidad/', aceptar_privacidad, name='aceptar_privacidad'),
 ]
