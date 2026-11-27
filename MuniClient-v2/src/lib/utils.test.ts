@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { formatDate, formatearDuracion, formatearFechaLarga, hoyLocal, isOverdue } from './utils'
+import { daysUntil, formatDate, formatearDuracion, formatearFechaLarga, hoyLocal, isOverdue } from './utils'
 
 describe('hoyLocal', () => {
   afterEach(() => vi.useRealTimers())
@@ -14,6 +14,27 @@ describe('formatDate', () => {
   it('pasa de AAAA-MM-DD a DD/MM/AAAA y muestra — si no hay fecha', () => {
     expect(formatDate('2026-11-25')).toBe('25/11/2026')
     expect(formatDate(null)).toBe('—')
+  })
+})
+
+describe('daysUntil', () => {
+  afterEach(() => vi.useRealTimers())
+  it('cuenta días de calendario locales, a cualquier hora del día', () => {
+    vi.useFakeTimers()
+    for (const hora of [0, 12, 23]) {
+      vi.setSystemTime(new Date(2026, 10, 26, hora, 30))
+      expect(daysUntil('2026-11-26')).toBe(0)
+      expect(daysUntil('2026-11-27')).toBe(1)
+      expect(daysUntil('2026-12-16')).toBe(20)
+      expect(daysUntil('2026-11-25')).toBe(-1)
+      expect(daysUntil('2026-11-23')).toBe(-3)
+    }
+  })
+  it('lo de ayer ya está vencido; lo de hoy, todavía no', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 10, 26, 22, 30))
+    expect(isOverdue({ fecha_entrega: '2026-11-25', estado_ID: { name: 'En progreso' } })).toBe(true)
+    expect(isOverdue({ fecha_entrega: '2026-11-26', estado_ID: { name: 'En progreso' } })).toBe(false)
   })
 })
 
