@@ -83,6 +83,11 @@ for (const tema of ['claro', 'oscuro'] as const) {
         await page.goto(ruta)
         await sinFallos(page, ruta)
       }
+      await page.goto('/departments')
+      await page.getByRole('button', { name: 'Más datos de Obras' }).click()
+      await expect(page.getByRole('dialog', { name: 'Datos de Obras' })).toBeVisible()
+      await sinFallos(page, 'datos del departamento', '[role=dialog]')
+      await page.keyboard.press('Escape')
       await page.goto('/users')
       await sinFallos(page, '/users')
       await page.getByRole('button', { name: 'Vista de cuadrícula' }).click()
@@ -98,7 +103,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
       test.setTimeout(150_000)
       await entrar(page)
       await page.goto('/config')
-      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
+      for (const pestana of ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Especialidades', 'Recursos', 'Solicitudes', 'Roles y permisos']) {
         await page.getByRole('tab', { name: new RegExp(`^${pestana}`) }).click()
         await sinFallos(page, `configuración · ${pestana}`)
       }

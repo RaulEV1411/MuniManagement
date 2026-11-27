@@ -34,6 +34,8 @@ AUDITADOS = {
     'Task.AsignacionRecurso': 'tareas',
     'Users.Users': 'usuarios',
     'Users.Roles': 'roles',
+    'Users.Ausencia': 'usuarios',
+    'Users.Especialidad': 'catalogos',
     'Departments.Direccion': 'estructura',
     'Departments.Departamentos': 'estructura',
     'Configuracion.Configuracion': 'configuracion',
@@ -45,6 +47,8 @@ AUDITADOS = {
 }
 SECRETOS = {'password'}
 OCULTO = '•••'
+# Datos sensibles (Ley 8968): la auditoría guarda que el registro existió, no su valor.
+SENSIBLES = {'Users.Ausencia': {'tipo'}}
 IGNORADOS = {'last_login'}
 # (modelo, campo booleano): (acción al pasar a True, acción al pasar a False)
 BANDERAS = {
@@ -69,7 +73,11 @@ def _campos(modelo):
 
 
 def instantanea(obj):
-    return {f.name: _valor(getattr(obj, f.attname)) for f in _campos(type(obj))}
+    datos = {f.name: _valor(getattr(obj, f.attname)) for f in _campos(type(obj))}
+    for campo in SENSIBLES.get(f'{obj._meta.app_label}.{obj.__class__.__name__}', ()):
+        if datos.get(campo) not in (None, ''):
+            datos[campo] = OCULTO
+    return datos
 
 
 def representar(obj):
@@ -99,6 +107,8 @@ def representar(obj):
         return f'{obj.recurso.nombre} en la tarea «{obj.tarea.name}»'
     if tipo == 'Projects.TareaPlantilla':
         return f'«{obj.nombre}» en la plantilla de «{obj.tipo.name}»'
+    if tipo == 'Users.Ausencia':
+        return f'Ausencia de {representar(obj.usuario)} del {obj.desde:%d/%m/%Y} al {obj.hasta:%d/%m/%Y}'
     if tipo == 'Projects.HitoProyecto':
         return f'Hito «{obj.nombre}» de «{obj.proyecto.name}»'
     if tipo == 'Projects.RiesgoProyecto':

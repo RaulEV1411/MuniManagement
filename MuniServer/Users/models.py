@@ -12,6 +12,15 @@ class Roles(models.Model):
     # {permiso: alcance}: ver Projects/catalogo_permisos.py. El Administrador siempre tiene todo.
     permisos = models.JSONField(default=dict, blank=True)
 
+class Especialidad(models.Model):
+    """Catálogo de especialidades (topografía, electricidad…), para elegir a quién asignar una tarea."""
+    especialidad_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=60, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+
 class Users(AbstractBaseUser):
     user_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     role = models.ForeignKey(Roles, on_delete=models.PROTECT)
@@ -34,6 +43,11 @@ class Users(AbstractBaseUser):
     # Versión del aviso de privacidad que aceptó y cuándo (Ley 8968, art. 5: consentimiento informado).
     privacidad_version = models.PositiveIntegerField(default=0)
     privacidad_aceptada_en = models.DateTimeField(null=True, blank=True)
+    # Datos de empleado, todos opcionales. El número, NULL cuando no hay (único sin condición, por MySQL).
+    numero_empleado = models.CharField(max_length=20, null=True, blank=True, unique=True)
+    extension = models.CharField(max_length=10, blank=True, default='')
+    fecha_ingreso = models.DateField(null=True, blank=True)
+    especialidades = models.ManyToManyField(Especialidad, blank=True, related_name='usuarios')
 
     objects = UserManager()
 
@@ -42,3 +56,21 @@ class Users(AbstractBaseUser):
 
     def _str_(self):
         return self.email
+
+
+class Ausencia(models.Model):
+    """Vacaciones, incapacidad o permiso, con fechas. Sin nota libre: la incapacidad ya es dato de salud
+    (Ley 8968), así que solo se guarda el tipo y quién lo ve lo decide Users/ausencias.py."""
+    TIPOS = [('vacaciones', 'Vacaciones'), ('incapacidad', 'Incapacidad'), ('permiso', 'Permiso')]
+
+    ausencia_ID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='ausencias')
+    tipo = models.CharField(max_length=12, choices=TIPOS)
+    desde = models.DateField()
+    hasta = models.DateField()
+    registrada_por = models.ForeignKey(Users, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    creada_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-desde']
+        indexes = [models.Index(fields=['usuario', 'desde', 'hasta'])]

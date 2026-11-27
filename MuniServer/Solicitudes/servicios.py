@@ -49,11 +49,15 @@ def nivel_efectivo(paso):
     return ORDEN_DE_NIVELES[min(i + 1, len(ORDEN_DE_NIVELES) - 1)]
 
 
-def puede_decidir(user, paso, solicitud=None):
+def puede_decidir(user, paso, solicitud=None, suplentes=None):
     """Cada paso lo decide su nivel: quien tiene solicitudes.aprobar con ese alcance exacto, sobre el
     departamento del proyecto. Si el paso venció sin respuesta (escalado), también el nivel siguiente.
     Así una jefatura de dirección no aprueba por el departamento y después por sí misma. Nadie decide
-    su propia solicitud ni dos pasos de la misma. El Administrador puede decidir cualquiera."""
+    su propia solicitud ni dos pasos de la misma. El Administrador puede decidir cualquiera.
+
+    El suplente en funciones decide como la jefatura que cubre: los pasos del nivel de esa jefatura
+    (departamento o dirección, nunca alcaldía) en su zona, si el rol del jefe aprueba al menos en ese
+    nivel. No decide la solicitud del jefe ni un paso más si el jefe ya decidió otro."""
     if paso is None:
         return False
     solicitud = solicitud or paso.solicitud
@@ -63,10 +67,26 @@ def puede_decidir(user, paso, solicitud=None):
         return False
     if authz.es_administrador(user):
         return True
+    if any(p.decidido_por_id == user.pk for p in solicitud.pasos.all()):
+        return False
+    if _decide_por_rol(user, paso, solicitud):
+        return True
+    if suplentes is not None and user.pk not in suplentes:
+        return False  # aprobadores ya sabe quiénes suplen: no consulta la suplencia de cada persona
+    depto_id = solicitud.proyecto.departamento_ID_id
+    niveles_del_paso = {ALCANCE_DE_NIVEL[paso.nivel], ALCANCE_DE_NIVEL[nivel_efectivo(paso)]}
+    orden = {a: i for i, a in enumerate(cat.ALCANCES)}
+    return any(
+        depto_id in zona and nivel in niveles_del_paso and jefe.pk != solicitud.solicitante_id
+        and not any(p.decidido_por_id == jefe.pk for p in solicitud.pasos.all())
+        and orden.get(authz.alcance_de(jefe, 'solicitudes.aprobar'), -1) >= orden[nivel]
+        for jefe, zona, nivel in authz.suplencias(user)
+    )
+
+
+def _decide_por_rol(user, paso, solicitud):
     alcance = authz.alcance_de(user, 'solicitudes.aprobar')
     if alcance not in {ALCANCE_DE_NIVEL[paso.nivel], ALCANCE_DE_NIVEL[nivel_efectivo(paso)]}:
-        return False
-    if any(p.decidido_por_id == user.pk for p in solicitud.pasos.all()):
         return False
     return authz.en_alcance_de_departamento(user, alcance, solicitud.proyecto.departamento_ID)
 
@@ -75,8 +95,10 @@ def aprobadores(paso, solicitud):
     """A quiénes avisar cuando un paso queda en turno."""
     from Users.models import Users
     candidatos = Users.objects.filter(is_active=True).select_related('role', 'departamento_ID__direccion')
-    return [u for u in candidatos if (authz.es_administrador(u) or authz.alcance_de(u, 'solicitudes.aprobar'))
-            and puede_decidir(u, paso, solicitud)]
+    suplentes = authz.suplentes_en_funciones()
+    return [u for u in candidatos
+            if (authz.es_administrador(u) or authz.alcance_de(u, 'solicitudes.aprobar') or u.pk in suplentes)
+            and puede_decidir(u, paso, solicitud, suplentes)]
 
 
 def _avisar_turno(solicitud, paso, actor):

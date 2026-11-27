@@ -10,10 +10,10 @@ import {
 import { toast } from 'sonner'
 import {
   getUserById, getProjectsByUser, updateUser, uploadUserPhoto,
-  changePassword, getRoles, getDepartments, enviarAcceso,
+  changePassword, getRoles, getDepartments, getDirections, enviarAcceso, getEspecialidades,
 } from '@/lib/api'
 import { useAppStore } from '@/store/app'
-import { type User, type Project, type Role, type Department } from '@/types'
+import { type User, type Project, type Role, type Department, type Direction, type Especialidad } from '@/types'
 import { cn, formatDate, getInitials, fullName, isOverdue } from '@/lib/utils'
 import { mensajeDeError } from '@/lib/errores'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
@@ -26,6 +26,7 @@ import { usePermiso } from '@/hooks/usePermiso'
 import PermisosDeUsuario from '@/components/users/PermisosDeUsuario'
 import ActividadDeUsuario from '@/components/users/ActividadDeUsuario'
 import MisDatos from '@/components/users/MisDatos'
+import DisponibilidadPanel from '@/components/users/DisponibilidadPanel'
 import { TIPOS_IDENTIFICACION, formatearIdentificacion } from '@/lib/identificacion'
 
 
@@ -58,6 +59,7 @@ function EditModal({
   user,
   roles,
   departments,
+  especialidades,
   puedeEditarTodo,
   onClose,
   onSaved,
@@ -66,6 +68,7 @@ function EditModal({
   roles: Role[]
   puedeEditarTodo: boolean
   departments: Department[]
+  especialidades: Especialidad[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -80,8 +83,13 @@ function EditModal({
     puesto:        user.puesto ?? '',
     role:          user.role?.role_ID ?? '',
     departamento_ID: user.departamento_ID?.departamentos_ID ?? '',
+    numero_empleado: user.numero_empleado ?? '',
+    fecha_ingreso: user.fecha_ingreso ?? '',
+    extension: user.extension ?? '',
   })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const [misEspecialidades, setMisEspecialidades] = useState<string[]>((user.especialidades ?? []).map(e => e.especialidad_ID))
+  const alternar = (id: string) => setMisEspecialidades(l => l.includes(id) ? l.filter(x => x !== id) : [...l, id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,13 +100,17 @@ function EditModal({
         last_name:    form.last_name,
         phone_number: form.phone_number.trim(),
         puesto:       form.puesto,
-        // Cédula, correo, rol y departamento solo los cambia la alcaldía.
+        extension:    form.extension.trim(),
+        especialidades: misEspecialidades,
+        // Cédula, correo, rol, departamento, número de empleado e ingreso solo los cambia quien gestiona.
         ...(puedeEditarTodo && {
           tipo_identificacion: form.tipo_identificacion,
           cedula:          form.cedula.trim(),
           email:           form.email,
           role:            form.role || undefined,
           departamento_ID: form.departamento_ID || undefined,
+          numero_empleado: form.numero_empleado.trim(),
+          fecha_ingreso:   form.fecha_ingreso || null,
         }),
       })
       toast.success('Usuario actualizado')
@@ -164,6 +176,34 @@ function EditModal({
               <input id="userprofile-puesto" value={form.puesto} onChange={e => set('puesto', e.target.value)} className={inputCls} />
             </div>
           </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="userprofile-numero-empleado" className="text-xs font-semibold text-muted-foreground">N.º de empleado</label>
+              <input id="userprofile-numero-empleado" maxLength={20} value={form.numero_empleado} onChange={e => set('numero_empleado', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="userprofile-ingreso" className="text-xs font-semibold text-muted-foreground">Ingreso</label>
+              <input id="userprofile-ingreso" type="date" value={form.fecha_ingreso} onChange={e => set('fecha_ingreso', e.target.value)} disabled={!puedeEditarTodo} className={cn(inputCls, 'disabled:opacity-60')} />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="userprofile-extension" className="text-xs font-semibold text-muted-foreground">Extensión</label>
+              <input id="userprofile-extension" inputMode="numeric" maxLength={10} value={form.extension} onChange={e => set('extension', e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          {especialidades.length > 0 && (
+            <fieldset className="space-y-1.5">
+              <legend className="text-xs font-semibold text-muted-foreground mb-1.5">Especialidades</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {especialidades.map(e => (
+                  <label key={e.especialidad_ID} className={cn('flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs cursor-pointer',
+                    misEspecialidades.includes(e.especialidad_ID) ? 'border-ocean-500 bg-ocean-500/10 text-foreground' : 'border-border text-muted-foreground')}>
+                    <input type="checkbox" className="accent-ocean-500" checked={misEspecialidades.includes(e.especialidad_ID)} onChange={() => alternar(e.especialidad_ID)} />
+                    {e.name}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label htmlFor="userprofile-rol" className="text-xs font-semibold text-muted-foreground">Rol</label>
@@ -319,6 +359,12 @@ export default function UserProfilePage() {
     queryKey: ['departments'],
     queryFn: getDepartments,
   })
+  const { data: directions = [] } = useQuery<Direction[]>({ queryKey: ['directions'], queryFn: getDirections })
+  const { data: especialidades = [] } = useQuery<Especialidad[]>({ queryKey: ['especialidades'], queryFn: getEspecialidades })
+  // Registra ausencias: la persona, quien la gestiona o su jefatura (también quien la suple). El servidor decide lo exacto.
+  const depto = departments.find(d => d.departamentos_ID === user?.departamento_ID?.departamentos_ID)
+  const direccion = directions.find(d => d.direccion_ID === (typeof depto?.direccion === 'string' ? depto.direccion : depto?.direccion?.direccion_ID))
+  const esJefatura = !!yo && [depto?.jefe, depto?.suplente, direccion?.jefe, direccion?.suplente].includes(yo.user_ID)
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -498,8 +544,24 @@ export default function UserProfilePage() {
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Contacto</h3>
                   <InfoRow icon={Mail}       label="Correo electrónico" value={user.email} />
                   {puedeEditar && <InfoRow icon={Phone}      label="Teléfono" value={user.phone_number || null} />}
+                  <InfoRow icon={Phone}      label="Extensión" value={user.extension || null} />
                   <InfoRow icon={Briefcase}  label="Puesto"   value={user.puesto} />
                 </div>
+                <div className="bg-card border border-border rounded-2xl p-4">
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Empleo</h3>
+                  {/* Número e ingreso solo llegan en la ficha completa. */}
+                  {user.numero_empleado !== undefined && <InfoRow icon={CreditCard} label="N.º de empleado" value={user.numero_empleado || null} />}
+                  {user.fecha_ingreso !== undefined && <InfoRow icon={Calendar} label="Ingreso" value={user.fecha_ingreso ? formatDate(user.fecha_ingreso) : null} />}
+                  <div className="py-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Especialidades</p>
+                    {user.especialidades?.length ? (
+                      <ul className="flex flex-wrap gap-1.5">
+                        {user.especialidades.map(e => <li key={e.especialidad_ID} className="text-xs px-2 py-0.5 rounded-full bg-muted text-foreground">{e.name}</li>)}
+                      </ul>
+                    ) : <p className="text-sm text-muted-foreground">—</p>}
+                  </div>
+                </div>
+                <DisponibilidadPanel usuario={user} puedeRegistrar={esPropio || gestiona || esJefatura} />
                 {(esPropio || gestiona || veRoles) && <PermisosDeUsuario usuarioId={user.user_ID} />}
                 {(esPropio || esAdmin) && <MisDatos usuario={user} propio={esPropio} esAdmin={esAdmin} />}
               </div>
@@ -557,6 +619,7 @@ export default function UserProfilePage() {
             user={user}
             roles={roles}
             departments={departments}
+            especialidades={especialidades}
             puedeEditarTodo={gestiona}
             onClose={() => setShowEdit(false)}
             onSaved={() => qc.invalidateQueries({ queryKey: ['user', id] })}

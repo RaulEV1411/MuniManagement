@@ -115,6 +115,14 @@ export const uploadUserPhoto = (id: string, file: File) => {
   const fd = new FormData(); fd.append('image', file)
   return api.post(`/users/upload-photo/${seg(id)}/`, fd).then(r => r.data)
 }
+// Especialidades (catálogo) y ausencias (tanda D3)
+export const getEspecialidades    = ()             => api.get('/users/especialidades/').then(r => r.data)
+export const createEspecialidad   = (data: object) => api.post('/users/especialidades/', data).then(r => r.data)
+export const updateEspecialidad   = (id: string, data: object) => api.patch(`/users/especialidades/${seg(id)}/`, data).then(r => r.data)
+export const deleteEspecialidad   = (id: string)   => api.delete(`/users/especialidades/${seg(id)}/`).then(r => r.data)
+export const getAusencias         = (usuario: string) => api.get('/users/ausencias/', { params: { usuario } }).then(r => r.data)
+export const crearAusencia        = (data: object) => api.post('/users/ausencias/', data).then(r => r.data)
+export const borrarAusencia       = (id: string)   => api.delete(`/users/ausencias/${seg(id)}/`).then(r => r.data)
 export const getRoles        = ()           => api.get('/users/roles/').then(r => r.data)
 export const createRole      = (data: object) => api.post('/users/roles/', data).then(r => r.data)
 
@@ -165,6 +173,8 @@ export const getDepartments   = ()             => api.get('/departments/departam
 export const createDepartment = (data: object) => api.post('/departments/departamentos/', data).then(r => r.data)
 export const updateDepartment = (id: string, data: object) => api.put(`/departments/departamentos/${seg(id)}/`, data).then(r => r.data)
 export const deleteDepartment = (id: string)   => api.delete(`/departments/departamentos/${seg(id)}/`).then(r => r.data)
+export const patchDepartment  = (id: string, data: object) => api.patch(`/departments/departamentos/${seg(id)}/`, data).then(r => r.data)
+export const patchDirection   = (id: string, data: object) => api.patch(`/departments/direcciones/${seg(id)}/`, data).then(r => r.data)
 export const getDirections    = ()             => api.get('/departments/direcciones/').then(r => r.data)
 export const createDirection  = (data: object) => api.post('/departments/direcciones/', data).then(r => r.data)
 export const updateDirection  = (id: string, data: object) => api.put(`/departments/direcciones/${seg(id)}/`, data).then(r => r.data)

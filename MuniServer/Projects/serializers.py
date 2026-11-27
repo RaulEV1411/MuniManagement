@@ -12,7 +12,7 @@ from .models import (
 )
 from . import authz
 from .catalogo_permisos import PERMISOS_DE_PROYECTO
-from Departments.serializers import DepartamentosSerializer
+from Departments.serializers import DepartamentoResumenSerializer
 from Users.serializers import UsuarioResumenSerializer
 
 
@@ -294,7 +294,7 @@ class ReabrirProyectoSerializer(serializers.Serializer):
 
 
 class ProyectosReadSerializer(ModelSerializer):
-    departamento_ID = DepartamentosSerializer(read_only=True)
+    departamento_ID = DepartamentoResumenSerializer(read_only=True)
     estado_ID = EstadoSerializer(read_only=True)
     prioridad_ID = PrioridadSerializer(read_only=True)
     user_ID = UsuarioResumenSerializer(read_only=True)

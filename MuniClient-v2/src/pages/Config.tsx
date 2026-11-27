@@ -8,8 +8,9 @@ import {
   getPrioridades, createPrioridad, updatePrioridad, deletePrioridad,
   getTipos,      createTipo,      updateTipo,      deleteTipo,
   getFuentes,    createFuente,    updateFuente,    deleteFuente,
+  getEspecialidades, createEspecialidad, updateEspecialidad, deleteEspecialidad,
 } from '@/lib/api'
-import { type Estado, type FuenteFinanciamiento, type Prioridad, type Tipo } from '@/types'
+import { type Especialidad, type Estado, type FuenteFinanciamiento, type Prioridad, type Tipo } from '@/types'
 import { cn } from '@/lib/utils'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import InstitucionPanel from '@/components/config/InstitucionPanel'
@@ -25,7 +26,7 @@ import PrivacidadPanel from '@/components/config/PrivacidadPanel'
 import RecursosPanel from '@/components/config/RecursosPanel'
 import PlantillasPanel from '@/components/config/PlantillasPanel'
 
-const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Recursos', 'Solicitudes', 'Roles y permisos'] as const
+const TABS = ['Institución', 'Privacidad', 'Estados', 'Prioridades', 'Tipos', 'Financiamiento', 'Especialidades', 'Recursos', 'Solicitudes', 'Roles y permisos'] as const
 type Tab = typeof TABS[number]
 
 // ── Fila editable genérica ─────────────────────────────────────────────────
@@ -253,6 +254,7 @@ export default function ConfigPage() {
   const { data: prioridades = [], isLoading: loadingPrioridades, error: errPrioridades, refetch: refetchPrioridades } = useQuery<Prioridad[]>({ queryKey: ['prioridades'], queryFn: getPrioridades })
   const { data: tipos = [],       isLoading: loadingTipos, error: errTipos, refetch: refetchTipos } = useQuery<Tipo[]>({ queryKey: ['tipos'],       queryFn: getTipos })
   const { data: fuentes = [], isLoading: loadingFuentes } = useQuery<FuenteFinanciamiento[]>({ queryKey: ['fuentes'], queryFn: getFuentes })
+  const { data: especialidades = [], isLoading: loadingEspecialidades } = useQuery<Especialidad[]>({ queryKey: ['especialidades'], queryFn: getEspecialidades })
 
   // ── Estados ──
   const estadoItems: GenericItem[] = estados.map(e => ({
@@ -346,6 +348,25 @@ export default function ConfigPage() {
     toast.success('Fuente creada')
   }
 
+  // ── Especialidades ──
+  const especialidadItems: GenericItem[] = especialidades.map(e => ({ id: e.especialidad_ID, name: e.name }))
+  const onSaveEspecialidad = async (id: string, name: string) => {
+    await updateEspecialidad(id, { name })
+    qc.invalidateQueries({ queryKey: ['especialidades'] })
+    toast.success('Especialidad actualizada')
+  }
+  const onDeleteEspecialidad = async (id: string, name: string) => {
+    if (!(await confirmar({ titulo: `¿Eliminar la especialidad «${name}»?` }))) return
+    await deleteEspecialidad(id)
+    qc.invalidateQueries({ queryKey: ['especialidades'] })
+    toast.success('Especialidad eliminada')
+  }
+  const onCreateEspecialidad = async (name: string) => {
+    await createEspecialidad({ name })
+    qc.invalidateQueries({ queryKey: ['especialidades'] })
+    toast.success('Especialidad creada')
+  }
+
   const errorCatalogos = errEstados ?? errPrioridades ?? errTipos
   if (errorCatalogos) {
     return <ErrorDeCarga error={errorCatalogos} onReintentar={() => { refetchEstados(); refetchPrioridades(); refetchTipos() }} que="los catálogos" />
@@ -377,9 +398,10 @@ export default function ConfigPage() {
               )}
             >
               {t}
-              {(t === 'Estados' || t === 'Prioridades' || t === 'Tipos' || t === 'Financiamiento') && (
+              {(t === 'Estados' || t === 'Prioridades' || t === 'Tipos' || t === 'Financiamiento' || t === 'Especialidades') && (
                 <span className="ml-1.5 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                  {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : t === 'Tipos' ? tipos.length : fuentes.length}
+                  {t === 'Estados' ? estados.length : t === 'Prioridades' ? prioridades.length : t === 'Tipos' ? tipos.length
+                    : t === 'Financiamiento' ? fuentes.length : especialidades.length}
                 </span>
               )}
             </button>
@@ -458,6 +480,20 @@ export default function ConfigPage() {
                 readOnly={!editaCatalogos}
                 readOnlyMessage="Su rol no permite editar los catálogos."
                 nota="Se elige en la ficha de cada proyecto. Una fuente que ya financia proyectos no se puede borrar."
+              />
+            )}
+            {tab === 'Especialidades' && (
+              <CrudSection
+                items={especialidadItems}
+                isLoading={loadingEspecialidades}
+                textoNuevo="Nueva especialidad (topografía, electricidad…)"
+                textoVacio="No hay especialidades registradas"
+                onSave={onSaveEspecialidad}
+                onDelete={onDeleteEspecialidad}
+                onCreate={onCreateEspecialidad}
+                readOnly={!editaCatalogos}
+                readOnlyMessage="Su rol no permite editar los catálogos."
+                nota="Cada persona marca las suyas en su perfil; se ven al asignar una tarea. Una especialidad que alguien tiene no se puede borrar."
               />
             )}
             {tab === 'Roles y permisos' && veRoles && <RolesPermisosPanel />}
