@@ -87,11 +87,18 @@ services:
 
   # Front, proxy de la API y HTTPS.
   web:
-    build: ./MuniClient-v2
+    build:
+      context: ./MuniClient-v2
+      args:
+        VITE_MAPA_ESTILO: ${MAPA_ESTILO:-}
+        VITE_BUSQUEDA_DIRECCIONES: ${BUSQUEDA_DIRECCIONES:-}
     image: munimanagement-web
     restart: unless-stopped
     environment:
       DOMINIO: ${DOMINIO}
+      # Orígenes que la CSP deja pedir para el mapa y la búsqueda de direcciones (ver despliegue/README.md).
+      MAPA_ORIGEN: ${MAPA_ORIGEN:-https://tiles.openfreemap.org}
+      BUSQUEDA_ORIGEN: ${BUSQUEDA_ORIGEN:-https://nominatim.openstreetmap.org}
     ports:
       - "80:80"
       - "443:443"

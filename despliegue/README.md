@@ -88,6 +88,14 @@ La API aplica las migraciones al arrancar. **Antes de actualizar, conviene un re
 - Si no hay SMTP propio, se puede usar Resend o SendGrid con su clave (`RESEND_API_KEY` o `SENDGRID_API_KEY`) y un dominio verificado en ese servicio.
 - Sin correo configurado, el sistema funciona, pero las personas nuevas no reciben el enlace para definir su contraseña.
 
+## Mapa y portal
+
+- **Mapa:** por defecto usa [OpenFreeMap](https://openfreemap.org). Es gratuito, sin clave ni límite de vistas, con datos de OpenStreetMap, pero no garantiza el servicio. Si no carga, el portal lo avisa y sigue mostrando la lista.
+  - Para teselas propias o de un proveedor, ponga en el `.env` `MAPA_ESTILO` (la URL del estilo) y `MAPA_ORIGEN` (su origen, que entra en la CSP), y vuelva a construir `web`.
+  - La búsqueda de direcciones usa Nominatim, de la misma forma: con `BUSQUEDA_DIRECCIONES` y `BUSQUEDA_ORIGEN`.
+- **Datos abiertos:** el portal ofrece `/api/v1/public/datos/proyectos.csv` y `.json`, con la licencia que se elige en Configuración › Institución.
+- **Vista previa al compartir:** cuando alguien comparte un enlace del portal en WhatsApp, Facebook, X, LinkedIn, Slack o Telegram, Caddy le pasa el pedido de ese robot a Django, que responde el título, la descripción y la foto del proyecto.
+
 ## Monitoreo
 
 - `GET /api/v1/health/` responde 200 si la API llega a la base y a la caché, y 503 si no. Sirve para un monitor externo, como UptimeRobot.

@@ -12,7 +12,7 @@ Proyecto en desarrollo, hecho en equipo.
 - Notificaciones en la aplicación y por correo, y avisos diarios de vencimiento.
 - Historial de cambios y comentarios.
 - Panel con gráficos y reportes en PDF y Excel.
-- Portal público de proyectos.
+- Portal público de proyectos, con mapa, presupuesto y ejecución, cierre y datos abiertos en CSV y JSON.
 - Nombre, logo, colores, datos de soporte y moneda de cada institución, configurables desde la app.
 
 ## Tecnologías
@@ -20,7 +20,7 @@ Proyecto en desarrollo, hecho en equipo.
 | Parte | Tecnologías |
 |---|---|
 | Backend | Python 3.12, Django 5.2 LTS, Django REST Framework, JWT en cookies HttpOnly, Celery y Celery Beat, MySQL 8.4 |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand, Recharts |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand, Recharts, MapLibre (mapa de OpenFreeMap) |
 | Infraestructura | Docker Compose, Caddy (HTTPS automático) y Valkey |
 
 ## Estructura

@@ -31,6 +31,18 @@
 		file_server
 	}
 
+	# Vista previa al compartir un enlace del portal: los robots que la arman no corren JavaScript, así que
+	# reciben de Django un HTML corto con Open Graph. Las personas y los buscadores (que sí lo corren)
+	# reciben la aplicación de siempre; si Django falla, solo falla la vista previa.
+	@vistaPrevia {
+		path /publico /publico/ /publico/proyectos/*
+		header_regexp User-Agent (?i)(facebookexternalhit|facebookcatalog|meta-externalagent|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|skypeuripreview|redditbot|pinterestbot|embedly|iframely|mastodon|bluesky|signal)
+	}
+	handle @vistaPrevia {
+		rewrite * /api/v1/public/vista-previa{path}
+		reverse_proxy api:8000
+	}
+
 	# El front: cualquier otra ruta es de la aplicación y sirve index.html.
 	handle {
 		root * /srv/app
@@ -46,7 +58,7 @@
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' {$MAPA_ORIGEN:https://tiles.openfreemap.org} {$BUSQUEDA_ORIGEN:https://nominatim.openstreetmap.org}; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		-Server
 	}
 }
