@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -1127,7 +1127,9 @@ export default function ProjectDetailPage() {
   })
   useTituloDePagina(project?.name ?? 'Proyecto')
   const misPermisos = project?.mis_permisos
-  const [tareaAbierta, setTareaAbierta] = useState<string | null>(null)
+  // «Mis tareas» llega con ?tarea=<id>: se abre esa tarea apenas cargan las del proyecto.
+  const [busqueda] = useSearchParams()
+  const [tareaAbierta, setTareaAbierta] = useState<string | null>(() => busqueda.get('tarea'))
   const permisos = useMemo(() => ({
     puede: (codigo: string) => !!misPermisos?.includes(codigo),
     usuarioId: user?.user_ID ?? '',
@@ -1278,7 +1280,10 @@ export default function ProjectDetailPage() {
   const days = project.fecha_entrega ? daysUntil(project.fecha_entrega) : null
   const totalTasks     = tasks.length
   const completedTasks = tasks.filter(t => t.estado_ID?.name === 'Completado').length
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  // La misma regla que la tabla, el tooltip y el portal: sin las canceladas, y un proyecto completado vale 100.
+  const vigentes = tasks.filter(t => t.estado_ID?.name !== 'Cancelado')
+  const progress = project.estado_ID?.name === 'Completado' ? 100
+    : vigentes.length > 0 ? Math.round((vigentes.filter(t => t.estado_ID?.name === 'Completado').length / vigentes.length) * 100) : 0
 
   const filteredTasks = taskSearch.trim()
     ? tasks.filter(t => t.name.toLowerCase().includes(taskSearch.toLowerCase()) || t.descripcion?.toLowerCase().includes(taskSearch.toLowerCase()))

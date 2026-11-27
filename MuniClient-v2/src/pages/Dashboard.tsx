@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,7 +22,8 @@ import RazonModal from '@/components/common/RazonModal'
 import { esFinal, pideMotivo, PESTANAS_DE_PROYECTOS, type PestanaProyectos } from '@/lib/estados'
 import { useValorDiferido } from '@/hooks/useValorDiferido'
 import { claseEtiqueta, claseRelleno, colorDeEstado, conColor } from '@/lib/colores'
-import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
+import { useMarca, useMoneda, useTituloDePagina } from '@/hooks/useMarca'
+import TablaDeDatos, { TamanoDePagina, type Columna } from '@/components/common/TablaDeDatos'
 import { usePermiso } from '@/hooks/usePermiso'
 import { pestanas } from '@/lib/pestanas'
 
@@ -39,11 +41,44 @@ function StatusQuickChange({ project }: { project: Project }) {
     onError: err => toast.error(mensajeDeError(err, 'Error al actualizar estado')),
   })
 
+  // El menú va en un portal con posición fija: dentro de la tabla (que tiene scroll propio) se recortaría.
+  // Se abre hacia arriba si abajo no cabe, y se cierra al desplazar la página o la tabla.
+  const menuRef = useRef<HTMLDivElement>(null)
+  const botonRef = useRef<HTMLButtonElement>(null)
+  const [posicion, setPosicion] = useState<React.CSSProperties>({})
+  const opciones = estados.filter(e => !esFinal(e))
+  const alternar = () => {
+    if (!open && botonRef.current) {
+      const r = botonRef.current.getBoundingClientRect()
+      const alto = opciones.length * 34 + 8
+      const arriba = window.innerHeight - r.bottom < alto && r.top > window.innerHeight - r.bottom
+      setPosicion(arriba ? { bottom: window.innerHeight - r.top + 4, left: r.left } : { top: r.bottom + 4, left: r.left })
+    }
+    setOpen(v => !v)
+  }
+
   useEffect(() => {
     if (!open) return
-    const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!ref.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false)
+    }
+    const cerrar = () => setOpen(false)
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); botonRef.current?.focus() } }
+    // Al abrirse, el foco entra al menú (en la opción actual): está en un portal, al final de la página.
+    const opcionesDelMenu = menuRef.current?.querySelectorAll<HTMLButtonElement>('button')
+    const actual = menuRef.current?.querySelector<HTMLButtonElement>('[aria-current="true"]')
+    ;(actual ?? opcionesDelMenu?.[0])?.focus({ preventScroll: true })
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    document.addEventListener('keydown', tecla)
+    window.addEventListener('scroll', cerrar, true)
+    window.addEventListener('resize', cerrar)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', tecla)
+      window.removeEventListener('scroll', cerrar, true)
+      window.removeEventListener('resize', cerrar)
+    }
   }, [open])
 
   const currentStatus = isOverdue(project) ? 'Vencido' : (project.estado_ID?.name ?? '')
@@ -59,7 +94,8 @@ function StatusQuickChange({ project }: { project: Project }) {
   return (
     <div ref={ref} className="relative z-10 inline-flex" onClick={e => e.stopPropagation()}>
       <button
-        onClick={() => setOpen(v => !v)}
+        ref={botonRef}
+        onClick={alternar}
         disabled={isPending}
         className={cn(
           'flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full transition-all',
@@ -72,18 +108,33 @@ function StatusQuickChange({ project }: { project: Project }) {
         {isPending ? <RefreshCw size={9} className="animate-spin" /> : <Zap size={9} />}
         {currentStatus}
       </button>
-      <AnimatePresence>
+      {createPortal(<AnimatePresence>
         {open && (
           <motion.div
+            ref={menuRef}
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.1 }}
-            className="absolute top-full mt-1 left-0 z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden min-w-[130px]"
+            style={posicion}
+            onKeyDown={e => {
+              const botones = [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+              const i = botones.indexOf(document.activeElement as HTMLButtonElement)
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault()
+                botones[(i + (e.key === 'ArrowDown' ? 1 : -1) + botones.length) % botones.length]?.focus({ preventScroll: true })
+              } else if (e.key === 'Tab') {
+                // Sale del menú: el Tab sigue desde el botón de estado, como si el menú estuviera junto a él.
+                setOpen(false)
+                botonRef.current?.focus({ preventScroll: true })
+              }
+            }}
+            className="fixed z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden min-w-[130px]"
           >
-            {estados.filter(e => !esFinal(e)).map(e => (
+            {opciones.map(e => (
               <button
                 key={e.estado_ID}
+                aria-current={e.estado_ID === project.estado_ID?.estado_ID || undefined}
                 onClick={() => {
                   if (pideMotivo(e) && e.estado_ID !== project.estado_ID?.estado_ID) {
                     setOpen(false)
@@ -103,7 +154,7 @@ function StatusQuickChange({ project }: { project: Project }) {
             ))}
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>, document.body)}
       {conMotivo && (
         <RazonModal
           title={`Pasar a ${conMotivo.name}`}
@@ -318,6 +369,51 @@ function ProjectListRow({ project }: { project: Project }) {
       </AnimatePresence>
     </>
   )
+}
+
+function DiasRestantes({ project }: { project: Project }) {
+  const overdue = isOverdue(project)
+  const days = project.fecha_entrega ? daysUntil(project.fecha_entrega) : null
+  if (days === null || project.estado_ID?.categoria === 'finalizado') return <span className="text-muted-foreground">—</span>
+  return (
+    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
+      overdue ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+        : days <= 3 ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-muted text-muted-foreground')}>
+      {overdue ? `Vencido ${Math.abs(days)}d` : days === 0 ? 'Vence hoy' : `${days}d`}
+    </span>
+  )
+}
+
+function columnasDeProyectos(formatear: (n: number) => string): Columna<Project>[] {
+  return [
+    { id: 'codigo', titulo: 'Código', orden: 'codigo', oculta: true, celda: p => <span className="text-muted-foreground">{p.codigo || '—'}</span> },
+    {
+      id: 'nombre', titulo: 'Nombre', orden: 'nombre', fija: true, ancho: 'min-w-48 max-w-80',
+      celda: p => <Link to={`/projects/${p.proyect_ID}`} className="font-semibold text-foreground hover:text-ocean-500 dark:hover:text-ocean-200">{p.name}</Link>,
+    },
+    { id: 'estado', titulo: 'Estado', orden: 'estado', celda: p => <StatusQuickChange project={p} /> },
+    {
+      id: 'prioridad', titulo: 'Prioridad', orden: 'prioridad', oculta: true,
+      celda: p => p.prioridad_ID ? <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', claseEtiqueta)} style={conColor(p.prioridad_ID.color)}>{p.prioridad_ID.name}</span> : '—',
+    },
+    { id: 'departamento', titulo: 'Departamento', orden: 'departamento', ancho: 'min-w-32 max-w-56', celda: p => p.departamento_ID?.name ?? '—' },
+    { id: 'responsable', titulo: 'Responsable', orden: 'responsable', ancho: 'min-w-32 max-w-56', celda: p => p.user_ID ? `${p.user_ID.first_name} ${p.user_ID.last_name}` : '—' },
+    {
+      id: 'avance', titulo: 'Avance', orden: 'avance',
+      celda: p => (
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-1.5 w-14 rounded-full bg-muted overflow-hidden">
+            <span className="block h-full rounded-full bg-ocean-500 dark:bg-ocean-300" style={{ width: `${p.avance ?? 0}%` }} />
+          </span>
+          <span className="tabular-nums">{p.avance ?? 0}&nbsp;%</span>
+        </span>
+      ),
+    },
+    { id: 'presupuesto', titulo: 'Presupuesto', orden: 'presupuesto', derecha: true, celda: p => formatear(p.costo_total ?? p.costo ?? 0) },
+    { id: 'ejecutado', titulo: 'Ejecutado', orden: 'ejecutado', derecha: true, oculta: true, celda: p => formatear(p.costo_ejecutado ?? 0) },
+    { id: 'entrega', titulo: 'Entrega', orden: 'entrega', celda: p => <span className="whitespace-nowrap">{formatDate(p.fecha_entrega)}</span> },
+    { id: 'dias', titulo: 'Días restantes', celda: p => <DiasRestantes project={p} /> },
+  ]
 }
 
 // ── Vista grid ───────────────────────────────────────────────────────────────
@@ -554,6 +650,7 @@ export default function DashboardPage() {
   const setPriority = (v: string) => setParam('prioridad', v, 'Todas')
   const setSortBy   = (v: string) => setParam('orden', v, 'reciente')
   const setView     = (v: string) => setParam('vista', v, 'list')
+  const setPorPagina = (n: number) => setParam('por', String(n), '25')
   const setMineOnly = (fn: (prev: boolean) => boolean) => setParam('mios', fn(mineOnly) ? '1' : '', '')
   // Cambiar de pestaña limpia el filtro de estado (los estados de otra pestaña no aplican).
   const setPestana = (v: PestanaProyectos) => setParams(prev => {
@@ -578,9 +675,15 @@ export default function DashboardPage() {
     orden: sortBy,
   }
   const filtrosDeLista = { ...filtros, ...(pestana === 'archivados' ? { archivados: '1' } : { categoria: pestana }) }
-  const porPagina = view === 'kanban' ? 100 : 24
+  // La tabla elige 25, 50 o 100; la cuadrícula va de a 24 (llena filas de 2, 3 y 4) y el tablero trae 100.
+  const porTabla = [25, 50, 100].includes(Number(params.get('por'))) ? Number(params.get('por')) : 25
+  const porPagina = view === 'kanban' ? 100 : view === 'grid' ? 24 : porTabla
+  const { formatear } = useMoneda()
+  const columnas = columnasDeProyectos(formatear)
   const { data: paginaActual, isLoading, refetch, isError, error, isPlaceholderData } = useQuery({
     queryKey: ['projects', 'dashboard', filtrosDeLista, pagina, porPagina],
+    // Al volver de un proyecto (p. ej., tras completar tareas), el avance se pide de nuevo.
+    refetchOnMount: 'always',
     queryFn: () => getProyectosPagina({ ...filtrosDeLista, page: pagina, page_size: porPagina }),
     placeholderData: keepPreviousData,
   })
@@ -745,6 +848,11 @@ export default function DashboardPage() {
             <option value="nombre">Nombre</option>
             <option value="entrega">Entrega</option>
             <option value="prioridad">Prioridad</option>
+            {!['reciente', 'nombre', 'entrega', 'prioridad'].includes(sortBy) && (
+              <option value={sortBy}>
+                {`Por ${(columnas.find(c => c.orden === sortBy.replace(/^-/, ''))?.titulo ?? 'columna').toLowerCase()}${sortBy.startsWith('-') ? ' (al revés)' : ''}`}
+              </option>
+            )}
           </select>
           <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         </div>
@@ -859,8 +967,9 @@ export default function DashboardPage() {
                   {displayed.map(p => <ProjectGridCard key={p.proyect_ID} project={p} />)}
                 </motion.div>
               ) : (
-                <motion.div key="list" className="bg-card rounded-2xl border border-border overflow-hidden">
-                  {displayed.map(p => <ProjectListRow key={p.proyect_ID} project={p} />)}
+                <motion.div key="list">
+                  <TablaDeDatos id="proyectos" titulo="Proyectos" columnas={columnas} filas={displayed} clave={p => p.proyect_ID}
+                    orden={sortBy} onOrden={setSortBy} tarjeta={p => <ProjectListRow project={p} />} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -870,6 +979,7 @@ export default function DashboardPage() {
                   ? `Se muestran los ${displayed.length} más ${sortBy === 'reciente' ? 'recientes' : 'arriba en el orden elegido'} de ${totalFiltrado}. Use los filtros para acotar.`
                   : `${(pagina - 1) * porPagina + 1}–${(pagina - 1) * porPagina + displayed.length} de ${totalFiltrado} proyecto${totalFiltrado !== 1 ? 's' : ''}`}
               </span>
+              {view === 'list' && <TamanoDePagina etiqueta="Por página" valor={porTabla} onCambio={setPorPagina} />}
               {view !== 'kanban' && totalPaginas > 1 && (
                 <span className="flex items-center gap-1.5">
                   <button

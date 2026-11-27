@@ -232,6 +232,9 @@ export interface Project {
   images: ProjectImage[]
   es_publico?: boolean
   costo_total?: number
+  // Tareas completadas sobre las no canceladas (100 si el proyecto está completado), como en el portal.
+  avance?: number | null
+  solicitudes_abiertas?: number
   created_at?: string
   tipos?: Array<{ tipos_ID: string; name: string }>
   // Solo en el detalle: lo que puede hacer quien lo mira (proyectos.editar, tareas.gestionar, …).
@@ -302,6 +305,7 @@ export interface Task {
   estado_ID: Estado
   prioridad_ID: Prioridad
   proyecto_ID: string
+  proyecto_nombre?: string
   asignado_a: Pick<User, 'user_ID' | 'first_name' | 'last_name' | 'user_photo'> | null
   images: TaskImage[]
   costo?: number

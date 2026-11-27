@@ -151,6 +151,8 @@ export const deleteProjectImage = (imageId: string) => api.delete(`/projects/pro
 
 // ── Tasks ─────────────────────────────────────────────────────
 export const getTasksByProject = (projectId: string) => todasDe<Task>(api, '/task/tareas/', { proyecto_ID: projectId })
+// Las abiertas de uno (asignadas o en que colabora) en todos los proyectos que ve.
+export const getMisTareas = () => todasDe<Task>(api, '/task/tareas/', { mias: '1', abiertas: '1' })
 export const createTask   = (data: object) => api.post('/task/tareas/', data).then(r => r.data)
 export const updateTask   = (id: string, data: object) => api.put(`/task/tareas/${seg(id)}/`, data).then(r => r.data)
 export const patchTask    = (id: string, data: object) => api.patch(`/task/tareas/${seg(id)}/`, data).then(r => r.data)
@@ -265,6 +267,8 @@ export const createFuente = (data: object) => api.post('/projects/fuentes/', dat
 export const updateFuente = (id: string, d: object) => api.put(`/projects/fuentes/${seg(id)}/`, d).then(r => r.data)
 export const deleteFuente = (id: string) => api.delete(`/projects/fuentes/${seg(id)}/`).then(r => r.data)
 export const getHitos = (proyecto: string) => api.get<Hito[]>('/projects/hitos/', { params: { proyecto } }).then(r => r.data)
+// Los de todos los proyectos que uno ve (para el Cronograma).
+export const getTodosLosHitos = () => api.get<Hito[]>('/projects/hitos/').then(r => r.data)
 export const crearHito = (datos: Partial<Hito>) => api.post<Hito>('/projects/hitos/', datos).then(r => r.data)
 export const actualizarHito = (id: string, datos: Partial<Hito>) => api.patch<Hito>(`/projects/hitos/${seg(id)}/`, datos).then(r => r.data)
 export const borrarHito = (id: string) => api.delete(`/projects/hitos/${seg(id)}/`).then(r => r.data)

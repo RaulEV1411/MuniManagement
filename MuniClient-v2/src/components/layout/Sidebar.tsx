@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Building2, GitBranch,
   LogOut, Moon, Sun, ChevronLeft, ChevronRight,
-  Sliders, GanttChartSquare, FileDown, HelpCircle, ShieldCheck, Inbox,
+  Sliders, GanttChartSquare, FileDown, HelpCircle, ShieldCheck, Inbox, ListChecks,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -32,6 +32,7 @@ const NAV: { label: string; items: NavItem[] }[] = [
     label: 'Principal',
     items: [
       { icon: LayoutDashboard, label: 'Proyectos',     path: '/dashboard',   match: (p: string) => p === '/dashboard' || p.startsWith('/projects'), showOverdue: true },
+      { icon: ListChecks,      label: 'Mis tareas',    path: '/mis-tareas',  match: (p: string) => p === '/mis-tareas' },
       { icon: Inbox,           label: 'Solicitudes',   path: '/solicitudes', match: (p: string) => p === '/solicitudes', showPorAprobar: true },
     ],
   },
