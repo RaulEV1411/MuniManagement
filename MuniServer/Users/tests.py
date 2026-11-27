@@ -240,13 +240,24 @@ class CrearAdminTests(APITestCase):
         from django.core.management import call_command
         sembrar()
         salida = io.StringIO()
-        call_command('crear_admin', email='Jefa@Muni.test', nombre='Ana', apellido='Mora', cedula=111, stdout=salida)
+        call_command('crear_admin', email='Jefa@Muni.test', nombre='Ana', apellido='Mora', cedula='1-0111-0111',
+                     telefono='8888-1111', stdout=salida)
         from Users.models import Users
         u = Users.objects.get(email='jefa@muni.test')
         self.assertEqual(u.role.name, 'Administrador')
         self.assertEqual(u.departamento_ID.direccion.name, 'Alcaldía')
         self.assertFalse(u.has_usable_password())
         self.assertIn('https://muni.test/definir-clave/', salida.getvalue())
+        self.assertEqual(u.cedula, '101110111')
+
+    def test_valida_la_cedula_como_la_aplicacion(self):
+        import io
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        sembrar()
+        with self.assertRaisesMessage(CommandError, 'cedula'):
+            call_command('crear_admin', email='a@muni.test', nombre='Ana', apellido='Mora', cedula='111',
+                         telefono='88881111', stdout=io.StringIO())
 
 
 class JerarquiaDeUsuariosTests(Escenario, APITestCase):

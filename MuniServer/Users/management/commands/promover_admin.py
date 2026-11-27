@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         email = options['email']
         try:
-            user = Users.objects.get(email=email)
+            user = Users.objects.get(email__iexact=email.strip())
         except Users.DoesNotExist:
             self.stderr.write(self.style.ERROR(f'Usuario no encontrado: {email}'))
             return

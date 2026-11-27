@@ -32,16 +32,28 @@ Una instalación por municipalidad, en un servidor con Docker. Todo corre en con
    docker compose ps                        # api y web en «healthy»
    curl https://DOMINIO/api/v1/health/      # {"estado": "ok", "db": "ok", "cache": "ok"}
    ```
-5. Crear el primer administrador:
+5. Instalar la institución: sus datos, el primer administrador y, si se tienen, los departamentos y las personas:
    ```bash
-   docker compose exec api python manage.py crear_admin --email ana@muni.go.cr --nombre Ana --apellido Mora --cedula 112345678
+   docker compose cp departamentos.csv api:/tmp/ && docker compose cp usuarios.csv api:/tmp/
+   docker compose exec api python manage.py instalar \
+     --institucion "Municipalidad de Carmen" --ubicacion "San José, Costa Rica" --distritos "Carmen,Merced,Hospital" \
+     --correo-soporte soporte@muni.go.cr --telefono-soporte 2222-0000 \
+     --admin-correo ana@muni.go.cr --admin-nombre Ana --admin-apellido Mora --admin-cedula 1-1234-0567 --admin-telefono 8888-0000 \
+     --departamentos /tmp/departamentos.csv --usuarios /tmp/usuarios.csv --catalogos-base --probar
    ```
-   El comando imprime un enlace para definir la contraseña, y también lo manda por correo si el correo está configurado. Para dar el rol de Administrador a alguien que ya tiene cuenta: `python manage.py promover_admin correo@muni.go.cr`.
+   - Con `--probar` revisa todo sin guardar nada. Si sale bien, se repite sin `--probar`.
+   - Es todo o nada: si una línea tiene un error, no guarda nada y dice qué corregir en cada línea.
+   - Imprime el enlace para que el administrador defina su contraseña. Las personas del CSV reciben el suyo por correo; sin correo configurado, lo piden después en «Olvidé mi contraseña».
+   - Los CSV se guardan desde Excel con «Guardar como» y el formato **«CSV UTF-8 (delimitado por comas)»**. El «CSV (delimitado por comas)» común no sirve: no es UTF-8 y las tildes se pierden, así que el comando lo rechaza. Se aceptan con coma o punto y coma, y los encabezados con o sin tildes y mayúsculas. Una columna que no está en la lista se rechaza, para que ningún dato se pierda sin aviso. Hay ejemplos en [`ejemplos/`](ejemplos/):
+     - `departamentos.csv`: `direccion` y `departamento` y, si se quiere, `codigo`, `correo` y `telefono`;
+     - `usuarios.csv`: `nombre`, `apellido`, `identificacion`, `correo`, `telefono`, `puesto`, `rol` (uno de los roles del sistema) y `departamento` (uno del otro archivo, o el del administrador) y, si se quiere, `tipo_identificacion` (`fisica`, `dimex`, `nite` o `pasaporte`) y `numero_empleado`.
+   - `--catalogos-base` suma tipos de proyecto, fuentes de financiamiento y especialidades para empezar; se cambian en Configuración.
+   - El administrador queda en el departamento de `--admin-departamento` (por defecto, «Despacho de la Alcaldía»). Si ese departamento no está en el CSV, se crea en la Dirección «Alcaldía».
+   - Solo corre en una instalación sin administrador. Después, las personas se suman desde la aplicación, y otro administrador con `python manage.py crear_admin --email … --nombre … --apellido … --cedula … --telefono …`. Para dar el rol a alguien que ya tiene cuenta: `python manage.py promover_admin correo@muni.go.cr`.
 6. Entrar como ese administrador y completar **Configuración › Institución**:
-   - nombre, ubicación y logo, que se ven en el login, el menú, los reportes, el portal y la pestaña del navegador;
+   - logo, que se ve en el login, el menú, los reportes, el portal y la pestaña del navegador;
    - colores; el principal tiene que leerse con texto blanco encima;
-   - correo y teléfono de soporte, que se muestran en Ayuda;
-   - moneda.
+   - horario de soporte, el centro del mapa del portal y la licencia de los datos abiertos.
 
 ## Actualizar
 
