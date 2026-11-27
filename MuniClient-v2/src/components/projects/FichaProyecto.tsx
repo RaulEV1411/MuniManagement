@@ -9,6 +9,8 @@ import { mensajeDeError } from '@/lib/errores'
 import { useMarca } from '@/hooks/useMarca'
 import { cn } from '@/lib/utils'
 import Dialogo from '@/components/common/Dialogo'
+import ElegirPunto from '@/components/mapa/ElegirPunto'
+import { centroDeLaInstitucion, puntoEscrito } from '@/components/mapa/tipos'
 import { EntradasDeCampos } from '@/components/campos/CamposPersonalizados'
 import {
   cambiosParaEnviar, camposQueAplican, datosConValor, formDeCampos, useCampos, yaTieneValor, type FormDeCampos,
@@ -133,7 +135,8 @@ function EditarFicha({ project, onCerrar, onGuardado }: {
   onCerrar: () => void
   onGuardado: () => Promise<unknown> | void
 }) {
-  const { distritos } = useMarca()
+  const marca = useMarca()
+  const { distritos } = marca
   const { data: fuentes = [] } = useQuery<FuenteFinanciamiento[]>({ queryKey: ['fuentes'], queryFn: getFuentes })
   const [guardando, setGuardando] = useState(false)
   const [form, setForm] = useState({
@@ -249,7 +252,12 @@ function EditarFicha({ project, onCerrar, onGuardado }: {
               <input id="ficha-longitud" type="number" step="any" min={-180} max={180} value={form.longitud} onChange={e => set('longitud', e.target.value)} placeholder="-84.087502" className={campo} />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground -mt-1">El punto se copia de un mapa (por ejemplo, con clic derecho en OpenStreetMap).</p>
+          <ElegirPunto
+            etiqueta="Mapa para marcar la ubicación del proyecto"
+            punto={puntoEscrito(form.latitud, form.longitud)}
+            centro={centroDeLaInstitucion(marca)}
+            alElegir={(lat, lng) => setForm(f => ({ ...f, latitud: String(lat), longitud: String(lng) }))}
+          />
           <div className="space-y-1.5">
             <label htmlFor="ficha-objetivo" className="text-xs font-semibold text-muted-foreground">Objetivo</label>
             <textarea id="ficha-objetivo" maxLength={1000} rows={3} value={form.objetivo} onChange={e => set('objetivo', e.target.value)} className={cn(campo, 'resize-none')} />

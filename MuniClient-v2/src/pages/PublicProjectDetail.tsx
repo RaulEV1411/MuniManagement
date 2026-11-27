@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Calendar, Building2, MapPin, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, Calendar, Building2, FileText, MapPin, type LucideIcon } from 'lucide-react'
 import { getPublicProject } from '@/lib/api'
 import type { PublicProjectDetail } from '@/types'
-import { useTituloDePagina } from '@/hooks/useMarca'
+import { useMarca, useTituloDePagina } from '@/hooks/useMarca'
 import { textoSobre } from '@/lib/colores'
+import { formatearMonto } from '@/lib/marca'
 import { formatearFechaLarga } from '@/lib/utils'
+import Mapa from '@/components/mapa/Mapa'
+
+const fechaDe = (iso: string) => new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso))
 
 export default function PublicProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -15,6 +19,7 @@ export default function PublicProjectDetailPage() {
     enabled: !!id,
   })
   useTituloDePagina(p?.name ?? 'Proyecto')
+  const { moneda } = useMarca()
 
   if (isLoading) return <div className="p-10 text-center text-slate-600" role="status">Cargando…</div>
   // 404: el proyecto no existe o no es público. Cualquier otro error se puede reintentar.
@@ -73,6 +78,38 @@ export default function PublicProjectDetailPage() {
           <Info icon={MapPin} label="Departamento" value={p.departamento} />
           <Info icon={Calendar} label="Inicio" value={formatearFechaLarga(p.fecha_inicio)} />
           <Info icon={Calendar} label="Entrega" value={formatearFechaLarga(p.fecha_entrega)} />
+          {p.distrito && <Info icon={MapPin} label="Distrito" value={p.distrito} />}
+          {p.numero_sicop && <Info icon={FileText} label="Número de SICOP" value={p.numero_sicop} />}
+        </section>
+
+        {p.cierre && (
+          <section aria-labelledby="cierre" className="rounded-2xl bg-white border border-slate-200 p-5 space-y-2">
+            <h2 id="cierre" className="font-semibold text-slate-900">
+              {p.cierre.estado === 'Cancelado' ? 'Motivo de la cancelación' : 'Cierre del proyecto'}
+            </h2>
+            <p className="text-sm text-slate-800 whitespace-pre-line">{p.cierre.motivo}</p>
+            <p className="text-xs text-slate-600">
+              {p.cierre.estado} el {formatearFechaLarga(p.cierre.fecha)} · Costo final {formatearMonto(p.cierre.costo_final, moneda)}
+            </p>
+          </section>
+        )}
+
+        <section aria-labelledby="presupuesto" className="rounded-2xl bg-white border border-slate-200 p-5">
+          <h2 id="presupuesto" className="font-semibold text-slate-900 mb-3">Presupuesto y ejecución</h2>
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <dt className="text-xs uppercase text-slate-600">Presupuesto aprobado</dt>
+              <dd className="text-lg font-bold text-slate-900">{formatearMonto(p.presupuesto, moneda)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-600">Ejecutado</dt>
+              <dd className="text-lg font-bold text-slate-900">{formatearMonto(p.ejecutado, moneda)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-600">Porcentaje ejecutado</dt>
+              <dd className="text-lg font-bold text-slate-900">{p.presupuesto > 0 ? `${Math.round((p.ejecutado / p.presupuesto) * 100)} %` : '—'}</dd>
+            </div>
+          </dl>
         </section>
 
         <section className="rounded-2xl bg-white border border-slate-200 p-5">
@@ -84,6 +121,14 @@ export default function PublicProjectDetailPage() {
             <span className="text-lg font-bold text-slate-900">{p.avance}%</span>
           </div>
         </section>
+
+        {p.latitud != null && p.longitud != null && (
+          <section aria-labelledby="ubicacion">
+            <h2 id="ubicacion" className="font-semibold text-slate-900 mb-3">Ubicación</h2>
+            <Mapa etiqueta={`Ubicación de ${p.name}`} alto="h-72"
+              puntos={[{ id: p.proyect_ID, lat: Number(p.latitud), lng: Number(p.longitud), titulo: p.name, detalle: p.distrito || undefined }]} />
+          </section>
+        )}
 
         {p.images.length > 0 && (
           <section>
@@ -124,6 +169,8 @@ export default function PublicProjectDetailPage() {
             </ul>
           </section>
         )}
+
+        <p className="text-xs text-slate-600">Información actualizada el {fechaDe(p.actualizado)}.</p>
       </main>
     </div>
   )

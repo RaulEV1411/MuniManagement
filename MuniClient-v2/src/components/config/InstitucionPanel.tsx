@@ -5,7 +5,8 @@ import { ImageUp, Trash2, AlertTriangle } from 'lucide-react'
 import { borrarLogo, getConfiguracion, subirLogo, updateConfiguracion } from '@/lib/api'
 import ErrorDeCarga from '@/components/common/ErrorDeCarga'
 import { mensajeDeError } from '@/lib/errores'
-import { contrasteConBlanco, type Marca } from '@/lib/marca'
+import { contrasteConBlanco, type CodigoDeLicencia, type Marca } from '@/lib/marca'
+import ElegirPunto from '@/components/mapa/ElegirPunto'
 import { useMarca } from '@/hooks/useMarca'
 import LogoInstitucion from '@/components/common/LogoInstitucion'
 import { textoSobre } from '@/lib/colores'
@@ -17,6 +18,11 @@ const MONEDAS = [
   ['EUR', 'Euro'],
 ]
 const HEX = /^#[0-9a-fA-F]{6}$/
+const LICENCIAS: [CodigoDeLicencia, string][] = [
+  ['CC-BY-4.0', 'CC BY 4.0 · se pueden usar citando a la institución'],
+  ['CC0-1.0', 'CC0 1.0 · dominio público, sin condiciones'],
+  ['ODbL-1.0', 'ODbL 1.0 · citando y compartiendo igual las bases derivadas'],
+]
 const cls = 'w-full px-3 py-2 text-sm bg-background border border-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60'
 
 type Campos = Omit<Marca, 'logo'>
@@ -50,9 +56,11 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
     e.preventDefault()
     setGuardando(true)
     try {
-      const { nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias } = form
+      const { nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias,
+        mapa_latitud, mapa_longitud, mapa_zoom, licencia_datos } = form
       actualizar(await updateConfiguracion({
         nombre, ubicacion, color_primario, color_acento, correo_soporte, telefono_soporte, horario_soporte, moneda, retencion_auditoria_dias,
+        mapa_latitud, mapa_longitud, mapa_zoom, licencia_datos,
         distritos: distritos.split('\n').map(d => d.trim()).filter(Boolean),
       }))
       toast.success('Datos de la institución guardados')
@@ -180,6 +188,51 @@ function FormularioInstitucion({ inicial }: { inicial: Marca }) {
         <p id="inst-distritos-ayuda" className="text-xs text-muted-foreground">
           Se eligen en la ficha de cada proyecto. Si la lista queda vacía, el distrito se escribe a mano.
         </p>
+      </section>
+
+      <section className="bg-card border border-border rounded-2xl p-5 space-y-3" aria-labelledby="inst-portal-titulo">
+        <h2 id="inst-portal-titulo" className="text-sm font-bold text-foreground">Portal: mapa y datos abiertos</h2>
+        <div className="space-y-1.5 max-w-md">
+          <label htmlFor="inst-licencia" className="text-xs font-semibold text-muted-foreground">Licencia de los datos abiertos</label>
+          <select id="inst-licencia" value={form.licencia_datos} onChange={e => setForm(f => ({ ...f, licencia_datos: e.target.value as CodigoDeLicencia }))}
+            disabled={!esAdmin} aria-describedby="inst-licencia-ayuda" className={cls}>
+            {LICENCIAS.map(([codigo, nombre]) => <option key={codigo} value={codigo}>{nombre}</option>)}
+          </select>
+        </div>
+        <p id="inst-licencia-ayuda" className="text-xs text-muted-foreground">
+          El portal ofrece los proyectos públicos para descargar en CSV y JSON con esta licencia.
+        </p>
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">Centro del mapa</p>
+          <p className="text-xs text-muted-foreground">
+            {form.mapa_latitud != null && form.mapa_longitud != null
+              ? `Abre en ${Number(form.mapa_latitud)}, ${Number(form.mapa_longitud)}.`
+              : 'Sin marcar: el mapa se ajusta a los proyectos que tienen punto.'}
+          </p>
+          {esAdmin && (
+            <>
+              <ElegirPunto
+                etiqueta="Mapa para marcar el centro"
+                punto={form.mapa_latitud != null && form.mapa_longitud != null ? { lat: Number(form.mapa_latitud), lng: Number(form.mapa_longitud) } : null}
+                centro={form.mapa_latitud != null && form.mapa_longitud != null ? { lat: Number(form.mapa_latitud), lng: Number(form.mapa_longitud), zoom: form.mapa_zoom } : null}
+                alElegir={(lat, lng) => setForm(f => ({ ...f, mapa_latitud: lat.toFixed(6), mapa_longitud: lng.toFixed(6) }))}
+              />
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1.5 w-32">
+                  <label htmlFor="inst-zoom" className="text-xs font-semibold text-muted-foreground">Acercamiento</label>
+                  <input id="inst-zoom" type="number" min={1} max={18} required value={form.mapa_zoom}
+                    onChange={e => setForm(f => ({ ...f, mapa_zoom: Number(e.target.value) }))} className={cls} />
+                </div>
+                {form.mapa_latitud != null && (
+                  <button type="button" onClick={() => setForm(f => ({ ...f, mapa_latitud: null, mapa_longitud: null }))}
+                    className="px-3 py-2 text-xs font-semibold rounded-xl border border-border hover:bg-accent">
+                    Quitar el centro
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </section>
 
       <section className="bg-card border border-border rounded-2xl p-5 space-y-3" aria-labelledby="inst-auditoria-titulo">

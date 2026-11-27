@@ -94,7 +94,12 @@ export function CerrarProyectoDialogo({ project, estados, inicial, pendientes, o
         <div className="space-y-1.5">
           <label htmlFor="cierre-motivo" className={etiqueta}>Resumen del cierre o motivo</label>
           <textarea id="cierre-motivo" value={motivo} onChange={e => setMotivo(e.target.value)} required maxLength={2000} rows={3}
-            placeholder="Qué se entregó, o por qué se canceló" className={cls} />
+            placeholder="Qué se entregó, o por qué se canceló" aria-describedby={project.es_publico ? 'cierre-motivo-publico' : undefined} className={cls} />
+          {project.es_publico && (
+            <p id="cierre-motivo-publico" className="text-xs text-muted-foreground">
+              El proyecto es público: el portal muestra este texto, la fecha y el costo final. Las lecciones aprendidas no se publican.
+            </p>
+          )}
         </div>
         <div className="space-y-1.5">
           <label htmlFor="cierre-lecciones" className={etiqueta}>Lecciones aprendidas (opcional)</label>

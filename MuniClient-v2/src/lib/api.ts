@@ -143,6 +143,8 @@ export const reabrirProyecto = (id: string, datos: { estado_ID: string; motivo: 
   api.post(`/projects/proyectosWrite/${seg(id)}/reabrir/`, datos).then(r => r.data)
 export const archivarProyecto = (id: string) => api.post(`/projects/proyectosWrite/${seg(id)}/archivar/`).then(r => r.data)
 export const desarchivarProyecto = (id: string) => api.post(`/projects/proyectosWrite/${seg(id)}/desarchivar/`).then(r => r.data)
+// Quitarlo del portal aunque esté cerrado (volver a publicarlo exige reabrirlo).
+export const despublicarProyecto = (id: string) => api.post(`/projects/proyectosWrite/${seg(id)}/despublicar/`).then(r => r.data)
 export const uploadProjectImage = (projectId: string, file: File) => {
   const fd = new FormData(); fd.append('image', file); fd.append('proyecto_ID', projectId)
   return api.post('/projects/project-images/', fd).then(r => r.data)
@@ -245,6 +247,7 @@ export const getPublicProjects = (search = '') =>
   todasDe<PublicProject>(publicApi, '/public/projects/', search ? { search } : {})
 export const getPublicProject = (id: string) =>
   publicApi.get(`/public/projects/${seg(id)}/`).then(r => r.data)
+export const urlDatosAbiertos = (formato: 'csv' | 'json') => `${BASE_URL}/public/datos/proyectos.${formato}`
 
 // ── Config ────────────────────────────────────────────────────
 export const getEstados      = ()             => api.get('/projects/estados/').then(r => r.data)

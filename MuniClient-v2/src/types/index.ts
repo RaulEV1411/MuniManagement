@@ -231,6 +231,8 @@ export interface Project {
   user_ID: User
   images: ProjectImage[]
   es_publico?: boolean
+  // Solo en el detalle de un proyecto público: si puede quitarlo del portal (también cerrado).
+  puede_despublicar?: boolean | null
   costo_total?: number
   // Tareas completadas sobre las no canceladas (100 si el proyecto está completado), como en el portal.
   avance?: number | null
@@ -444,12 +446,23 @@ export interface PublicProject {
   descripcion: string
   fecha_inicio: string
   fecha_entrega: string
-  estado: { name: string; color: string } | null
+  estado: { name: string; color: string; categoria: CategoriaEstado } | null
   prioridad: { name: string; color: string } | null
   departamento: string
   direccion: string
   images: Array<{ imagen_ID: string; url: string }>
   avance: number
+  numero_sicop: string
+  distrito: string
+  latitud: string | null
+  longitud: string | null
+  /** Presupuesto aprobado: el costo más los ajustes. */
+  presupuesto: number
+  ejecutado: number
+  /** Último cambio del historial (o la creación). */
+  actualizado: string
+  /** El cierre vigente de un proyecto finalizado; las lecciones aprendidas no se publican. */
+  cierre: { estado: string; fecha: string; costo_final: number; motivo: string } | null
 }
 
 export interface PublicTask {
