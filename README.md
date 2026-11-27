@@ -25,9 +25,9 @@ Proyecto en desarrollo, hecho en equipo.
 
 ## Estructura
 
-- `MuniServer/`: API en Django, bajo `/api/v1/`, con las apps Users, Departments, Projects, Task, Notifications, Feedback, Historial y Configuracion.
+- `MuniServer/`: API en Django, bajo `/api/v1/`, con las apps Users, Departments, Projects, Task, Solicitudes, Notifications, Feedback, Historial, Auditoria y Configuracion.
 - `MuniClient-v2/`: cliente web en React.
-- `despliegue/`: guía de instalación en producción y plantilla de variables.
+- `despliegue/`: guía de instalación en producción, plantilla de variables y ejemplos de los CSV de `instalar`.
 
 ## Cómo correrlo en local
 
@@ -38,12 +38,21 @@ Proyecto en desarrollo, hecho en equipo.
    docker compose -f docker-compose.dev.yaml up --build
    ```
 
+   Las migraciones se regeneraron desde cero en la tanda I (27/11/2026). Una base local creada antes no arranca con ellas (`InconsistentMigrationHistory`): hay que borrarla y crearla de nuevo con `docker compose -f docker-compose.dev.yaml down -v`, lo que borra los datos locales.
+
 3. En otra terminal, el front (su proxy manda `/api` a `localhost:8000`):
 
    ```bash
    cd MuniClient-v2
    npm ci
    npm run dev
+   ```
+
+4. En una base nueva, el primer usuario (Administrador) se crea con `instalar`; para probar alcanza con los datos mínimos. Imprime el enlace para definir la contraseña:
+
+   ```bash
+   docker compose -f docker-compose.dev.yaml exec django python manage.py instalar --institucion "Municipalidad de prueba" \
+     --admin-correo ana@muni.test --admin-nombre Ana --admin-apellido Mora --admin-cedula 1-1234-0567 --admin-telefono 8888-0000 --catalogos-base
    ```
 
 ## Pruebas
@@ -70,6 +79,10 @@ El CI de GitHub Actions (`.github/workflows/ci.yml`) corre todo esto en cada PR 
 ## Producción
 
 Ver [`despliegue/README.md`](despliegue/README.md).
+
+## Licencia
+
+Software propietario: ver [`LICENSE`](LICENSE). Se instala con un contrato de licencia firmado con el autor.
 
 ## Equipo
 
