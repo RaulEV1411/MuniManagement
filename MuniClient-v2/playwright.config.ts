@@ -21,9 +21,17 @@ const entorno = {
   E2E_PUERTO_API: API,
   E2E_PUERTO_PREVIEW: PREVIEW,
   FRONTEND_URL: `http://localhost:${WEB}`,
+  // El mapa y la búsqueda de direcciones apuntan a hosts falsos que las fixtures responden: las pruebas no
+  // salen a internet (e2e/fixtures/mapa.ts).
+  VITE_MAPA_ESTILO: 'https://mapa.e2e.test/estilo.json',
+  VITE_BUSQUEDA_DIRECCIONES: 'https://direcciones.e2e.test/search',
+  MAPA_ORIGEN: 'https://mapa.e2e.test',
+  BUSQUEDA_ORIGEN: 'https://direcciones.e2e.test',
 } as Record<string, string>
-// Las fixtures (e2e/fixtures) llaman al endpoint de siembra en este puerto.
-Object.assign(process.env, { E2E_CORREOS: entorno.E2E_CORREOS, E2E_PUERTO_API: API })
+// Las fixtures (e2e/fixtures) llaman al endpoint de siembra en este puerto; la CSP lee los orígenes del mapa.
+Object.assign(process.env, {
+  E2E_CORREOS: entorno.E2E_CORREOS, E2E_PUERTO_API: API, MAPA_ORIGEN: entorno.MAPA_ORIGEN, BUSQUEDA_ORIGEN: entorno.BUSQUEDA_ORIGEN,
+})
 
 const navegador = { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } }
 

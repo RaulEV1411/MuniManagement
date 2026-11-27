@@ -56,6 +56,10 @@ for (const tema of ['claro', 'oscuro'] as const) {
         await sinFallos(page, ruta)
       }
       await page.goto('/publico')
+      await page.getByRole('button', { name: 'Mapa' }).click()
+      await expect(page.locator('[data-estado="listo"]')).toBeVisible()
+      await sinFallos(page, 'portal · mapa')
+      await page.getByRole('button', { name: 'Tarjetas' }).click()
       await page.getByRole('heading', { name: 'Acera central' }).click()
       await expect(page.getByText('Tareas del proyecto')).toBeVisible()
       await sinFallos(page, 'detalle público')
@@ -148,6 +152,7 @@ for (const tema of ['claro', 'oscuro'] as const) {
 
       await page.getByRole('button', { name: 'Editar ficha' }).click()
       await expect(page.getByRole('dialog', { name: 'Editar ficha' })).toBeVisible()
+      await expect(page.getByRole('dialog').locator('[data-estado="listo"]')).toBeVisible()
       await sinFallos(page, 'editar ficha', '[role=dialog]')
       await page.keyboard.press('Escape')
 

@@ -12,7 +12,10 @@ import { test as base, expect, type APIRequestContext, type Page, type Response 
 import { readdirSync, readFileSync } from 'fs'
 import path from 'path'
 
+import { servirMapa } from './mapa'
+
 export { expect }
+export { DIRECCION_DE_PRUEBA, mapaCaido } from './mapa'
 
 export const CLAVE = 'Clave-E2E-2026'
 export const ANA = 'ana@muni.test'      // Administrador
@@ -76,6 +79,10 @@ const idDeCorrida = (info: { workerIndex: number; retry: number; repeatEachIndex
 // El segundo parámetro de una fixture es el `use` de Playwright; se llama `entregar` para que el lint
 // de React no lo tome por un hook.
 export const test = base.extend<{ escenario: Escenario; escenarioConPersona: Escenario }>({
+  page: async ({ page }, entregar) => {
+    await servirMapa(page)
+    await entregar(page)
+  },
   escenario: async ({ request }, entregar, info) => {
     await entregar(await crearEscenario(request, idDeCorrida(info), false))
   },

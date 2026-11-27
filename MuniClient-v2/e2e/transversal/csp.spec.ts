@@ -7,11 +7,15 @@ import { CLAVE, ANA, expect, test } from '../fixtures'
 // La CSP de producción vive en el Caddyfile y Vite en desarrollo no la aplica: acá se sirve el build
 // (vite preview) con esa misma cabecera y se recorren las pantallas buscando violaciones.
 const raiz = path.dirname(fileURLToPath(import.meta.url))
+// Los {$VARIABLE:valor} los reemplaza Caddy con el entorno al arrancar; acá, igual.
 const CSP = readFileSync(path.join(raiz, '..', '..', 'Caddyfile'), 'utf8').match(/Content-Security-Policy "([^"]+)"/)![1]
+  .replace(/\{\$([A-Z_]+):([^}]+)\}/g, (_, variable: string, porDefecto: string) => process.env[variable] ?? porDefecto)
 const BASE = `http://localhost:${process.env.E2E_PUERTO_PREVIEW ?? '4173'}`
 
 async function conCsp(page: Page) {
   await page.route('**/*', async route => {
+    // El mapa y la búsqueda de direcciones los responde la fixture (hosts falsos, sin red).
+    if (new URL(route.request().url()).hostname.endsWith('.e2e.test')) return route.fallback()
     const r = await route.fetch()
     const html = (r.headers()['content-type'] ?? '').includes('text/html')
     await route.fulfill({ response: r, headers: html ? { ...r.headers(), 'content-security-policy': CSP } : r.headers() })
@@ -36,6 +40,10 @@ test('el build no viola la CSP de producción', { tag: ['@lectura', '@critico'] 
   await page.goto(`${BASE}/publico`)
   await expect(page.getByRole('heading', { name: 'Portal de proyectos' })).toBeVisible()
   expect(await violaciones(page), 'portal').toEqual([])
+  // El mapa: el worker de MapLibre (del propio sitio) y el estilo (el origen del mapa en connect-src).
+  await page.getByRole('button', { name: 'Mapa' }).click()
+  await expect(page.locator('[data-estado="listo"]')).toBeVisible()
+  expect(await violaciones(page), 'mapa').toEqual([])
 
   await page.goto(`${BASE}/login`)
   await page.fill('input[type=email]', ANA)
